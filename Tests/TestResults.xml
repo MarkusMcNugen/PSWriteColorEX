@@ -1,0 +1,1226 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="557" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="9" invalid="0" date="2025-11-02" time="02:29:42">
+  <environment user="Mark.Newton" nunit-version="2.5.8.0" os-version="10.0.26200" user-domain="AUNALYTICS" machine-name="NB-W11P-4777" platform="Microsoft Windows 11 Enterprise|C:\WINDOWS|\Device\Harddisk0\Partition3" clr-version="9.0.8" cwd="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Ignored" success="True" time="36.2244" asserts="0" description="Pester">
+    <results>
+      <test-suite type="TestFixture" name="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\PSColorStyle.Tests.ps1" executed="True" result="Success" success="True" time="2.3223" asserts="0" description="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\PSColorStyle.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="PSColorStyle Class" executed="True" result="Success" success="True" time="0.5328" asserts="0" description="PSColorStyle Class">
+            <results>
+              <test-suite type="TestFixture" name="PSColorStyle Class.Constructors" executed="True" result="Success" success="True" time="0.1316" asserts="0" description="PSColorStyle Class.Constructors">
+                <results>
+                  <test-case description="Creates instance with default constructor" name="PSColorStyle Class.Constructors.Creates instance with default constructor" time="0.0675" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Creates instance with name only" name="PSColorStyle Class.Constructors.Creates instance with name only" time="0.0071" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Creates instance with name, foreground, and background" name="PSColorStyle Class.Constructors.Creates instance with name, foreground, and background" time="0.0051" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts null background color" name="PSColorStyle Class.Constructors.Accepts null background color" time="0.0292" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.Property Initialization" executed="True" result="Success" success="True" time="0.1761" asserts="0" description="PSColorStyle Class.Property Initialization">
+                <results>
+                  <test-case description="Initializes boolean properties to false" name="PSColorStyle Class.Property Initialization.Initializes boolean properties to false" time="0.0187" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Initializes numeric properties to zero" name="PSColorStyle Class.Property Initialization.Initializes numeric properties to zero" time="0.0092" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Initializes Style as empty or null" name="PSColorStyle Class.Property Initialization.Initializes Style as empty or null" time="0.0036" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Initializes Gradient as null" name="PSColorStyle Class.Property Initialization.Initializes Gradient as null" time="0.0029" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.Property Modification" executed="True" result="Success" success="True" time="0.2362" asserts="0" description="PSColorStyle Class.Property Modification">
+                <results>
+                  <test-case description="Allows setting Bold to true" name="PSColorStyle Class.Property Modification.Allows setting Bold to true" time="0.0132" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Allows setting multiple style properties" name="PSColorStyle Class.Property Modification.Allows setting multiple style properties" time="0.0128" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Allows setting numeric properties" name="PSColorStyle Class.Property Modification.Allows setting numeric properties" time="0.012" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Allows setting Gradient array" name="PSColorStyle Class.Property Modification.Allows setting Gradient array" time="0.0076" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Allows setting Style array" name="PSColorStyle Class.Property Modification.Allows setting Style array" time="0.0061" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.Static Default Property" executed="True" result="Success" success="True" time="0.25" asserts="0" description="PSColorStyle Class.Static Default Property">
+                <results>
+                  <test-case description="Has a Default static property" name="PSColorStyle Class.Static Default Property.Has a Default static property" time="0.0027" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Default property is of type PSColorStyle" name="PSColorStyle Class.Static Default Property.Default property is of type PSColorStyle" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.Static Profiles Property" executed="True" result="Success" success="True" time="0.2895" asserts="0" description="PSColorStyle Class.Static Profiles Property">
+                <results>
+                  <test-case description="Has a Profiles static property" name="PSColorStyle Class.Static Profiles Property.Has a Profiles static property" time="0.0047" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Profiles is a hashtable" name="PSColorStyle Class.Static Profiles Property.Profiles is a hashtable" time="0.0186" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Profiles contains default profiles" name="PSColorStyle Class.Static Profiles Property.Profiles contains default profiles" time="0.0084" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.SetAsDefault Method" executed="True" result="Success" success="True" time="0.3047" asserts="0" description="PSColorStyle Class.SetAsDefault Method">
+                <results>
+                  <test-case description="Sets the style as default" name="PSColorStyle Class.SetAsDefault Method.Sets the style as default" time="0.0071" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.AddToProfiles Method" executed="True" result="Success" success="True" time="0.3217" asserts="0" description="PSColorStyle Class.AddToProfiles Method">
+                <results>
+                  <test-case description="Adds style to profiles collection" name="PSColorStyle Class.AddToProfiles Method.Adds style to profiles collection" time="0.005" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Overwrites existing profile with same name" name="PSColorStyle Class.AddToProfiles Method.Overwrites existing profile with same name" time="0.0038" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.GetProfile Static Method" executed="True" result="Success" success="True" time="0.3552" asserts="0" description="PSColorStyle Class.GetProfile Static Method">
+                <results>
+                  <test-case description="Retrieves existing profile by name" name="PSColorStyle Class.GetProfile Static Method.Retrieves existing profile by name" time="0.0111" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns null for non-existent profile" name="PSColorStyle Class.GetProfile Static Method.Returns null for non-existent profile" time="0.0037" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Retrieves built-in Error profile" name="PSColorStyle Class.GetProfile Static Method.Retrieves built-in Error profile" time="0.0097" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.ToWriteColorParams Method" executed="True" result="Success" success="True" time="0.4102" asserts="0" description="PSColorStyle Class.ToWriteColorParams Method">
+                <results>
+                  <test-case description="Returns hashtable with color properties" name="PSColorStyle Class.ToWriteColorParams Method.Returns hashtable with color properties" time="0.0057" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Includes Bold when set to true" name="PSColorStyle Class.ToWriteColorParams Method.Includes Bold when set to true" time="0.0037" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Excludes Bold when set to false" name="PSColorStyle Class.ToWriteColorParams Method.Excludes Bold when set to false" time="0.0028" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Includes multiple style properties" name="PSColorStyle Class.ToWriteColorParams Method.Includes multiple style properties" time="0.0043" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Includes formatting properties when set" name="PSColorStyle Class.ToWriteColorParams Method.Includes formatting properties when set" time="0.0053" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Excludes formatting properties when zero" name="PSColorStyle Class.ToWriteColorParams Method.Excludes formatting properties when zero" time="0.0045" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Includes Gradient when set" name="PSColorStyle Class.ToWriteColorParams Method.Includes Gradient when set" time="0.0047" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Excludes Gradient when less than 2 colors" name="PSColorStyle Class.ToWriteColorParams Method.Excludes Gradient when less than 2 colors" time="0.0027" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Caches parameters for performance" name="PSColorStyle Class.ToWriteColorParams Method.Caches parameters for performance" time="0.0095" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns clone to prevent external modification" name="PSColorStyle Class.ToWriteColorParams Method.Returns clone to prevent external modification" time="0.0038" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.Clone Method" executed="True" result="Success" success="True" time="0.4658" asserts="0" description="PSColorStyle Class.Clone Method">
+                <results>
+                  <test-case description="Creates a copy of the style" name="PSColorStyle Class.Clone Method.Creates a copy of the style" time="0.0197" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Creates independent copy that can be modified" name="PSColorStyle Class.Clone Method.Creates independent copy that can be modified" time="0.0056" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Clone does not share cached parameters" name="PSColorStyle Class.Clone Method.Clone does not share cached parameters" time="0.0031" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Copies all style properties" name="PSColorStyle Class.Clone Method.Copies all style properties" time="0.0132" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Copies Gradient array" name="PSColorStyle Class.Clone Method.Copies Gradient array" time="0.0059" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="PSColorStyle Class.InitializeDefaultProfiles Static Method" executed="True" result="Success" success="True" time="0.5188" asserts="0" description="PSColorStyle Class.InitializeDefaultProfiles Static Method">
+                <results>
+                  <test-case description="Initializes all default profiles" name="PSColorStyle Class.InitializeDefaultProfiles Static Method.Initializes all default profiles" time="0.0183" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Error profile has correct properties" name="PSColorStyle Class.InitializeDefaultProfiles Static Method.Error profile has correct properties" time="0.0046" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Warning profile has correct properties" name="PSColorStyle Class.InitializeDefaultProfiles Static Method.Warning profile has correct properties" time="0.0034" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Info profile has correct properties" name="PSColorStyle Class.InitializeDefaultProfiles Static Method.Info profile has correct properties" time="0.0034" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Success profile has correct properties" name="PSColorStyle Class.InitializeDefaultProfiles Static Method.Success profile has correct properties" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Critical profile has correct properties" name="PSColorStyle Class.InitializeDefaultProfiles Static Method.Critical profile has correct properties" time="0.0052" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Debug profile has correct properties" name="PSColorStyle Class.InitializeDefaultProfiles Static Method.Debug profile has correct properties" time="0.0037" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Default profile cache is pre-warmed" name="PSColorStyle Class.InitializeDefaultProfiles Static Method.Default profile cache is pre-warmed" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Test-AnsiSupport.Tests.ps1" executed="True" result="Ignored" success="True" time="2.0793" asserts="0" description="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Test-AnsiSupport.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Test-AnsiSupport" executed="True" result="Ignored" success="True" time="0.4025" asserts="0" description="Test-AnsiSupport">
+            <results>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Basic Functionality" executed="True" result="Success" success="True" time="0.0616" asserts="0" description="Test-AnsiSupport.Basic Functionality">
+                <results>
+                  <test-case description="Returns a PSCustomObject" name="Test-AnsiSupport.Basic Functionality.Returns a PSCustomObject" time="0.0205" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="ColorSupport property returns one of the expected values" name="Test-AnsiSupport.Basic Functionality.ColorSupport property returns one of the expected values" time="0.0086" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="SupportsBoldFonts property is a boolean" name="Test-AnsiSupport.Basic Functionality.SupportsBoldFonts property is a boolean" time="0.0053" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports -Silent switch parameter" name="Test-AnsiSupport.Basic Functionality.Supports -Silent switch parameter" time="0.0069" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works without -Silent parameter" name="Test-AnsiSupport.Basic Functionality.Works without -Silent parameter" time="0.003" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has TAS alias" name="Test-AnsiSupport.Basic Functionality.Has TAS alias" time="0.0067" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has Test-ANSI alias" name="Test-AnsiSupport.Basic Functionality.Has Test-ANSI alias" time="0.0026" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.FORCE_COLOR Environment Variable" executed="True" result="Success" success="True" time="0.0886" asserts="0" description="Test-AnsiSupport.FORCE_COLOR Environment Variable">
+                <results>
+                  <test-case description="Returns None when FORCE_COLOR is 0" name="Test-AnsiSupport.FORCE_COLOR Environment Variable.Returns None when FORCE_COLOR is 0" time="0.0035" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns ANSI4 when FORCE_COLOR is 1" name="Test-AnsiSupport.FORCE_COLOR Environment Variable.Returns ANSI4 when FORCE_COLOR is 1" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns ANSI8 when FORCE_COLOR is 2" name="Test-AnsiSupport.FORCE_COLOR Environment Variable.Returns ANSI8 when FORCE_COLOR is 2" time="0.0027" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns TrueColor when FORCE_COLOR is 3" name="Test-AnsiSupport.FORCE_COLOR Environment Variable.Returns TrueColor when FORCE_COLOR is 3" time="0.0036" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="FORCE_COLOR takes precedence over other detection" name="Test-AnsiSupport.FORCE_COLOR Environment Variable.FORCE_COLOR takes precedence over other detection" time="0.0037" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.NO_COLOR Environment Variable" executed="True" result="Success" success="True" time="0.1072" asserts="0" description="Test-AnsiSupport.NO_COLOR Environment Variable">
+                <results>
+                  <test-case description="Returns None when NO_COLOR is set" name="Test-AnsiSupport.NO_COLOR Environment Variable.Returns None when NO_COLOR is set" time="0.0034" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="NO_COLOR works with any value" name="Test-AnsiSupport.NO_COLOR Environment Variable.NO_COLOR works with any value" time="0.0074" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.COLORTERM Environment Variable Detection" executed="True" result="Success" success="True" time="0.1201" asserts="0" description="Test-AnsiSupport.COLORTERM Environment Variable Detection">
+                <results>
+                  <test-case description="Detects TrueColor when COLORTERM is truecolor" name="Test-AnsiSupport.COLORTERM Environment Variable Detection.Detects TrueColor when COLORTERM is truecolor" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects TrueColor when COLORTERM is 24bit" name="Test-AnsiSupport.COLORTERM Environment Variable Detection.Detects TrueColor when COLORTERM is 24bit" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.TERM Environment Variable Detection" executed="True" result="Success" success="True" time="0.1329" asserts="0" description="Test-AnsiSupport.TERM Environment Variable Detection">
+                <results>
+                  <test-case description="Detects ANSI8 when TERM contains 256color" name="Test-AnsiSupport.TERM Environment Variable Detection.Detects ANSI8 when TERM contains 256color" time="0.0029" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects ANSI4 when TERM is set but not 256color" name="Test-AnsiSupport.TERM Environment Variable Detection.Detects ANSI4 when TERM is set but not 256color" time="0.0027" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Windows Terminal Detection" executed="True" result="Success" success="True" time="0.1444" asserts="0" description="Test-AnsiSupport.Windows Terminal Detection">
+                <results>
+                  <test-case description="Detects TrueColor when WT_SESSION is set" name="Test-AnsiSupport.Windows Terminal Detection.Detects TrueColor when WT_SESSION is set" time="0.0045" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.ConEmu/Cmder Detection" executed="True" result="Success" success="True" time="0.1555" asserts="0" description="Test-AnsiSupport.ConEmu/Cmder Detection">
+                <results>
+                  <test-case description="Detects ConEmu when ConEmuANSI is set" name="Test-AnsiSupport.ConEmu/Cmder Detection.Detects ConEmu when ConEmuANSI is set" time="0.0037" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Terminal Program Detection" executed="True" result="Ignored" success="True" time="0.1685" asserts="0" description="Test-AnsiSupport.Terminal Program Detection">
+                <results>
+                  <test-case description="Detects Apple Terminal when TERM_PROGRAM is Apple_Terminal" name="Test-AnsiSupport.Terminal Program Detection.Detects Apple Terminal when TERM_PROGRAM is Apple_Terminal" time="0.002" asserts="0" success="False" result="Ignored" executed="False" />
+                  <test-case description="Detects iTerm2 when TERM_PROGRAM is iTerm.app" name="Test-AnsiSupport.Terminal Program Detection.Detects iTerm2 when TERM_PROGRAM is iTerm.app" time="0.0007" asserts="0" success="False" result="Ignored" executed="False" />
+                  <test-case description="Detects VS Code when TERM_PROGRAM is vscode" name="Test-AnsiSupport.Terminal Program Detection.Detects VS Code when TERM_PROGRAM is vscode" time="0.0033" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.VTE Version Detection" executed="True" result="Ignored" success="True" time="0.176" asserts="0" description="Test-AnsiSupport.VTE Version Detection">
+                <results>
+                  <test-case description="Detects VTE-based terminal when VTE_VERSION is set" name="Test-AnsiSupport.VTE Version Detection.Detects VTE-based terminal when VTE_VERSION is set" time="0.0006" asserts="0" success="False" result="Ignored" executed="False" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Silent Mode" executed="True" result="Success" success="True" time="0.196" asserts="0" description="Test-AnsiSupport.Silent Mode">
+                <results>
+                  <test-case description="Does not produce warnings with -Silent switch" name="Test-AnsiSupport.Silent Mode.Does not produce warnings with -Silent switch" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works without -Silent on supported terminals" name="Test-AnsiSupport.Silent Mode.Works without -Silent on supported terminals" time="0.0053" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Platform-Specific Behavior" executed="True" result="Success" success="True" time="0.2324" asserts="0" description="Test-AnsiSupport.Platform-Specific Behavior">
+                <results>
+                  <test-case description="Detects platform correctly" name="Test-AnsiSupport.Platform-Specific Behavior.Detects platform correctly" time="0.0201" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns valid result on current platform" name="Test-AnsiSupport.Platform-Specific Behavior.Returns valid result on current platform" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.PowerShell ISE Detection" executed="True" result="Ignored" success="True" time="0.2405" asserts="0" description="Test-AnsiSupport.PowerShell ISE Detection">
+                <results>
+                  <test-case description="Returns None in PowerShell ISE" name="Test-AnsiSupport.PowerShell ISE Detection.Returns None in PowerShell ISE" time="0.0007" asserts="0" success="False" result="Ignored" executed="False" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.PowerShell Version Compatibility" executed="True" result="Ignored" success="True" time="0.2542" asserts="0" description="Test-AnsiSupport.PowerShell Version Compatibility">
+                <results>
+                  <test-case description="Works in PowerShell 5.1" name="Test-AnsiSupport.PowerShell Version Compatibility.Works in PowerShell 5.1" time="0.0007" asserts="0" success="False" result="Ignored" executed="False" />
+                  <test-case description="Works in PowerShell 7+" name="Test-AnsiSupport.PowerShell Version Compatibility.Works in PowerShell 7+" time="0.0028" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects if running PowerShell Core" name="Test-AnsiSupport.PowerShell Version Compatibility.Detects if running PowerShell Core" time="0.0026" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Return Value Consistency" executed="True" result="Success" success="True" time="0.2664" asserts="0" description="Test-AnsiSupport.Return Value Consistency">
+                <results>
+                  <test-case description="Returns same value on multiple calls" name="Test-AnsiSupport.Return Value Consistency.Returns same value on multiple calls" time="0.0031" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns consistent value type" name="Test-AnsiSupport.Return Value Consistency.Returns consistent value type" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Edge Cases" executed="True" result="Success" success="True" time="0.2894" asserts="0" description="Test-AnsiSupport.Edge Cases">
+                <results>
+                  <test-case description="Handles invalid FORCE_COLOR value gracefully" name="Test-AnsiSupport.Edge Cases.Handles invalid FORCE_COLOR value gracefully" time="0.0028" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles empty environment variables" name="Test-AnsiSupport.Edge Cases.Handles empty environment variables" time="0.0028" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Terminal Detection via Environment Variables" executed="True" result="Ignored" success="True" time="0.3212" asserts="0" description="Test-AnsiSupport.Terminal Detection via Environment Variables">
+                <results>
+                  <test-case description="Detects Windows Terminal via WT_SESSION" name="Test-AnsiSupport.Terminal Detection via Environment Variables.Detects Windows Terminal via WT_SESSION" time="0.0068" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects ConEmu via ConEmuANSI" name="Test-AnsiSupport.Terminal Detection via Environment Variables.Detects ConEmu via ConEmuANSI" time="0.0033" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects VS Code terminal via TERM_PROGRAM" name="Test-AnsiSupport.Terminal Detection via Environment Variables.Detects VS Code terminal via TERM_PROGRAM" time="0.0033" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects iTerm2 via TERM_PROGRAM" name="Test-AnsiSupport.Terminal Detection via Environment Variables.Detects iTerm2 via TERM_PROGRAM" time="0.0009" asserts="0" success="False" result="Ignored" executed="False" />
+                  <test-case description="Detects Terminal.app with ANSI8 limitation" name="Test-AnsiSupport.Terminal Detection via Environment Variables.Detects Terminal.app with ANSI8 limitation" time="0.0006" asserts="0" success="False" result="Ignored" executed="False" />
+                  <test-case description="Detects VTE-based terminals (modern version)" name="Test-AnsiSupport.Terminal Detection via Environment Variables.Detects VTE-based terminals (modern version)" time="0.003" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects TrueColor via COLORTERM=truecolor" name="Test-AnsiSupport.Terminal Detection via Environment Variables.Detects TrueColor via COLORTERM=truecolor" time="0.0028" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects TrueColor via COLORTERM=24bit" name="Test-AnsiSupport.Terminal Detection via Environment Variables.Detects TrueColor via COLORTERM=24bit" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.FORCE_COLOR Environment Variable Override" executed="True" result="Success" success="True" time="0.3438" asserts="0" description="Test-AnsiSupport.FORCE_COLOR Environment Variable Override">
+                <results>
+                  <test-case description="Forces None with FORCE_COLOR=0" name="Test-AnsiSupport.FORCE_COLOR Environment Variable Override.Forces None with FORCE_COLOR=0" time="0.0059" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Forces ANSI4 with FORCE_COLOR=1" name="Test-AnsiSupport.FORCE_COLOR Environment Variable Override.Forces ANSI4 with FORCE_COLOR=1" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Forces ANSI8 with FORCE_COLOR=2" name="Test-AnsiSupport.FORCE_COLOR Environment Variable Override.Forces ANSI8 with FORCE_COLOR=2" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Forces TrueColor with FORCE_COLOR=3" name="Test-AnsiSupport.FORCE_COLOR Environment Variable Override.Forces TrueColor with FORCE_COLOR=3" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="FORCE_COLOR overrides terminal detection" name="Test-AnsiSupport.FORCE_COLOR Environment Variable Override.FORCE_COLOR overrides terminal detection" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Terminal Warning Messages" executed="True" result="Ignored" success="True" time="0.3559" asserts="0" description="Test-AnsiSupport.Terminal Warning Messages">
+                <results>
+                  <test-case description="Warns about Terminal.app TrueColor limitation" name="Test-AnsiSupport.Terminal Warning Messages.Warns about Terminal.app TrueColor limitation" time="0.0007" asserts="0" success="False" result="Ignored" executed="False" />
+                  <test-case description="Warns about ConEmu limited TrueColor support" name="Test-AnsiSupport.Terminal Warning Messages.Warns about ConEmu limited TrueColor support" time="0.0007" asserts="0" success="False" result="Ignored" executed="False" />
+                  <test-case description="Silent mode suppresses warnings" name="Test-AnsiSupport.Terminal Warning Messages.Silent mode suppresses warnings" time="0.0031" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Bold Font Support Detection" executed="True" result="Success" success="True" time="0.3688" asserts="0" description="Test-AnsiSupport.Bold Font Support Detection">
+                <results>
+                  <test-case description="Returns boolean for SupportsBoldFonts" name="Test-AnsiSupport.Bold Font Support Detection.Returns boolean for SupportsBoldFonts" time="0.0026" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects bold font support correctly for current terminal" name="Test-AnsiSupport.Bold Font Support Detection.Detects bold font support correctly for current terminal" time="0.0029" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Test-AnsiSupport.Style Support Details" executed="True" result="Success" success="True" time="0.3938" asserts="0" description="Test-AnsiSupport.Style Support Details">
+                <results>
+                  <test-case description="Returns StyleSupport hashtable in Details" name="Test-AnsiSupport.Style Support Details.Returns StyleSupport hashtable in Details" time="0.0035" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="StyleSupport contains expected properties" name="Test-AnsiSupport.Style Support Details.StyleSupport contains expected properties" time="0.0041" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="StyleSupport properties are boolean values" name="Test-AnsiSupport.Style Support Details.StyleSupport properties are boolean values" time="0.0095" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Convert-ColorValue.Tests.ps1" executed="True" result="Success" success="True" time="2.4415" asserts="0" description="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Convert-ColorValue.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Convert-HexToRGB" executed="True" result="Success" success="True" time="0.1106" asserts="0" description="Convert-HexToRGB">
+            <results>
+              <test-suite type="TestFixture" name="Convert-HexToRGB.Basic Functionality" executed="True" result="Success" success="True" time="0.0305" asserts="0" description="Convert-HexToRGB.Basic Functionality">
+                <results>
+                  <test-case description="Converts simple hex color with # prefix" name="Convert-HexToRGB.Basic Functionality.Converts simple hex color with # prefix" time="0.0119" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts hex color with 0x prefix" name="Convert-HexToRGB.Basic Functionality.Converts hex color with 0x prefix" time="0.0033" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts hex color without prefix" name="Convert-HexToRGB.Basic Functionality.Converts hex color without prefix" time="0.0031" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has CHR alias" name="Convert-HexToRGB.Basic Functionality.Has CHR alias" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has Hex2RGB alias" name="Convert-HexToRGB.Basic Functionality.Has Hex2RGB alias" time="0.0027" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-HexToRGB.Color Conversion Accuracy" executed="True" result="Success" success="True" time="0.0622" asserts="0" description="Convert-HexToRGB.Color Conversion Accuracy">
+                <results>
+                  <test-case description="Converts pure red" name="Convert-HexToRGB.Color Conversion Accuracy.Converts pure red" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts pure green" name="Convert-HexToRGB.Color Conversion Accuracy.Converts pure green" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts pure blue" name="Convert-HexToRGB.Color Conversion Accuracy.Converts pure blue" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts white" name="Convert-HexToRGB.Color Conversion Accuracy.Converts white" time="0.0027" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts black" name="Convert-HexToRGB.Color Conversion Accuracy.Converts black" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts orange" name="Convert-HexToRGB.Color Conversion Accuracy.Converts orange" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts gray" name="Convert-HexToRGB.Color Conversion Accuracy.Converts gray" time="0.005" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles lowercase hex" name="Convert-HexToRGB.Color Conversion Accuracy.Handles lowercase hex" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles mixed case hex" name="Convert-HexToRGB.Color Conversion Accuracy.Handles mixed case hex" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-HexToRGB.Invalid Input Handling" executed="True" result="Success" success="True" time="0.0901" asserts="0" description="Convert-HexToRGB.Invalid Input Handling">
+                <results>
+                  <test-case description="Returns gray for invalid hex format (too short)" name="Convert-HexToRGB.Invalid Input Handling.Returns gray for invalid hex format (too short)" time="0.0033" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns gray for invalid hex format (too long)" name="Convert-HexToRGB.Invalid Input Handling.Returns gray for invalid hex format (too long)" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns gray for invalid characters" name="Convert-HexToRGB.Invalid Input Handling.Returns gray for invalid characters" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Throws error for empty string" name="Convert-HexToRGB.Invalid Input Handling.Throws error for empty string" time="0.0113" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns gray for non-hex characters" name="Convert-HexToRGB.Invalid Input Handling.Returns gray for non-hex characters" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-HexToRGB.Edge Cases" executed="True" result="Success" success="True" time="0.1034" asserts="0" description="Convert-HexToRGB.Edge Cases">
+                <results>
+                  <test-case description="Handles minimum values" name="Convert-HexToRGB.Edge Cases.Handles minimum values" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles maximum values" name="Convert-HexToRGB.Edge Cases.Handles maximum values" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles mid-range values" name="Convert-HexToRGB.Edge Cases.Handles mid-range values" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Convert-RGBToANSI8" executed="True" result="Success" success="True" time="0.2209" asserts="0" description="Convert-RGBToANSI8">
+            <results>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI8.Basic Functionality" executed="True" result="Success" success="True" time="0.0266" asserts="0" description="Convert-RGBToANSI8.Basic Functionality">
+                <results>
+                  <test-case description="Converts RGB array to ANSI8 code" name="Convert-RGBToANSI8.Basic Functionality.Converts RGB array to ANSI8 code" time="0.0141" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has CRA8 alias" name="Convert-RGBToANSI8.Basic Functionality.Has CRA8 alias" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has RGB2ANSI8 alias" name="Convert-RGBToANSI8.Basic Functionality.Has RGB2ANSI8 alias" time="0.0029" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI8.Grayscale Detection" executed="True" result="Success" success="True" time="0.0534" asserts="0" description="Convert-RGBToANSI8.Grayscale Detection">
+                <results>
+                  <test-case description="Detects pure black as grayscale" name="Convert-RGBToANSI8.Grayscale Detection.Detects pure black as grayscale" time="0.0057" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects pure white as grayscale" name="Convert-RGBToANSI8.Grayscale Detection.Detects pure white as grayscale" time="0.0028" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects mid-gray as grayscale" name="Convert-RGBToANSI8.Grayscale Detection.Detects mid-gray as grayscale" time="0.006" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects near-gray values as grayscale" name="Convert-RGBToANSI8.Grayscale Detection.Detects near-gray values as grayscale" time="0.0053" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI8.Color Cube Mapping" executed="True" result="Success" success="True" time="0.0704" asserts="0" description="Convert-RGBToANSI8.Color Cube Mapping">
+                <results>
+                  <test-case description="Maps pure red to color cube" name="Convert-RGBToANSI8.Color Cube Mapping.Maps pure red to color cube" time="0.0026" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps pure green to color cube" name="Convert-RGBToANSI8.Color Cube Mapping.Maps pure green to color cube" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps pure blue to color cube" name="Convert-RGBToANSI8.Color Cube Mapping.Maps pure blue to color cube" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps orange correctly" name="Convert-RGBToANSI8.Color Cube Mapping.Maps orange correctly" time="0.0026" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI8.Edge Cases" executed="True" result="Success" success="True" time="0.0922" asserts="0" description="Convert-RGBToANSI8.Edge Cases">
+                <results>
+                  <test-case description="Handles all zeros" name="Convert-RGBToANSI8.Edge Cases.Handles all zeros" time="0.0058" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles all maximum values" name="Convert-RGBToANSI8.Edge Cases.Handles all maximum values" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles mid-range values" name="Convert-RGBToANSI8.Edge Cases.Handles mid-range values" time="0.0037" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns consistent results for same input" name="Convert-RGBToANSI8.Edge Cases.Returns consistent results for same input" time="0.0031" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI8.Lookup Table Usage" executed="True" result="Success" success="True" time="0.1041" asserts="0" description="Convert-RGBToANSI8.Lookup Table Usage">
+                <results>
+                  <test-case description="Uses lookup table when available" name="Convert-RGBToANSI8.Lookup Table Usage.Uses lookup table when available" time="0.0029" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Falls back when lookup table not available" name="Convert-RGBToANSI8.Lookup Table Usage.Falls back when lookup table not available" time="0.0025" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Convert-RGBToANSI4" executed="True" result="Success" success="True" time="0.3382" asserts="0" description="Convert-RGBToANSI4">
+            <results>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI4.Basic Functionality" executed="True" result="Success" success="True" time="0.018" asserts="0" description="Convert-RGBToANSI4.Basic Functionality">
+                <results>
+                  <test-case description="Converts RGB array to ANSI4 code" name="Convert-RGBToANSI4.Basic Functionality.Converts RGB array to ANSI4 code" time="0.0073" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has CRA4 alias" name="Convert-RGBToANSI4.Basic Functionality.Has CRA4 alias" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has RGB2ANSI4 alias" name="Convert-RGBToANSI4.Basic Functionality.Has RGB2ANSI4 alias" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI4.Brightness Detection" executed="True" result="Success" success="True" time="0.0397" asserts="0" description="Convert-RGBToANSI4.Brightness Detection">
+                <results>
+                  <test-case description="Detects dark colors correctly" name="Convert-RGBToANSI4.Brightness Detection.Detects dark colors correctly" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Detects bright colors correctly" name="Convert-RGBToANSI4.Brightness Detection.Detects bright colors correctly" time="0.0115" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI4.Grayscale Detection" executed="True" result="Success" success="True" time="0.0553" asserts="0" description="Convert-RGBToANSI4.Grayscale Detection">
+                <results>
+                  <test-case description="Maps pure black to black (30)" name="Convert-RGBToANSI4.Grayscale Detection.Maps pure black to black (30)" time="0.0025" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps pure white to white (97)" name="Convert-RGBToANSI4.Grayscale Detection.Maps pure white to white (97)" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps dark gray correctly" name="Convert-RGBToANSI4.Grayscale Detection.Maps dark gray correctly" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps light gray correctly" name="Convert-RGBToANSI4.Grayscale Detection.Maps light gray correctly" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI4.Primary Color Detection" executed="True" result="Success" success="True" time="0.0767" asserts="0" description="Convert-RGBToANSI4.Primary Color Detection">
+                <results>
+                  <test-case description="Maps bright red" name="Convert-RGBToANSI4.Primary Color Detection.Maps bright red" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps dark red" name="Convert-RGBToANSI4.Primary Color Detection.Maps dark red" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps bright green" name="Convert-RGBToANSI4.Primary Color Detection.Maps bright green" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps dark green" name="Convert-RGBToANSI4.Primary Color Detection.Maps dark green" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps bright blue" name="Convert-RGBToANSI4.Primary Color Detection.Maps bright blue" time="0.0025" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps dark blue" name="Convert-RGBToANSI4.Primary Color Detection.Maps dark blue" time="0.0026" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI4.Secondary Color Detection" executed="True" result="Success" success="True" time="0.0973" asserts="0" description="Convert-RGBToANSI4.Secondary Color Detection">
+                <results>
+                  <test-case description="Maps yellow (bright)" name="Convert-RGBToANSI4.Secondary Color Detection.Maps yellow (bright)" time="0.0028" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps yellow (dark)" name="Convert-RGBToANSI4.Secondary Color Detection.Maps yellow (dark)" time="0.0027" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps cyan (bright)" name="Convert-RGBToANSI4.Secondary Color Detection.Maps cyan (bright)" time="0.003" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Maps magenta (bright)" name="Convert-RGBToANSI4.Secondary Color Detection.Maps magenta (bright)" time="0.0053" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Convert-RGBToANSI4.Edge Cases" executed="True" result="Success" success="True" time="0.1112" asserts="0" description="Convert-RGBToANSI4.Edge Cases">
+                <results>
+                  <test-case description="Handles minimum values" name="Convert-RGBToANSI4.Edge Cases.Handles minimum values" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles maximum values" name="Convert-RGBToANSI4.Edge Cases.Handles maximum values" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns consistent results" name="Convert-RGBToANSI4.Edge Cases.Returns consistent results" time="0.0033" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Get-ColorTableWithRGB" executed="True" result="Success" success="True" time="0.9584" asserts="0" description="Get-ColorTableWithRGB">
+            <results>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.Basic Functionality" executed="True" result="Success" success="True" time="0.0497" asserts="0" description="Get-ColorTableWithRGB.Basic Functionality">
+                <results>
+                  <test-case description="Returns a hashtable" name="Get-ColorTableWithRGB.Basic Functionality.Returns a hashtable" time="0.0318" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has GCT alias" name="Get-ColorTableWithRGB.Basic Functionality.Has GCT alias" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has Get-ColorTable alias" name="Get-ColorTableWithRGB.Basic Functionality.Has Get-ColorTable alias" time="0.0065" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has Get-ColourTable alias" name="Get-ColorTableWithRGB.Basic Functionality.Has Get-ColourTable alias" time="0.0025" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.Color Table Structure" executed="True" result="Success" success="True" time="0.1706" asserts="0" description="Get-ColorTableWithRGB.Color Table Structure">
+                <results>
+                  <test-case description="Contains expected number of colors" name="Get-ColorTableWithRGB.Color Table Structure.Contains expected number of colors" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Each color entry is an array" name="Get-ColorTableWithRGB.Color Table Structure.Each color entry is an array" time="0.049" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Each color entry has 5 elements" name="Get-ColorTableWithRGB.Color Table Structure.Each color entry has 5 elements" time="0.0572" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Each color entry has correct structure (Native, ANSI4FG, ANSI4BG, ANSI8, RGB)" name="Get-ColorTableWithRGB.Color Table Structure.Each color entry has correct structure (Native, ANSI4FG, ANSI4BG, ANSI8, RGB)" time="0.005" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.Neutral Colors" executed="True" result="Success" success="True" time="0.1879" asserts="0" description="Get-ColorTableWithRGB.Neutral Colors">
+                <results>
+                  <test-case description="Contains Black" name="Get-ColorTableWithRGB.Neutral Colors.Contains Black" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains White" name="Get-ColorTableWithRGB.Neutral Colors.Contains White" time="0.0018" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Gray" name="Get-ColorTableWithRGB.Neutral Colors.Contains Gray" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains DarkGray" name="Get-ColorTableWithRGB.Neutral Colors.Contains DarkGray" time="0.0013" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains LightGray" name="Get-ColorTableWithRGB.Neutral Colors.Contains LightGray" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.Primary Color Families" executed="True" result="Success" success="True" time="0.2084" asserts="0" description="Get-ColorTableWithRGB.Primary Color Families">
+                <results>
+                  <test-case description="Contains Red family (Dark, Normal, Light)" name="Get-ColorTableWithRGB.Primary Color Families.Contains Red family (Dark, Normal, Light)" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Green family" name="Get-ColorTableWithRGB.Primary Color Families.Contains Green family" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Blue family" name="Get-ColorTableWithRGB.Primary Color Families.Contains Blue family" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Yellow family" name="Get-ColorTableWithRGB.Primary Color Families.Contains Yellow family" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Cyan family" name="Get-ColorTableWithRGB.Primary Color Families.Contains Cyan family" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Magenta family" name="Get-ColorTableWithRGB.Primary Color Families.Contains Magenta family" time="0.0019" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.Extended Color Families" executed="True" result="Success" success="True" time="0.2261" asserts="0" description="Get-ColorTableWithRGB.Extended Color Families">
+                <results>
+                  <test-case description="Contains Orange family" name="Get-ColorTableWithRGB.Extended Color Families.Contains Orange family" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Purple family" name="Get-ColorTableWithRGB.Extended Color Families.Contains Purple family" time="0.0044" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Pink family" name="Get-ColorTableWithRGB.Extended Color Families.Contains Pink family" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Teal family" name="Get-ColorTableWithRGB.Extended Color Families.Contains Teal family" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.Specialty Color Families" executed="True" result="Success" success="True" time="0.24" asserts="0" description="Get-ColorTableWithRGB.Specialty Color Families">
+                <results>
+                  <test-case description="Contains Crimson family" name="Get-ColorTableWithRGB.Specialty Color Families.Contains Crimson family" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Emerald family" name="Get-ColorTableWithRGB.Specialty Color Families.Contains Emerald family" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Sapphire family" name="Get-ColorTableWithRGB.Specialty Color Families.Contains Sapphire family" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.RGB Value Validation" executed="True" result="Success" success="True" time="0.4545" asserts="0" description="Get-ColorTableWithRGB.RGB Value Validation">
+                <results>
+                  <test-case description="All RGB values are within valid range (0-255)" name="Get-ColorTableWithRGB.RGB Value Validation.All RGB values are within valid range (0-255)" time="0.2011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Red color has correct RGB values" name="Get-ColorTableWithRGB.RGB Value Validation.Red color has correct RGB values" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Green color has correct RGB values" name="Get-ColorTableWithRGB.RGB Value Validation.Green color has correct RGB values" time="0.0012" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Blue color has correct RGB values" name="Get-ColorTableWithRGB.RGB Value Validation.Blue color has correct RGB values" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.ANSI Code Validation" executed="True" result="Success" success="True" time="0.6026" asserts="0" description="Get-ColorTableWithRGB.ANSI Code Validation">
+                <results>
+                  <test-case description="All ANSI4 foreground codes are valid" name="Get-ColorTableWithRGB.ANSI Code Validation.All ANSI4 foreground codes are valid" time="0.033" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="All ANSI4 background codes are valid" name="Get-ColorTableWithRGB.ANSI Code Validation.All ANSI4 background codes are valid" time="0.0317" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="All ANSI8 codes are within valid range" name="Get-ColorTableWithRGB.ANSI Code Validation.All ANSI8 codes are within valid range" time="0.0698" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorTableWithRGB.Return Value Consistency" executed="True" result="Success" success="True" time="0.6138" asserts="0" description="Get-ColorTableWithRGB.Return Value Consistency">
+                <results>
+                  <test-case description="Returns same table on multiple calls" name="Get-ColorTableWithRGB.Return Value Consistency.Returns same table on multiple calls" time="0.0019" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Table is not empty" name="Get-ColorTableWithRGB.Return Value Consistency.Table is not empty" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\New-GradientColorArray.Tests.ps1" executed="True" result="Success" success="True" time="1.1273" asserts="0" description="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\New-GradientColorArray.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="New-GradientColorArray" executed="True" result="Success" success="True" time="0.3248" asserts="0" description="New-GradientColorArray">
+            <results>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Basic Functionality" executed="True" result="Success" success="True" time="0.0316" asserts="0" description="New-GradientColorArray.Basic Functionality">
+                <results>
+                  <test-case description="Generates gradient array" name="New-GradientColorArray.Basic Functionality.Generates gradient array" time="0.0109" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts color names" name="New-GradientColorArray.Basic Functionality.Accepts color names" time="0.0055" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts hex colors" name="New-GradientColorArray.Basic Functionality.Accepts hex colors" time="0.0055" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts RGB arrays" name="New-GradientColorArray.Basic Functionality.Accepts RGB arrays" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts mixed color formats" name="New-GradientColorArray.Basic Functionality.Accepts mixed color formats" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Parameter Validation" executed="True" result="Success" success="True" time="0.0648" asserts="0" description="New-GradientColorArray.Parameter Validation">
+                <results>
+                  <test-case description="Requires at least 2 colors" name="New-GradientColorArray.Parameter Validation.Requires at least 2 colors" time="0.0032" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts exactly 2 colors" name="New-GradientColorArray.Parameter Validation.Accepts exactly 2 colors" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts more than 2 colors" name="New-GradientColorArray.Parameter Validation.Accepts more than 2 colors" time="0.0018" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Requires Steps parameter" name="New-GradientColorArray.Parameter Validation.Requires Steps parameter" time="0.0059" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Requires Mode parameter" name="New-GradientColorArray.Parameter Validation.Requires Mode parameter" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts TrueColor mode" name="New-GradientColorArray.Parameter Validation.Accepts TrueColor mode" time="0.0018" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts ANSI8 mode" name="New-GradientColorArray.Parameter Validation.Accepts ANSI8 mode" time="0.0035" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Rejects invalid mode" name="New-GradientColorArray.Parameter Validation.Rejects invalid mode" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Requires positive Steps value" name="New-GradientColorArray.Parameter Validation.Requires positive Steps value" time="0.0047" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.TrueColor Mode Output" executed="True" result="Success" success="True" time="0.1088" asserts="0" description="New-GradientColorArray.TrueColor Mode Output">
+                <results>
+                  <test-case description="Returns RGB arrays in TrueColor mode" name="New-GradientColorArray.TrueColor Mode Output.Returns RGB arrays in TrueColor mode" time="0.0031" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="First color matches start color" name="New-GradientColorArray.TrueColor Mode Output.First color matches start color" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Last color matches end color" name="New-GradientColorArray.TrueColor Mode Output.Last color matches end color" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Middle colors are interpolated" name="New-GradientColorArray.TrueColor Mode Output.Middle colors are interpolated" time="0.0019" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="RGB values stay within 0-255 range" name="New-GradientColorArray.TrueColor Mode Output.RGB values stay within 0-255 range" time="0.0291" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.ANSI8 Mode Output" executed="True" result="Success" success="True" time="0.1424" asserts="0" description="New-GradientColorArray.ANSI8 Mode Output">
+                <results>
+                  <test-case description="Returns ANSI8 codes in ANSI8 mode" name="New-GradientColorArray.ANSI8 Mode Output.Returns ANSI8 codes in ANSI8 mode" time="0.0063" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Generates correct number of codes" name="New-GradientColorArray.ANSI8 Mode Output.Generates correct number of codes" time="0.0037" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="All codes are within ANSI8 range" name="New-GradientColorArray.ANSI8 Mode Output.All codes are within ANSI8 range" time="0.0179" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Two-Color Gradient (Optimized Path)" executed="True" result="Success" success="True" time="0.1653" asserts="0" description="New-GradientColorArray.Two-Color Gradient (Optimized Path)">
+                <results>
+                  <test-case description="Handles simple two-color gradient" name="New-GradientColorArray.Two-Color Gradient (Optimized Path).Handles simple two-color gradient" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Interpolates smoothly between two colors" name="New-GradientColorArray.Two-Color Gradient (Optimized Path).Interpolates smoothly between two colors" time="0.0058" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles minimum steps (1)" name="New-GradientColorArray.Two-Color Gradient (Optimized Path).Handles minimum steps (1)" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles two identical colors" name="New-GradientColorArray.Two-Color Gradient (Optimized Path).Handles two identical colors" time="0.0067" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Multi-Stop Gradient (3+ Colors)" executed="True" result="Success" success="True" time="0.1798" asserts="0" description="New-GradientColorArray.Multi-Stop Gradient (3+ Colors)">
+                <results>
+                  <test-case description="Handles three-color gradient" name="New-GradientColorArray.Multi-Stop Gradient (3+ Colors).Handles three-color gradient" time="0.0018" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles four-color gradient" name="New-GradientColorArray.Multi-Stop Gradient (3+ Colors).Handles four-color gradient" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles five-color gradient" name="New-GradientColorArray.Multi-Stop Gradient (3+ Colors).Handles five-color gradient" time="0.0018" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Distributes colors evenly across waypoints" name="New-GradientColorArray.Multi-Stop Gradient (3+ Colors).Distributes colors evenly across waypoints" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Creates smooth transitions between waypoints" name="New-GradientColorArray.Multi-Stop Gradient (3+ Colors).Creates smooth transitions between waypoints" time="0.0019" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Color Format Handling" executed="True" result="Success" success="True" time="0.198" asserts="0" description="New-GradientColorArray.Color Format Handling">
+                <results>
+                  <test-case description="Converts hex colors to RGB" name="New-GradientColorArray.Color Format Handling.Converts hex colors to RGB" time="0.0046" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts color names to RGB" name="New-GradientColorArray.Color Format Handling.Converts color names to RGB" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles 0x prefix hex colors" name="New-GradientColorArray.Color Format Handling.Handles 0x prefix hex colors" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Clamps RGB values to 0-255 range" name="New-GradientColorArray.Color Format Handling.Clamps RGB values to 0-255 range" time="0.0028" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles invalid color names gracefully" name="New-GradientColorArray.Color Format Handling.Handles invalid color names gracefully" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Edge Cases" executed="True" result="Success" success="True" time="0.228" asserts="0" description="New-GradientColorArray.Edge Cases">
+                <results>
+                  <test-case description="Handles single step" name="New-GradientColorArray.Edge Cases.Handles single step" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles large number of steps" name="New-GradientColorArray.Edge Cases.Handles large number of steps" time="0.0164" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles very small RGB values" name="New-GradientColorArray.Edge Cases.Handles very small RGB values" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles very large RGB values" name="New-GradientColorArray.Edge Cases.Handles very large RGB values" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles black to white gradient" name="New-GradientColorArray.Edge Cases.Handles black to white gradient" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles white to black gradient (reverse)" name="New-GradientColorArray.Edge Cases.Handles white to black gradient (reverse)" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Performance and Optimization" executed="True" result="Success" success="True" time="0.2661" asserts="0" description="New-GradientColorArray.Performance and Optimization">
+                <results>
+                  <test-case description="Uses List instead of array concatenation" name="New-GradientColorArray.Performance and Optimization.Uses List instead of array concatenation" time="0.0218" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Caches color conversions" name="New-GradientColorArray.Performance and Optimization.Caches color conversions" time="0.0091" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles command availability checks efficiently" name="New-GradientColorArray.Performance and Optimization.Handles command availability checks efficiently" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Consistency and Reproducibility" executed="True" result="Success" success="True" time="0.2981" asserts="0" description="New-GradientColorArray.Consistency and Reproducibility">
+                <results>
+                  <test-case description="Returns same results for same input" name="New-GradientColorArray.Consistency and Reproducibility.Returns same results for same input" time="0.022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="TrueColor and ANSI8 return same count" name="New-GradientColorArray.Consistency and Reproducibility.TrueColor and ANSI8 return same count" time="0.0042" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Rainbow Gradients" executed="True" result="Success" success="True" time="0.3096" asserts="0" description="New-GradientColorArray.Rainbow Gradients">
+                <results>
+                  <test-case description="Creates full spectrum rainbow" name="New-GradientColorArray.Rainbow Gradients.Creates full spectrum rainbow" time="0.0029" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Creates custom rainbow" name="New-GradientColorArray.Rainbow Gradients.Creates custom rainbow" time="0.0029" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-GradientColorArray.Fallback Behavior" executed="True" result="Success" success="True" time="0.3184" asserts="0" description="New-GradientColorArray.Fallback Behavior">
+                <results>
+                  <test-case description="Returns gray when color table not available and color invalid" name="New-GradientColorArray.Fallback Behavior.Returns gray when color table not available and color invalid" time="0.0013" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns grayscale ANSI8 code (7) when conversion fails" name="New-GradientColorArray.Fallback Behavior.Returns grayscale ANSI8 code (7) when conversion fails" time="0.0019" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Write-ColorHelpers.Tests.ps1" executed="True" result="Success" success="True" time="2.8964" asserts="0" description="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Write-ColorHelpers.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Write-ColorError" executed="True" result="Success" success="True" time="0.9895" asserts="0" description="Write-ColorError">
+            <results>
+              <test-suite type="TestFixture" name="Write-ColorError.Basic Functionality" executed="True" result="Success" success="True" time="0.3797" asserts="0" description="Write-ColorError.Basic Functionality">
+                <results>
+                  <test-case description="Accepts text parameter" name="Write-ColorError.Basic Functionality.Accepts text parameter" time="0.0754" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts pipeline input" name="Write-ColorError.Basic Functionality.Accepts pipeline input" time="0.0713" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports NoNewLine switch" name="Write-ColorError.Basic Functionality.Supports NoNewLine switch" time="0.0728" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports NoConsoleOutput switch" name="Write-ColorError.Basic Functionality.Supports NoConsoleOutput switch" time="0.072" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports PassThru switch" name="Write-ColorError.Basic Functionality.Supports PassThru switch" time="0.0788" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has WCE alias" name="Write-ColorError.Basic Functionality.Has WCE alias" time="0.0018" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has Write-ErrorColor alias" name="Write-ColorError.Basic Functionality.Has Write-ErrorColor alias" time="0.001" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorError.Style Profile" executed="True" result="Success" success="True" time="0.5343" asserts="0" description="Write-ColorError.Style Profile">
+                <results>
+                  <test-case description="Uses Error profile by default" name="Write-ColorError.Style Profile.Uses Error profile by default" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Uses cached style parameters for performance" name="Write-ColorError.Style Profile.Uses cached style parameters for performance" time="0.1473" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorError.Logging" executed="True" result="Success" success="True" time="0.8183" asserts="0" description="Write-ColorError.Logging">
+                <results>
+                  <test-case description="Writes to log file when specified" name="Write-ColorError.Logging.Writes to log file when specified" time="0.1227" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports NoConsoleOutput for log-only mode" name="Write-ColorError.Logging.Supports NoConsoleOutput for log-only mode" time="0.153" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorError.Array Input" executed="True" result="Success" success="True" time="0.9835" asserts="0" description="Write-ColorError.Array Input">
+                <results>
+                  <test-case description="Accepts array of strings" name="Write-ColorError.Array Input.Accepts array of strings" time="0.0825" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="PassThru returns input array" name="Write-ColorError.Array Input.PassThru returns input array" time="0.0763" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Write-ColorWarning" executed="True" result="Success" success="True" time="1.4139" asserts="0" description="Write-ColorWarning">
+            <results>
+              <test-suite type="TestFixture" name="Write-ColorWarning.Basic Functionality" executed="True" result="Success" success="True" time="0.2953" asserts="0" description="Write-ColorWarning.Basic Functionality">
+                <results>
+                  <test-case description="Accepts text parameter" name="Write-ColorWarning.Basic Functionality.Accepts text parameter" time="0.0721" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts pipeline input" name="Write-ColorWarning.Basic Functionality.Accepts pipeline input" time="0.0708" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports NoNewLine switch" name="Write-ColorWarning.Basic Functionality.Supports NoNewLine switch" time="0.0715" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports PassThru switch" name="Write-ColorWarning.Basic Functionality.Supports PassThru switch" time="0.0728" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has WCW alias" name="Write-ColorWarning.Basic Functionality.Has WCW alias" time="0.0018" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorWarning.Style Profile" executed="True" result="Success" success="True" time="0.3023" asserts="0" description="Write-ColorWarning.Style Profile">
+                <results>
+                  <test-case description="Uses Warning profile by default" name="Write-ColorWarning.Style Profile.Uses Warning profile by default" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorWarning.Logging" executed="True" result="Success" success="True" time="0.4164" asserts="0" description="Write-ColorWarning.Logging">
+                <results>
+                  <test-case description="Writes to log file when specified" name="Write-ColorWarning.Logging.Writes to log file when specified" time="0.1065" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Write-ColorInfo" executed="True" result="Success" success="True" time="1.5994" asserts="0" description="Write-ColorInfo">
+            <results>
+              <test-suite type="TestFixture" name="Write-ColorInfo.Basic Functionality" executed="True" result="Success" success="True" time="0.1741" asserts="0" description="Write-ColorInfo.Basic Functionality">
+                <results>
+                  <test-case description="Accepts text parameter" name="Write-ColorInfo.Basic Functionality.Accepts text parameter" time="0.0736" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports PassThru switch" name="Write-ColorInfo.Basic Functionality.Supports PassThru switch" time="0.0924" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has WCI alias" name="Write-ColorInfo.Basic Functionality.Has WCI alias" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorInfo.Style Profile" executed="True" result="Success" success="True" time="0.1807" asserts="0" description="Write-ColorInfo.Style Profile">
+                <results>
+                  <test-case description="Uses Info profile by default" name="Write-ColorInfo.Style Profile.Uses Info profile by default" time="0.0013" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Write-ColorSuccess" executed="True" result="Success" success="True" time="1.7625" asserts="0" description="Write-ColorSuccess">
+            <results>
+              <test-suite type="TestFixture" name="Write-ColorSuccess.Basic Functionality" executed="True" result="Success" success="True" time="0.151" asserts="0" description="Write-ColorSuccess.Basic Functionality">
+                <results>
+                  <test-case description="Accepts text parameter" name="Write-ColorSuccess.Basic Functionality.Accepts text parameter" time="0.0725" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports PassThru switch" name="Write-ColorSuccess.Basic Functionality.Supports PassThru switch" time="0.0711" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has WCS alias" name="Write-ColorSuccess.Basic Functionality.Has WCS alias" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorSuccess.Style Profile" executed="True" result="Success" success="True" time="0.158" asserts="0" description="Write-ColorSuccess.Style Profile">
+                <results>
+                  <test-case description="Uses Success profile by default" name="Write-ColorSuccess.Style Profile.Uses Success profile by default" time="0.0013" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Write-ColorCritical" executed="True" result="Success" success="True" time="1.8905" asserts="0" description="Write-ColorCritical">
+            <results>
+              <test-suite type="TestFixture" name="Write-ColorCritical.Basic Functionality" executed="True" result="Success" success="True" time="0.115" asserts="0" description="Write-ColorCritical.Basic Functionality">
+                <results>
+                  <test-case description="Accepts text parameter" name="Write-ColorCritical.Basic Functionality.Accepts text parameter" time="0.0526" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports PassThru switch" name="Write-ColorCritical.Basic Functionality.Supports PassThru switch" time="0.0553" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has WCC alias" name="Write-ColorCritical.Basic Functionality.Has WCC alias" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorCritical.Style Profile" executed="True" result="Success" success="True" time="0.1226" asserts="0" description="Write-ColorCritical.Style Profile">
+                <results>
+                  <test-case description="Uses Critical profile by default" name="Write-ColorCritical.Style Profile.Uses Critical profile by default" time="0.0019" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Write-ColorDebug" executed="True" result="Success" success="True" time="2.0194" asserts="0" description="Write-ColorDebug">
+            <results>
+              <test-suite type="TestFixture" name="Write-ColorDebug.Basic Functionality" executed="True" result="Success" success="True" time="0.1159" asserts="0" description="Write-ColorDebug.Basic Functionality">
+                <results>
+                  <test-case description="Accepts text parameter" name="Write-ColorDebug.Basic Functionality.Accepts text parameter" time="0.0536" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Supports PassThru switch" name="Write-ColorDebug.Basic Functionality.Supports PassThru switch" time="0.0544" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has WCD alias" name="Write-ColorDebug.Basic Functionality.Has WCD alias" time="0.0025" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorDebug.Style Profile" executed="True" result="Success" success="True" time="0.1229" asserts="0" description="Write-ColorDebug.Style Profile">
+                <results>
+                  <test-case description="Uses Debug profile by default" name="Write-ColorDebug.Style Profile.Uses Debug profile by default" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Set-ColorDefault" executed="True" result="Success" success="True" time="2.0842" asserts="0" description="Set-ColorDefault">
+            <results>
+              <test-suite type="TestFixture" name="Set-ColorDefault.Basic Functionality" executed="True" result="Success" success="True" time="0.0194" asserts="0" description="Set-ColorDefault.Basic Functionality">
+                <results>
+                  <test-case description="Sets default using properties" name="Set-ColorDefault.Basic Functionality.Sets default using properties" time="0.0098" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets default using PSColorStyle object" name="Set-ColorDefault.Basic Functionality.Sets default using PSColorStyle object" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has SCD alias" name="Set-ColorDefault.Basic Functionality.Has SCD alias" time="0.0016" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has Set-ColourDefault alias" name="Set-ColorDefault.Basic Functionality.Has Set-ColourDefault alias" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Set-ColorDefault.Property Parameters" executed="True" result="Success" success="True" time="0.0426" asserts="0" description="Set-ColorDefault.Property Parameters">
+                <results>
+                  <test-case description="Sets foreground color" name="Set-ColorDefault.Property Parameters.Sets foreground color" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets background color" name="Set-ColorDefault.Property Parameters.Sets background color" time="0.0022" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets Bold" name="Set-ColorDefault.Property Parameters.Sets Bold" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets Italic" name="Set-ColorDefault.Property Parameters.Sets Italic" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets Underline" name="Set-ColorDefault.Property Parameters.Sets Underline" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets ShowTime" name="Set-ColorDefault.Property Parameters.Sets ShowTime" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets StartTab" name="Set-ColorDefault.Property Parameters.Sets StartTab" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets StartSpaces" name="Set-ColorDefault.Property Parameters.Sets StartSpaces" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets multiple properties at once" name="Set-ColorDefault.Property Parameters.Sets multiple properties at once" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Set-ColorDefault.Style Object Parameter" executed="True" result="Success" success="True" time="0.0515" asserts="0" description="Set-ColorDefault.Style Object Parameter">
+                <results>
+                  <test-case description="Accepts PSColorStyle object" name="Set-ColorDefault.Style Object Parameter.Accepts PSColorStyle object" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Style object takes precedence over property parameters" name="Set-ColorDefault.Style Object Parameter.Style object takes precedence over property parameters" time="0.0012" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Set-ColorDefault.Profile Registration" executed="True" result="Success" success="True" time="0.0588" asserts="0" description="Set-ColorDefault.Profile Registration">
+                <results>
+                  <test-case description="Adds new default to profiles collection" name="Set-ColorDefault.Profile Registration.Adds new default to profiles collection" time="0.0019" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="Get-ColorProfiles" executed="True" result="Success" success="True" time="2.1309" asserts="0" description="Get-ColorProfiles">
+            <results>
+              <test-suite type="TestFixture" name="Get-ColorProfiles.Basic Functionality" executed="True" result="Success" success="True" time="0.0132" asserts="0" description="Get-ColorProfiles.Basic Functionality">
+                <results>
+                  <test-case description="Returns all profiles" name="Get-ColorProfiles.Basic Functionality.Returns all profiles" time="0.0024" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns specific profile by name" name="Get-ColorProfiles.Basic Functionality.Returns specific profile by name" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns null for non-existent profile" name="Get-ColorProfiles.Basic Functionality.Returns null for non-existent profile" time="0.0009" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has GCP alias" name="Get-ColorProfiles.Basic Functionality.Has GCP alias" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has Get-ColourProfiles alias" name="Get-ColorProfiles.Basic Functionality.Has Get-ColourProfiles alias" time="0.0009" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorProfiles.Default Profiles" executed="True" result="Success" success="True" time="0.0312" asserts="0" description="Get-ColorProfiles.Default Profiles">
+                <results>
+                  <test-case description="Contains Error profile" name="Get-ColorProfiles.Default Profiles.Contains Error profile" time="0.0013" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Warning profile" name="Get-ColorProfiles.Default Profiles.Contains Warning profile" time="0.0054" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Info profile" name="Get-ColorProfiles.Default Profiles.Contains Info profile" time="0.0013" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Success profile" name="Get-ColorProfiles.Default Profiles.Contains Success profile" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Critical profile" name="Get-ColorProfiles.Default Profiles.Contains Critical profile" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Debug profile" name="Get-ColorProfiles.Default Profiles.Contains Debug profile" time="0.0012" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Contains Default profile" name="Get-ColorProfiles.Default Profiles.Contains Default profile" time="0.0009" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Get-ColorProfiles.Return Types" executed="True" result="Success" success="True" time="0.0415" asserts="0" description="Get-ColorProfiles.Return Types">
+                <results>
+                  <test-case description="Returns PSColorStyle objects" name="Get-ColorProfiles.Return Types.Returns PSColorStyle objects" time="0.0039" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Single profile returns PSColorStyle" name="Get-ColorProfiles.Return Types.Single profile returns PSColorStyle" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+          <test-suite type="TestFixture" name="New-ColorStyle" executed="True" result="Success" success="True" time="2.2353" asserts="0" description="New-ColorStyle">
+            <results>
+              <test-suite type="TestFixture" name="New-ColorStyle.Basic Functionality" executed="True" result="Success" success="True" time="0.0214" asserts="0" description="New-ColorStyle.Basic Functionality">
+                <results>
+                  <test-case description="Creates new style with name" name="New-ColorStyle.Basic Functionality.Creates new style with name" time="0.0085" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Creates style with foreground color" name="New-ColorStyle.Basic Functionality.Creates style with foreground color" time="0.004" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Creates style with background color" name="New-ColorStyle.Basic Functionality.Creates style with background color" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has NCS alias" name="New-ColorStyle.Basic Functionality.Has NCS alias" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has New-ColourStyle alias" name="New-ColorStyle.Basic Functionality.Has New-ColourStyle alias" time="0.0009" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-ColorStyle.Style Properties" executed="True" result="Success" success="True" time="0.0368" asserts="0" description="New-ColorStyle.Style Properties">
+                <results>
+                  <test-case description="Sets Bold" name="New-ColorStyle.Style Properties.Sets Bold" time="0.0012" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets Italic" name="New-ColorStyle.Style Properties.Sets Italic" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets Underline" name="New-ColorStyle.Style Properties.Sets Underline" time="0.001" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets Blink" name="New-ColorStyle.Style Properties.Sets Blink" time="0.001" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets Faint" name="New-ColorStyle.Style Properties.Sets Faint" time="0.001" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets CrossedOut" name="New-ColorStyle.Style Properties.Sets CrossedOut" time="0.001" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets DoubleUnderline" name="New-ColorStyle.Style Properties.Sets DoubleUnderline" time="0.0009" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets Overline" name="New-ColorStyle.Style Properties.Sets Overline" time="0.001" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets multiple style properties" name="New-ColorStyle.Style Properties.Sets multiple style properties" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-ColorStyle.Formatting Properties" executed="True" result="Success" success="True" time="0.0576" asserts="0" description="New-ColorStyle.Formatting Properties">
+                <results>
+                  <test-case description="Sets StartTab" name="New-ColorStyle.Formatting Properties.Sets StartTab" time="0.0079" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets StartSpaces" name="New-ColorStyle.Formatting Properties.Sets StartSpaces" time="0.0013" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets LinesBefore" name="New-ColorStyle.Formatting Properties.Sets LinesBefore" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets LinesAfter" name="New-ColorStyle.Formatting Properties.Sets LinesAfter" time="0.001" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets ShowTime" name="New-ColorStyle.Formatting Properties.Sets ShowTime" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets NoNewLine" name="New-ColorStyle.Formatting Properties.Sets NoNewLine" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Sets HorizontalCenter" name="New-ColorStyle.Formatting Properties.Sets HorizontalCenter" time="0.0012" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-ColorStyle.Gradient Property" executed="True" result="Success" success="True" time="0.0647" asserts="0" description="New-ColorStyle.Gradient Property">
+                <results>
+                  <test-case description="Sets Gradient array" name="New-ColorStyle.Gradient Property.Sets Gradient array" time="0.002" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-ColorStyle.AddToProfiles Switch" executed="True" result="Success" success="True" time="0.0727" asserts="0" description="New-ColorStyle.AddToProfiles Switch">
+                <results>
+                  <test-case description="Adds style to profiles when switch is used" name="New-ColorStyle.AddToProfiles Switch.Adds style to profiles when switch is used" time="0.0013" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Does not add to profiles by default" name="New-ColorStyle.AddToProfiles Switch.Does not add to profiles by default" time="0.0011" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-ColorStyle.SetAsDefault Switch" executed="True" result="Success" success="True" time="0.0805" asserts="0" description="New-ColorStyle.SetAsDefault Switch">
+                <results>
+                  <test-case description="Sets as default when switch is used" name="New-ColorStyle.SetAsDefault Switch.Sets as default when switch is used" time="0.0023" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-ColorStyle.Return Value" executed="True" result="Success" success="True" time="0.0919" asserts="0" description="New-ColorStyle.Return Value">
+                <results>
+                  <test-case description="Returns PSColorStyle object" name="New-ColorStyle.Return Value.Returns PSColorStyle object" time="0.0014" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Returns object with all specified properties" name="New-ColorStyle.Return Value.Returns object with all specified properties" time="0.0047" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="New-ColorStyle.Complex Style Creation" executed="True" result="Success" success="True" time="0.099" asserts="0" description="New-ColorStyle.Complex Style Creation">
+                <results>
+                  <test-case description="Creates complex style with all options" name="New-ColorStyle.Complex Style Creation.Creates complex style with all options" time="0.0021" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Write-ColorEX.Tests.ps1" executed="True" result="Success" success="True" time="15.7658" asserts="0" description="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Write-ColorEX.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Write-ColorEX" executed="True" result="Success" success="True" time="15.2538" asserts="0" description="Write-ColorEX">
+            <results>
+              <test-suite type="TestFixture" name="Write-ColorEX.Basic Functionality" executed="True" result="Success" success="True" time="0.1662" asserts="0" description="Write-ColorEX.Basic Functionality">
+                <results>
+                  <test-case description="Accepts Text parameter" name="Write-ColorEX.Basic Functionality.Accepts Text parameter" time="0.0523" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of text segments" name="Write-ColorEX.Basic Functionality.Accepts array of text segments" time="0.0518" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works without parameters" name="Write-ColorEX.Basic Functionality.Works without parameters" time="0.0521" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has WC alias" name="Write-ColorEX.Basic Functionality.Has WC alias" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has Write-Color alias" name="Write-ColorEX.Basic Functionality.Has Write-Color alias" time="0.0015" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has WCEX alias" name="Write-ColorEX.Basic Functionality.Has WCEX alias" time="0.0009" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Color Parameter - Color Names" executed="True" result="Success" success="True" time="0.4433" asserts="0" description="Write-ColorEX.Color Parameter - Color Names">
+                <results>
+                  <test-case description="Accepts single color name" name="Write-ColorEX.Color Parameter - Color Names.Accepts single color name" time="0.0522" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of color names" name="Write-ColorEX.Color Parameter - Color Names.Accepts array of color names" time="0.0524" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Cycles colors when more text than colors" name="Write-ColorEX.Color Parameter - Color Names.Cycles colors when more text than colors" time="0.058" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts extended color names" name="Write-ColorEX.Color Parameter - Color Names.Accepts extended color names" time="0.0525" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts Dark/Light color variants" name="Write-ColorEX.Color Parameter - Color Names.Accepts Dark/Light color variants" time="0.056" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Color Parameter - Hex Colors" executed="True" result="Success" success="True" time="0.7314" asserts="0" description="Write-ColorEX.Color Parameter - Hex Colors">
+                <results>
+                  <test-case description="Accepts hex color with # prefix" name="Write-ColorEX.Color Parameter - Hex Colors.Accepts hex color with # prefix" time="0.0585" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts hex color with 0x prefix" name="Write-ColorEX.Color Parameter - Hex Colors.Accepts hex color with 0x prefix" time="0.0575" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts hex color without prefix" name="Write-ColorEX.Color Parameter - Hex Colors.Accepts hex color without prefix" time="0.0496" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of hex colors" name="Write-ColorEX.Color Parameter - Hex Colors.Accepts array of hex colors" time="0.0568" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts lowercase hex" name="Write-ColorEX.Color Parameter - Hex Colors.Accepts lowercase hex" time="0.0573" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Color Parameter - RGB Arrays" executed="True" result="Success" success="True" time="0.9382" asserts="0" description="Write-ColorEX.Color Parameter - RGB Arrays">
+                <results>
+                  <test-case description="Accepts RGB array for single text" name="Write-ColorEX.Color Parameter - RGB Arrays.Accepts RGB array for single text" time="0.0801" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of RGB arrays" name="Write-ColorEX.Color Parameter - RGB Arrays.Accepts array of RGB arrays" time="0.0572" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Clamps RGB values to 0-255 range" name="Write-ColorEX.Color Parameter - RGB Arrays.Clamps RGB values to 0-255 range" time="0.064" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Color Parameter - ANSI Integers" executed="True" result="Success" success="True" time="1.117" asserts="0" description="Write-ColorEX.Color Parameter - ANSI Integers">
+                <results>
+                  <test-case description="Accepts ANSI8 integer (0-255)" name="Write-ColorEX.Color Parameter - ANSI Integers.Accepts ANSI8 integer (0-255)" time="0.0586" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of ANSI8 integers" name="Write-ColorEX.Color Parameter - ANSI Integers.Accepts array of ANSI8 integers" time="0.0567" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Validates ANSI8 range (0-255)" name="Write-ColorEX.Color Parameter - ANSI Integers.Validates ANSI8 range (0-255)" time="0.058" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.BackGroundColor Parameter" executed="True" result="Success" success="True" time="1.3319" asserts="0" description="Write-ColorEX.BackGroundColor Parameter">
+                <results>
+                  <test-case description="Accepts background color name" name="Write-ColorEX.BackGroundColor Parameter.Accepts background color name" time="0.0518" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts background hex color" name="Write-ColorEX.BackGroundColor Parameter.Accepts background hex color" time="0.0493" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts background RGB array" name="Write-ColorEX.BackGroundColor Parameter.Accepts background RGB array" time="0.0561" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts null background color" name="Write-ColorEX.BackGroundColor Parameter.Accepts null background color" time="0.0007" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of background colors" name="Write-ColorEX.BackGroundColor Parameter.Accepts array of background colors" time="0.0517" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Color Mode Switches" executed="True" result="Success" success="True" time="1.736" asserts="0" description="Write-ColorEX.Color Mode Switches">
+                <results>
+                  <test-case description="Accepts -ANSI4 switch" name="Write-ColorEX.Color Mode Switches.Accepts -ANSI4 switch" time="0.0567" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -ANSI8 switch" name="Write-ColorEX.Color Mode Switches.Accepts -ANSI8 switch" time="0.057" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -TrueColor switch" name="Write-ColorEX.Color Mode Switches.Accepts -TrueColor switch" time="0.0573" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -ANSI24 alias for TrueColor" name="Write-ColorEX.Color Mode Switches.Accepts -ANSI24 alias for TrueColor" time="0.0568" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -TC alias for TrueColor" name="Write-ColorEX.Color Mode Switches.Accepts -TC alias for TrueColor" time="0.0562" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Auto-selects color mode when not specified" name="Write-ColorEX.Color Mode Switches.Auto-selects color mode when not specified" time="0.0521" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles multiple color mode switches with warning" name="Write-ColorEX.Color Mode Switches.Handles multiple color mode switches with warning" time="0.0624" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Gradient Parameter" executed="True" result="Success" success="True" time="2.1159" asserts="0" description="Write-ColorEX.Gradient Parameter">
+                <results>
+                  <test-case description="Accepts 2-color gradient" name="Write-ColorEX.Gradient Parameter.Accepts 2-color gradient" time="0.0705" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts multi-stop gradient" name="Write-ColorEX.Gradient Parameter.Accepts multi-stop gradient" time="0.063" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts gradient with hex colors" name="Write-ColorEX.Gradient Parameter.Accepts gradient with hex colors" time="0.0627" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts gradient with RGB arrays" name="Write-ColorEX.Gradient Parameter.Accepts gradient with RGB arrays" time="0.0631" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Rejects gradient with less than 2 colors" name="Write-ColorEX.Gradient Parameter.Rejects gradient with less than 2 colors" time="0.0562" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Auto-enables TrueColor mode for gradient when supported" name="Write-ColorEX.Gradient Parameter.Auto-enables TrueColor mode for gradient when supported" time="0.0583" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Allows color override with gradient" name="Write-ColorEX.Gradient Parameter.Allows color override with gradient" time="0.0006" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Style Switches" executed="True" result="Success" success="True" time="2.5952" asserts="0" description="Write-ColorEX.Style Switches">
+                <results>
+                  <test-case description="Accepts -Bold switch" name="Write-ColorEX.Style Switches.Accepts -Bold switch" time="0.0469" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Italic switch" name="Write-ColorEX.Style Switches.Accepts -Italic switch" time="0.0464" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Underline switch" name="Write-ColorEX.Style Switches.Accepts -Underline switch" time="0.0464" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Blink switch" name="Write-ColorEX.Style Switches.Accepts -Blink switch" time="0.047" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Faint switch" name="Write-ColorEX.Style Switches.Accepts -Faint switch" time="0.048" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -CrossedOut switch" name="Write-ColorEX.Style Switches.Accepts -CrossedOut switch" time="0.0461" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Strikethrough alias" name="Write-ColorEX.Style Switches.Accepts -Strikethrough alias" time="0.0487" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -DoubleUnderline switch" name="Write-ColorEX.Style Switches.Accepts -DoubleUnderline switch" time="0.047" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Overline switch" name="Write-ColorEX.Style Switches.Accepts -Overline switch" time="0.0484" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts multiple style switches" name="Write-ColorEX.Style Switches.Accepts multiple style switches" time="0.0479" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Style Parameter (Per-Segment)" executed="True" result="Success" success="True" time="2.7888" asserts="0" description="Write-ColorEX.Style Parameter (Per-Segment)">
+                <results>
+                  <test-case description="Accepts single style string" name="Write-ColorEX.Style Parameter (Per-Segment).Accepts single style string" time="0.0464" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of styles for single segment" name="Write-ColorEX.Style Parameter (Per-Segment).Accepts array of styles for single segment" time="0.044" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of styles for multiple segments" name="Write-ColorEX.Style Parameter (Per-Segment).Accepts array of styles for multiple segments" time="0.0497" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts integer style" name="Write-ColorEX.Style Parameter (Per-Segment).Accepts integer style" time="0.0474" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.StyleProfile Parameter" executed="True" result="Success" success="True" time="3.0413" asserts="0" description="Write-ColorEX.StyleProfile Parameter">
+                <results>
+                  <test-case description="Accepts PSColorStyle object" name="Write-ColorEX.StyleProfile Parameter.Accepts PSColorStyle object" time="0.0693" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Applies profile colors" name="Write-ColorEX.StyleProfile Parameter.Applies profile colors" time="0.0586" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Applies profile styles" name="Write-ColorEX.StyleProfile Parameter.Applies profile styles" time="0.0614" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Uses built-in Error profile" name="Write-ColorEX.StyleProfile Parameter.Uses built-in Error profile" time="0.0575" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Default Switch" executed="True" result="Success" success="True" time="3.2027" asserts="0" description="Write-ColorEX.Default Switch">
+                <results>
+                  <test-case description="Accepts -Default switch" name="Write-ColorEX.Default Switch.Accepts -Default switch" time="0.0708" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Uses default style when specified" name="Write-ColorEX.Default Switch.Uses default style when specified" time="0.0851" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Formatting Parameters" executed="True" result="Success" success="True" time="3.8919" asserts="0" description="Write-ColorEX.Formatting Parameters">
+                <results>
+                  <test-case description="Accepts -StartTab parameter" name="Write-ColorEX.Formatting Parameters.Accepts -StartTab parameter" time="0.0729" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Indent alias for StartTab" name="Write-ColorEX.Formatting Parameters.Accepts -Indent alias for StartTab" time="0.0739" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -StartSpaces parameter" name="Write-ColorEX.Formatting Parameters.Accepts -StartSpaces parameter" time="0.0502" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -LinesBefore parameter" name="Write-ColorEX.Formatting Parameters.Accepts -LinesBefore parameter" time="0.0642" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -LinesAfter parameter" name="Write-ColorEX.Formatting Parameters.Accepts -LinesAfter parameter" time="0.0696" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -HorizontalCenter switch" name="Write-ColorEX.Formatting Parameters.Accepts -HorizontalCenter switch" time="0.0582" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Center alias" name="Write-ColorEX.Formatting Parameters.Accepts -Center alias" time="0.0488" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -ShowTime switch" name="Write-ColorEX.Formatting Parameters.Accepts -ShowTime switch" time="0.0534" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -DateTimeFormat parameter" name="Write-ColorEX.Formatting Parameters.Accepts -DateTimeFormat parameter" time="0.0524" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -NoNewLine switch" name="Write-ColorEX.Formatting Parameters.Accepts -NoNewLine switch" time="0.0512" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -BlankLine switch" name="Write-ColorEX.Formatting Parameters.Accepts -BlankLine switch" time="0.044" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -BL alias for BlankLine" name="Write-ColorEX.Formatting Parameters.Accepts -BL alias for BlankLine" time="0.0443" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Logging Parameters" executed="True" result="Success" success="True" time="4.5208" asserts="0" description="Write-ColorEX.Logging Parameters">
+                <results>
+                  <test-case description="Accepts -LogFile parameter" name="Write-ColorEX.Logging Parameters.Accepts -LogFile parameter" time="0.0682" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Creates log file with content" name="Write-ColorEX.Logging Parameters.Creates log file with content" time="0.0649" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -LogPath parameter" name="Write-ColorEX.Logging Parameters.Accepts -LogPath parameter" time="0.0719" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -LogLevel parameter" name="Write-ColorEX.Logging Parameters.Accepts -LogLevel parameter" time="0.0683" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -LogTime switch" name="Write-ColorEX.Logging Parameters.Accepts -LogTime switch" time="0.0722" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -LogRetry parameter" name="Write-ColorEX.Logging Parameters.Accepts -LogRetry parameter" time="0.0641" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Encoding parameter" name="Write-ColorEX.Logging Parameters.Accepts -Encoding parameter" time="0.068" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Adds .log extension if not specified" name="Write-ColorEX.Logging Parameters.Adds .log extension if not specified" time="0.0721" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Combines LogTime and LogLevel" name="Write-ColorEX.Logging Parameters.Combines LogTime and LogLevel" time="0.0688" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.NoConsoleOutput Switch" executed="True" result="Success" success="True" time="4.7423" asserts="0" description="Write-ColorEX.NoConsoleOutput Switch">
+                <results>
+                  <test-case description="Accepts -NoConsoleOutput switch" name="Write-ColorEX.NoConsoleOutput Switch.Accepts -NoConsoleOutput switch" time="0.0488" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Writes to log only with NoConsoleOutput" name="Write-ColorEX.NoConsoleOutput Switch.Writes to log only with NoConsoleOutput" time="0.0697" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has HideConsole alias" name="Write-ColorEX.NoConsoleOutput Switch.Has HideConsole alias" time="0.0462" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Has LogOnly alias" name="Write-ColorEX.NoConsoleOutput Switch.Has LogOnly alias" time="0.0482" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Debugging and Silent Parameters" executed="True" result="Success" success="True" time="4.9367" asserts="0" description="Write-ColorEX.Debugging and Silent Parameters">
+                <results>
+                  <test-case description="Accepts -Debugging switch" name="Write-ColorEX.Debugging and Silent Parameters.Accepts -Debugging switch" time="0.076" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts -Silent switch" name="Write-ColorEX.Debugging and Silent Parameters.Accepts -Silent switch" time="0.0617" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Silent suppresses warnings" name="Write-ColorEX.Debugging and Silent Parameters.Silent suppresses warnings" time="0.0499" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Color Fallback Behavior" executed="True" result="Success" success="True" time="5.1852" asserts="0" description="Write-ColorEX.Color Fallback Behavior">
+                <results>
+                  <test-case description="Falls back from TrueColor to ANSI8 when not supported" name="Write-ColorEX.Color Fallback Behavior.Falls back from TrueColor to ANSI8 when not supported" time="0.0602" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Falls back from TrueColor to ANSI4 when not supported" name="Write-ColorEX.Color Fallback Behavior.Falls back from TrueColor to ANSI4 when not supported" time="0.0642" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Falls back from ANSI8 to ANSI4 when not supported" name="Write-ColorEX.Color Fallback Behavior.Falls back from ANSI8 to ANSI4 when not supported" time="0.0605" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Disables ANSI when not supported" name="Write-ColorEX.Color Fallback Behavior.Disables ANSI when not supported" time="0.058" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Edge Cases and Error Handling" executed="True" result="Success" success="True" time="5.5974" asserts="0" description="Write-ColorEX.Edge Cases and Error Handling">
+                <results>
+                  <test-case description="Handles empty text array" name="Write-ColorEX.Edge Cases and Error Handling.Handles empty text array" time="0.0531" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles null color" name="Write-ColorEX.Edge Cases and Error Handling.Handles null color" time="0.0008" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles invalid color name gracefully" name="Write-ColorEX.Edge Cases and Error Handling.Handles invalid color name gracefully" time="0.0488" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles invalid hex format" name="Write-ColorEX.Edge Cases and Error Handling.Handles invalid hex format" time="0.0657" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles RGB array with out-of-range values" name="Write-ColorEX.Edge Cases and Error Handling.Handles RGB array with out-of-range values" time="0.0543" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles very long text" name="Write-ColorEX.Edge Cases and Error Handling.Handles very long text" time="0.0458" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles many text segments" name="Write-ColorEX.Edge Cases and Error Handling.Handles many text segments" time="0.0463" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles special characters in text" name="Write-ColorEX.Edge Cases and Error Handling.Handles special characters in text" time="0.0461" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles Unicode characters" name="Write-ColorEX.Edge Cases and Error Handling.Handles Unicode characters" time="0.045" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Performance" executed="True" result="Success" success="True" time="5.8722" asserts="0" description="Write-ColorEX.Performance">
+                <results>
+                  <test-case description="Processes many segments quickly" name="Write-ColorEX.Performance.Processes many segments quickly" time="0.0475" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Uses cached ANSI support" name="Write-ColorEX.Performance.Uses cached ANSI support" time="0.1326" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Uses cached color table" name="Write-ColorEX.Performance.Uses cached color table" time="0.0871" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.ANSI Escape Sequences" executed="True" result="Success" success="True" time="6.1921" asserts="0" description="Write-ColorEX.ANSI Escape Sequences">
+                <results>
+                  <test-case description="Skips ANSI when NoConsoleOutput is used without logging" name="Write-ColorEX.ANSI Escape Sequences.Skips ANSI when NoConsoleOutput is used without logging" time="0.046" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Generates ANSI codes for TrueColor" name="Write-ColorEX.ANSI Escape Sequences.Generates ANSI codes for TrueColor" time="0.119" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Generates ANSI codes for ANSI8" name="Write-ColorEX.ANSI Escape Sequences.Generates ANSI codes for ANSI8" time="0.0815" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Generates ANSI codes for ANSI4" name="Write-ColorEX.ANSI Escape Sequences.Generates ANSI codes for ANSI4" time="0.0676" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Color Mode Validation" executed="True" result="Success" success="True" time="6.3851" asserts="0" description="Write-ColorEX.Color Mode Validation">
+                <results>
+                  <test-case description="Validates TrueColor expects RGB or hex" name="Write-ColorEX.Color Mode Validation.Validates TrueColor expects RGB or hex" time="0.0424" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Validates ANSI8 expects 0-255 range" name="Write-ColorEX.Color Mode Validation.Validates ANSI8 expects 0-255 range" time="0.0529" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Validates ANSI8 rejects RGB arrays" name="Write-ColorEX.Color Mode Validation.Validates ANSI8 rejects RGB arrays" time="0.0881" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Gradient Validation" executed="True" result="Success" success="True" time="6.6136" asserts="0" description="Write-ColorEX.Gradient Validation">
+                <results>
+                  <test-case description="Requires ANSI8 or TrueColor for gradient" name="Write-ColorEX.Gradient Validation.Requires ANSI8 or TrueColor for gradient" time="0.0685" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Rejects gradient in ANSI4 mode" name="Write-ColorEX.Gradient Validation.Rejects gradient in ANSI4 mode" time="0.0874" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Warns when gradient has more colors than characters" name="Write-ColorEX.Gradient Validation.Warns when gradient has more colors than characters" time="0.0666" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Integration with Style Profiles" executed="True" result="Success" success="True" time="6.8022" asserts="0" description="Write-ColorEX.Integration with Style Profiles">
+                <results>
+                  <test-case description="Combines StyleProfile with explicit parameters" name="Write-ColorEX.Integration with Style Profiles.Combines StyleProfile with explicit parameters" time="0.0645" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="StyleProfile does not override explicit parameters" name="Write-ColorEX.Integration with Style Profiles.StyleProfile does not override explicit parameters" time="0.0546" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Default profile does not override StyleProfile" name="Write-ColorEX.Integration with Style Profiles.Default profile does not override StyleProfile" time="0.0635" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Complex Scenarios" executed="True" result="Success" success="True" time="6.9851" asserts="0" description="Write-ColorEX.Complex Scenarios">
+                <results>
+                  <test-case description="Combines multiple features" name="Write-ColorEX.Complex Scenarios.Combines multiple features" time="0.0463" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Complex gradient with color override" name="Write-ColorEX.Complex Scenarios.Complex gradient with color override" time="0.0571" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Full-featured call with all parameters" name="Write-ColorEX.Complex Scenarios.Full-featured call with all parameters" time="0.0724" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Regression Tests" executed="True" result="Success" success="True" time="7.1928" asserts="0" description="Write-ColorEX.Regression Tests">
+                <results>
+                  <test-case description="Handles flattened RGB array correctly" name="Write-ColorEX.Regression Tests.Handles flattened RGB array correctly" time="0.0555" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Color cycling works correctly" name="Write-ColorEX.Regression Tests.Color cycling works correctly" time="0.0448" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Gradient with single text segment" name="Write-ColorEX.Regression Tests.Gradient with single text segment" time="0.0541" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Multiple style switches applied correctly" name="Write-ColorEX.Regression Tests.Multiple style switches applied correctly" time="0.0475" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Environment Variable Interactions" executed="True" result="Success" success="True" time="7.3005" asserts="0" description="Write-ColorEX.Environment Variable Interactions">
+                <results>
+                  <test-case description="Respects FORCE_COLOR environment variable" name="Write-ColorEX.Environment Variable Interactions.Respects FORCE_COLOR environment variable" time="0.0511" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Respects NO_COLOR environment variable" name="Write-ColorEX.Environment Variable Interactions.Respects NO_COLOR environment variable" time="0.0511" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Alias Coverage" executed="True" result="Success" success="True" time="7.5532" asserts="0" description="Write-ColorEX.Alias Coverage">
+                <results>
+                  <test-case description="C alias works for Color parameter" name="Write-ColorEX.Alias Coverage.C alias works for Color parameter" time="0.0755" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="B alias works for BackGroundColor parameter" name="Write-ColorEX.Alias Coverage.B alias works for BackGroundColor parameter" time="0.0603" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="T alias works for Text parameter" name="Write-ColorEX.Alias Coverage.T alias works for Text parameter" time="0.0447" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="L alias works for LogFile parameter" name="Write-ColorEX.Alias Coverage.L alias works for LogFile parameter" time="0.0654" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Background Color Support" executed="True" result="Success" success="True" time="8.9671" asserts="0" description="Write-ColorEX.Background Color Support">
+                <results>
+                  <test-case description="Accepts BackGroundColor parameter" name="Write-ColorEX.Background Color Support.Accepts BackGroundColor parameter" time="0.1492" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts array of background colors" name="Write-ColorEX.Background Color Support.Accepts array of background colors" time="0.2041" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Cycles background colors across segments" name="Write-ColorEX.Background Color Support.Cycles background colors across segments" time="0.2775" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts RGB array for background in TrueColor mode" name="Write-ColorEX.Background Color Support.Accepts RGB array for background in TrueColor mode" time="0.1477" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts hex color for background" name="Write-ColorEX.Background Color Support.Accepts hex color for background" time="0.1391" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles invalid RGB values in background gracefully" name="Write-ColorEX.Background Color Support.Handles invalid RGB values in background gracefully" time="0.1544" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts ANSI integer code for background" name="Write-ColorEX.Background Color Support.Accepts ANSI integer code for background" time="0.1474" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Combines foreground and background colors" name="Write-ColorEX.Background Color Support.Combines foreground and background colors" time="0.1394" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Formatting Features" executed="True" result="Success" success="True" time="9.69" asserts="0" description="Write-ColorEX.Formatting Features">
+                <results>
+                  <test-case description="Accepts StartTab parameter" name="Write-ColorEX.Formatting Features.Accepts StartTab parameter" time="0.0997" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts StartSpaces parameter" name="Write-ColorEX.Formatting Features.Accepts StartSpaces parameter" time="0.0834" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts LinesBefore parameter" name="Write-ColorEX.Formatting Features.Accepts LinesBefore parameter" time="0.0814" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts LinesAfter parameter" name="Write-ColorEX.Formatting Features.Accepts LinesAfter parameter" time="0.0805" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts HorizontalCenter parameter" name="Write-ColorEX.Formatting Features.Accepts HorizontalCenter parameter" time="0.0974" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Accepts ShowTime parameter" name="Write-ColorEX.Formatting Features.Accepts ShowTime parameter" time="0.0818" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Combines multiple formatting options" name="Write-ColorEX.Formatting Features.Combines multiple formatting options" time="0.0843" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="BlankLine parameter works" name="Write-ColorEX.Formatting Features.BlankLine parameter works" time="0.0913" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Per-Segment Styling" executed="True" result="Success" success="True" time="10.5516" asserts="0" description="Write-ColorEX.Per-Segment Styling">
+                <results>
+                  <test-case description="Applies different styles to each segment" name="Write-ColorEX.Per-Segment Styling.Applies different styles to each segment" time="0.1868" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles array of styles for single segment" name="Write-ColorEX.Per-Segment Styling.Handles array of styles for single segment" time="0.1122" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles mixed single and array styles" name="Write-ColorEX.Per-Segment Styling.Handles mixed single and array styles" time="0.1904" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Cycles styles when fewer styles than segments" name="Write-ColorEX.Per-Segment Styling.Cycles styles when fewer styles than segments" time="0.2144" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Combines per-segment and line-wide styles" name="Write-ColorEX.Per-Segment Styling.Combines per-segment and line-wide styles" time="0.152" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.ANSI Escape Sequence Generation" executed="True" result="Success" success="True" time="11.7798" asserts="0" description="Write-ColorEX.ANSI Escape Sequence Generation">
+                <results>
+                  <test-case description="Works with TrueColor mode and RGB array" name="Write-ColorEX.ANSI Escape Sequence Generation.Works with TrueColor mode and RGB array" time="0.1495" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works with ANSI8 mode and color code" name="Write-ColorEX.ANSI Escape Sequence Generation.Works with ANSI8 mode and color code" time="0.1426" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works with ANSI4 mode and color name" name="Write-ColorEX.ANSI Escape Sequence Generation.Works with ANSI4 mode and color name" time="0.1437" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works with Bold style" name="Write-ColorEX.ANSI Escape Sequence Generation.Works with Bold style" time="0.1108" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works with Italic style" name="Write-ColorEX.ANSI Escape Sequence Generation.Works with Italic style" time="0.1082" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works with Underline style" name="Write-ColorEX.ANSI Escape Sequence Generation.Works with Underline style" time="0.1138" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Combines multiple ANSI styles" name="Write-ColorEX.ANSI Escape Sequence Generation.Combines multiple ANSI styles" time="0.1117" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works with background color in TrueColor mode" name="Write-ColorEX.ANSI Escape Sequence Generation.Works with background color in TrueColor mode" time="0.1449" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Combines foreground, background, and styles" name="Write-ColorEX.ANSI Escape Sequence Generation.Combines foreground, background, and styles" time="0.1976" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.ANSI Color Mode Testing" executed="True" result="Success" success="True" time="12.6802" asserts="0" description="Write-ColorEX.ANSI Color Mode Testing">
+                <results>
+                  <test-case description="Works in ANSI4 mode with color name" name="Write-ColorEX.ANSI Color Mode Testing.Works in ANSI4 mode with color name" time="0.1431" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works in ANSI4 mode with ANSI code" name="Write-ColorEX.ANSI Color Mode Testing.Works in ANSI4 mode with ANSI code" time="0.1473" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works in ANSI8 mode with color name" name="Write-ColorEX.ANSI Color Mode Testing.Works in ANSI8 mode with color name" time="0.1415" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Works in ANSI8 mode with ANSI8 code" name="Write-ColorEX.ANSI Color Mode Testing.Works in ANSI8 mode with ANSI8 code" time="0.1473" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Converts RGB to ANSI8 when TrueColor unavailable" name="Write-ColorEX.ANSI Color Mode Testing.Converts RGB to ANSI8 when TrueColor unavailable" time="0.1465" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Uses helper function ConvertANSI4ToNativeColor" name="Write-ColorEX.ANSI Color Mode Testing.Uses helper function ConvertANSI4ToNativeColor" time="0.1693" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Enhanced Gradient Features" executed="True" result="Success" success="True" time="14.2307" asserts="0" description="Write-ColorEX.Enhanced Gradient Features">
+                <results>
+                  <test-case description="Applies 2-color gradient" name="Write-ColorEX.Enhanced Gradient Features.Applies 2-color gradient" time="0.1876" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Applies multi-stop gradient (4 colors)" name="Write-ColorEX.Enhanced Gradient Features.Applies multi-stop gradient (4 colors)" time="0.196" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Applies rainbow gradient (7 colors)" name="Write-ColorEX.Enhanced Gradient Features.Applies rainbow gradient (7 colors)" time="0.1823" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Allows selective color overrides in gradient" name="Write-ColorEX.Enhanced Gradient Features.Allows selective color overrides in gradient" time="0.233" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles gradient with hex colors" name="Write-ColorEX.Enhanced Gradient Features.Handles gradient with hex colors" time="0.1585" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles gradient with RGB arrays" name="Write-ColorEX.Enhanced Gradient Features.Handles gradient with RGB arrays" time="0.1629" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Gradient works with multiple text segments" name="Write-ColorEX.Enhanced Gradient Features.Gradient works with multiple text segments" time="0.1943" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Gradient works in ANSI8 mode" name="Write-ColorEX.Enhanced Gradient Features.Gradient works in ANSI8 mode" time="0.2278" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX.Color Cycling and Arrays" executed="True" result="Success" success="True" time="15.2485" asserts="0" description="Write-ColorEX.Color Cycling and Arrays">
+                <results>
+                  <test-case description="Cycles colors across many segments" name="Write-ColorEX.Color Cycling and Arrays.Cycles colors across many segments" time="0.2539" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles single color for multiple segments" name="Write-ColorEX.Color Cycling and Arrays.Handles single color for multiple segments" time="0.1834" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles more colors than segments" name="Write-ColorEX.Color Cycling and Arrays.Handles more colors than segments" time="0.1476" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Cycles background colors independently" name="Write-ColorEX.Color Cycling and Arrays.Cycles background colors independently" time="0.2532" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Handles mixed color types in array" name="Write-ColorEX.Color Cycling and Arrays.Handles mixed color types in array" time="0.1741" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+      <test-suite type="TestFixture" name="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Write-ColorEX-AutoPad.Tests.ps1" executed="True" result="Success" success="True" time="9.5918" asserts="0" description="C:\Users\Mark.Newton\OneDrive - Aunalytics\Documents\GitHub\PSWriteColorEX\Tests\Write-ColorEX-AutoPad.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature" executed="True" result="Success" success="True" time="9.1702" asserts="0" description="Write-ColorEX AutoPad Feature">
+            <results>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.Basic AutoPad Functionality" executed="True" result="Success" success="True" time="0.3973" asserts="0" description="Write-ColorEX AutoPad Feature.Basic AutoPad Functionality">
+                <results>
+                  <test-case description="Should execute with AutoPad parameter" name="Write-ColorEX AutoPad Feature.Basic AutoPad Functionality.Should execute with AutoPad parameter" time="0.0717" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should create log file with padded text" name="Write-ColorEX AutoPad Feature.Basic AutoPad Functionality.Should create log file with padded text" time="0.091" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should handle Unicode bullet correctly" name="Write-ColorEX AutoPad Feature.Basic AutoPad Functionality.Should handle Unicode bullet correctly" time="0.0657" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should handle CJK characters" name="Write-ColorEX AutoPad Feature.Basic AutoPad Functionality.Should handle CJK characters" time="0.066" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should pad mixed ASCII and Unicode" name="Write-ColorEX AutoPad Feature.Basic AutoPad Functionality.Should pad mixed ASCII and Unicode" time="0.0932" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.PadLeft Functionality (Right-Align)" executed="True" result="Success" success="True" time="0.6225" asserts="0" description="Write-ColorEX AutoPad Feature.PadLeft Functionality (Right-Align)">
+                <results>
+                  <test-case description="Should execute with PadLeft switch" name="Write-ColorEX AutoPad Feature.PadLeft Functionality (Right-Align).Should execute with PadLeft switch" time="0.0659" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should right-align text with PadLeft" name="Write-ColorEX AutoPad Feature.PadLeft Functionality (Right-Align).Should right-align text with PadLeft" time="0.0888" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should right-align Unicode text" name="Write-ColorEX AutoPad Feature.PadLeft Functionality (Right-Align).Should right-align Unicode text" time="0.0651" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.Custom PadChar" executed="True" result="Success" success="True" time="0.9044" asserts="0" description="Write-ColorEX AutoPad Feature.Custom PadChar">
+                <results>
+                  <test-case description="Should use custom padding character" name="Write-ColorEX AutoPad Feature.Custom PadChar.Should use custom padding character" time="0.0915" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should use dash as PadChar" name="Write-ColorEX AutoPad Feature.Custom PadChar.Should use dash as PadChar" time="0.0914" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should use underscore as PadChar" name="Write-ColorEX AutoPad Feature.Custom PadChar.Should use underscore as PadChar" time="0.0933" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.Edge Cases" executed="True" result="Success" success="True" time="1.3117" asserts="0" description="Write-ColorEX AutoPad Feature.Edge Cases">
+                <results>
+                  <test-case description="Should not pad when text is already wider than AutoPad" name="Write-ColorEX AutoPad Feature.Edge Cases.Should not pad when text is already wider than AutoPad" time="0.0811" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should not pad when text width equals AutoPad" name="Write-ColorEX AutoPad Feature.Edge Cases.Should not pad when text width equals AutoPad" time="0.0804" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should handle empty text" name="Write-ColorEX AutoPad Feature.Edge Cases.Should handle empty text" time="0.0648" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should do nothing when AutoPad is 0 (disabled)" name="Write-ColorEX AutoPad Feature.Edge Cases.Should do nothing when AutoPad is 0 (disabled)" time="0.0658" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should handle negative AutoPad as disabled" name="Write-ColorEX AutoPad Feature.Edge Cases.Should handle negative AutoPad as disabled" time="0.044" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should handle very large AutoPad values" name="Write-ColorEX AutoPad Feature.Edge Cases.Should handle very large AutoPad values" time="0.0652" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.Multiple Text Segments" executed="True" result="Success" success="True" time="1.4714" asserts="0" description="Write-ColorEX AutoPad Feature.Multiple Text Segments">
+                <results>
+                  <test-case description="Should concatenate multiple segments before padding" name="Write-ColorEX AutoPad Feature.Multiple Text Segments.Should concatenate multiple segments before padding" time="0.0888" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should handle array of text with Unicode" name="Write-ColorEX AutoPad Feature.Multiple Text Segments.Should handle array of text with Unicode" time="0.0655" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.Integration with Other Features" executed="True" result="Success" success="True" time="1.7685" asserts="0" description="Write-ColorEX AutoPad Feature.Integration with Other Features">
+                <results>
+                  <test-case description="Should work with -Color parameter" name="Write-ColorEX AutoPad Feature.Integration with Other Features.Should work with -Color parameter" time="0.067" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should work with -Bold parameter" name="Write-ColorEX AutoPad Feature.Integration with Other Features.Should work with -Bold parameter" time="0.0712" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should work with -NoNewLine parameter" name="Write-ColorEX AutoPad Feature.Integration with Other Features.Should work with -NoNewLine parameter" time="0.0642" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should work with -LogFile parameter" name="Write-ColorEX AutoPad Feature.Integration with Other Features.Should work with -LogFile parameter" time="0.0896" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.PSColorStyle AutoPad Properties" executed="True" result="Success" success="True" time="1.8862" asserts="0" description="Write-ColorEX AutoPad Feature.PSColorStyle AutoPad Properties">
+                <results>
+                  <test-case description="Should create style with AutoPad via New-ColorStyle" name="Write-ColorEX AutoPad Feature.PSColorStyle AutoPad Properties.Should create style with AutoPad via New-ColorStyle" time="0.0017" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should create style with all AutoPad parameters" name="Write-ColorEX AutoPad Feature.PSColorStyle AutoPad Properties.Should create style with all AutoPad parameters" time="0.004" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should apply AutoPad from StyleProfile" name="Write-ColorEX AutoPad Feature.PSColorStyle AutoPad Properties.Should apply AutoPad from StyleProfile" time="0.1068" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.Performance" executed="True" result="Success" success="True" time="8.6244" asserts="0" description="Write-ColorEX AutoPad Feature.Performance">
+                <results>
+                  <test-case description="Should handle large AutoPad values efficiently" name="Write-ColorEX AutoPad Feature.Performance.Should handle large AutoPad values efficiently" time="0.0678" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should handle long text efficiently" name="Write-ColorEX AutoPad Feature.Performance.Should handle long text efficiently" time="0.1067" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should handle multiple AutoPad calls efficiently" name="Write-ColorEX AutoPad Feature.Performance.Should handle multiple AutoPad calls efficiently" time="6.5579" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+              <test-suite type="TestFixture" name="Write-ColorEX AutoPad Feature.Real-World Scenarios" executed="True" result="Success" success="True" time="9.1647" asserts="0" description="Write-ColorEX AutoPad Feature.Real-World Scenarios">
+                <results>
+                  <test-case description="Should create aligned table rows with different widths" name="Write-ColorEX AutoPad Feature.Real-World Scenarios.Should create aligned table rows with different widths" time="0.268" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should create table of contents style" name="Write-ColorEX AutoPad Feature.Real-World Scenarios.Should create table of contents style" time="0.0916" asserts="0" success="True" result="Success" executed="True" />
+                  <test-case description="Should right-align numbers in columns" name="Write-ColorEX AutoPad Feature.Real-World Scenarios.Should right-align numbers in columns" time="0.1749" asserts="0" success="True" result="Success" executed="True" />
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>
