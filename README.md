@@ -948,10 +948,10 @@ Comprehensive documentation is available in the [Docs](Docs/) folder, organized 
   - **[Set-ColorDefault](Docs/Public/Set-ColorDefault.md)** - Configure default style _(wrapper function)_
   - **[PSColorStyle Class](Docs/Public/PSColorStyle-Class.md)** - Advanced style management
 - **[Measure-DisplayWidth](Docs/Public/Measure-DisplayWidth.md)** - Unicode-aware string width calculation
-
-### 🔒 Private Functions
 - **[Test-AnsiSupport](Docs/Private/Test-AnsiSupport.md)** - Terminal detection and capability testing
 - **[Color Conversions](Docs/Private/Color-Conversions.md)** - Automatic conversion chain, validation, environment variables
+
+### 🔒 Private Functions
 - **[Gradient Functions](Docs/Private/New-GradientColorArray.md)** - 🌈 Color gradients and smooth transitions
 
 > **See [Docs/README.md](Docs/README.md) for complete documentation index**
