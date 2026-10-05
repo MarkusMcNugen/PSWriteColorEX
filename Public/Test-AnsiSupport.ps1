@@ -1,33 +1,34 @@
 ﻿function Test-AnsiSupport {
     <#
     .SYNOPSIS
-        Detects terminal ANSI capabilities including color support levels and style features
+        Detects the terminal's ANSI color support and the styles it shows
 
     .DESCRIPTION
-        Test-AnsiSupport performs comprehensive cross-platform detection of terminal ANSI escape
-        sequence support, including color modes (TrueColor/256-color/16-color) and text styling
-        capabilities (Bold, Italic, Underline, etc.).
+        Test-AnsiSupport reads the environment and the host to answer which ANSI color mode the
+        terminal supports (TrueColor, 256-color, 16-color or none), whether it draws bold as a
+        bold font, and which text styles it shows. Write-ColorEX falls back to the modes it reports.
 
-        The function automatically detects and attempts to enable ANSI support on Windows platforms
-        using Virtual Terminal Processing. It provides detailed information about terminal capabilities
-        to ensure Write-ColorEX can gracefully degrade colors and styles based on what's supported.
+        On Windows PowerShell 5.1 in the Windows console host it switches on virtual terminal
+        processing for the session when it is off.
 
-        DETECTION FEATURES:
+        DETECTION:
         - Color support levels: TrueColor (24-bit), ANSI8 (256-color), ANSI4 (16-color), None
         - Bold font rendering vs color brightening detection
         - Style support: Italic, Underline, Blink, Faint, CrossedOut, DoubleUnderline, Overline
         - Terminal-specific detection (Windows Terminal, iTerm2, GNOME Terminal, VS Code, etc.)
         - Platform detection: Windows, Linux, macOS with specific terminal identification
-        - Environment variable overrides: FORCE_COLOR, NO_COLOR, COLORTERM, TERM
+        - Environment variables: FORCE_COLOR, NO_COLOR, COLORTERM, TERM (TERM=dumb means none)
+        - On PowerShell 7.2 and later, a host without virtual terminal support means none, since
+          PowerShell removes escape codes from its output
 
         TERMINAL-SPECIFIC DETECTION:
         Windows: Windows Terminal, PowerShell Console (conhost), ConEmu, VS Code, PowerShell ISE, Git Bash
         macOS: iTerm2, Terminal.app, VS Code
-        Linux: GNOME Terminal, Konsole, xterm, rxvt-unicode, Kitty
+        Linux: GNOME Terminal, Konsole, xterm, rxvt-unicode, Kitty, and Windows Terminal under WSL
 
-        AUTOMATIC WINDOWS ENABLEMENT:
-        On Windows 10+ (build 10586 or later), automatically enables Virtual Terminal Processing
-        if not already enabled, allowing ANSI escape sequences to work in conhost.exe.
+        WINDOWS CONSOLE:
+        On Windows 10 build 10586 or later, Windows PowerShell 5.1 switches on virtual terminal
+        processing in conhost.exe for the session when it is off, so ANSI escape codes work.
 
     .PARAMETER Silent
         Suppresses all warning messages and terminal limitation notices.
@@ -113,8 +114,8 @@
         Linux   - Checks TERM, COLORTERM, VTE_VERSION, terminal-specific env vars
         macOS   - Detects iTerm2, Terminal.app via TERM_PROGRAM
 
-        This function is called automatically during PSWriteColorEX module initialization.
-        Results are cached in $script:CachedANSISupport for performance.
+        Importing PSWriteColorEX runs this function once and keeps the result in
+        $script:CachedANSISupport for Write-ColorEX.
 
     .LINK
         https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -169,9 +170,15 @@
         }
     }
 
-    # Check for NO_COLOR environment variable
     If ([Environment]::GetEnvironmentVariable('NO_COLOR')) {
         $results.ColorSupport = 'None'
+        Return $results
+    }
+
+    # TERM=dumb names a terminal that interprets no escape codes
+    If ([Environment]::GetEnvironmentVariable('TERM') -eq 'dumb') {
+        $results.ColorSupport = 'None'
+        $results.Details.TerminalType = 'dumb'
         Return $results
     }
 
@@ -206,7 +213,7 @@
             $results.ColorSupport = 'ANSI8'  # Terminal.app max is 256 colors
             $results.SupportsBoldFonts = $False  # Terminal.app uses color brightening for bold
             $results.Details.Warnings += 'macOS Terminal.app does not support TrueColor (24-bit). Maximum 256 colors. For TrueColor support, use iTerm2.'
-            # Terminal.app has good basic style support
+            # Terminal.app shows italic and underline
             $results.Details.StyleSupport.Italic = $True
             $results.Details.StyleSupport.Underline = $True
         }
@@ -216,7 +223,7 @@
                 $results.ColorSupport = 'TrueColor'
             }
             $results.SupportsBoldFonts = $True  # iTerm2 supports true bold fonts
-            # iTerm2 has excellent style support (v3.5.0+)
+            # iTerm2 3.5 and later show these styles
             $results.Details.StyleSupport.Italic = $True
             $results.Details.StyleSupport.Underline = $True
             $results.Details.StyleSupport.CrossedOut = $True
@@ -230,11 +237,21 @@
             $results.Details.StyleSupport.Italic = $True
             $results.Details.StyleSupport.Underline = $True
         }
+        # Windows Terminal running a WSL shell, which passes WT_SESSION through
+        ElseIf (-not [string]::IsNullOrEmpty($wtSession)) {
+            $results.Details.TerminalType = 'Windows Terminal (WSL)'
+            $results.ColorSupport = 'TrueColor'
+            $results.SupportsBoldFonts = $True
+            $results.Details.StyleSupport.Italic = $True
+            $results.Details.StyleSupport.Underline = $True
+            $results.Details.StyleSupport.CrossedOut = $True
+        }
         # Detect VTE-based terminals (GNOME Terminal, Xfce Terminal, etc.)
         ElseIf (-not [string]::IsNullOrEmpty($vte_version)) {
-            $vteVersionNum = [int]$vte_version
+            $vteVersionNum = 0
+            $null = [int]::TryParse($vte_version, [ref]$vteVersionNum)
             If ($vteVersionNum -ge 5600) {
-                # VTE 0.56+ (GNOME Terminal 3.32+) - default changed to bold-only (no color brightening)
+                # VTE 0.56+ (GNOME Terminal 3.32+) draws bold as a bold font, without brighter colors
                 $results.Details.TerminalType = 'VTE-based Terminal (GNOME Terminal 3.32+)'
                 $results.SupportsBoldFonts = $True  # VTE 0.56+ defaults to true bold fonts
                 $results.Details.StyleSupport.Italic = $True
@@ -334,12 +351,12 @@
             $results.Details.TerminalType = 'Windows Terminal'
             $results.Details.HasVirtualTerminalProcessing = $True
             $results.ColorSupport = 'TrueColor'
-            # Windows Terminal has excellent style support
+            # Windows Terminal shows these styles
             $results.Details.StyleSupport.Italic = $True
             $results.Details.StyleSupport.Underline = $True
             $results.Details.StyleSupport.CrossedOut = $True
             If ($results.Details.IsPSCore) {
-                # PowerShell 7+ has proper bold font support in Windows Terminal
+                # PowerShell 7 in Windows Terminal: bold is a bold font
                 $results.SupportsBoldFonts = $True
                 $results.Details.StyleSupport.Bold = $True
             } Else {
@@ -478,10 +495,16 @@ public class ConsoleHelper {
         }
     }
 
-    # Final determination
+    # VT processing with no color level found means the 16 colors
     If ($results.ColorSupport -eq 'None' -and $results.Details.HasVirtualTerminalProcessing) {
-        # If VT processing is available but no specific color level detected, default to ANSI4
         $results.ColorSupport = 'ANSI4'
+    }
+
+    # PowerShell 7.2 and later remove escape codes from the output of a host without virtual terminal support
+    If ($results.ColorSupport -ne 'None' -and -not (Test-ColorHostVirtualTerminal)) {
+        $results.ColorSupport = 'None'
+        $results.Details.HasVirtualTerminalProcessing = $False
+        $results.Details.Warnings += "Host '$($Host.Name)' has no virtual terminal support, so PowerShell removes ANSI escape codes from its output. Only console colors are available."
     }
 
     # Return warnings if not silent

@@ -1,12 +1,9 @@
-#Requires -Modules Pester
+﻿#Requires -Modules Pester
 
 BeforeAll {
-    # Import the module
+    # Importing the module makes [PSColorStyle] available
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
-
-    # Dot-source the class file for tests that reference [PSColorStyle]
-    . "$ModuleRoot\Classes\PSColorStyle.ps1"
 }
 
 Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
@@ -642,14 +639,14 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
         }
     }
 
-    Context 'Regression Tests' {
+    Context 'Color and Style Combinations' {
         It 'Handles flattened RGB array correctly' {
-            # Regression: RGB array should be wrapped, not flattened
+            # Three integers under -TrueColor are one RGB color
             { Write-ColorEX -Text 'Test' -Color @(255, 0, 0) -TrueColor -NoConsoleOutput } | Should -Not -Throw
         }
 
         It 'Color cycling works correctly' {
-            # Regression: Colors should cycle through all segments
+            # Two colors repeat across five segments
             { Write-ColorEX -Text @('A', 'B', 'C', 'D', 'E') -Color @('Red', 'Blue') -NoConsoleOutput } | Should -Not -Throw
         }
 
@@ -703,7 +700,6 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
         }
     }
 
-    # PHASE 1 TESTS: Background Colors, Formatting, Styles
     Context 'Background Color Support' {
         BeforeAll {
             # Mock Write-Host to prevent console spam and test actual ANSI generation
@@ -798,7 +794,6 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
         }
     }
 
-    # PHASE 2 TESTS: ANSI Sequences, Color Modes, Gradients
     Context 'ANSI Escape Sequence Generation' {
         It 'Works with TrueColor mode and RGB array' {
             { Write-ColorEX -Text 'Test' -Color @(255,128,0) -TrueColor } | Should -Not -Throw
@@ -942,7 +937,6 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
         }
     }
 
-    # NEW TESTS: Color Lightening with Bold in Terminals without True Bold Fonts
     Context 'Color Lightening for Bold (TrueColor Mode)' {
         BeforeAll {
             # Mock Test-AnsiSupport to simulate terminal without bold font support
@@ -1039,7 +1033,6 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
         }
     }
 
-    # NEW TESTS: ConvertANSI4ToNativeColor Function
     Context 'ANSI4 to Native Color Conversion' {
         BeforeAll {
             # Mock Test-AnsiSupport to force Native color mode (no ANSI support)
@@ -1088,11 +1081,10 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
         }
     }
 
-    # NEW TESTS: AutoPad Edge Cases with Wide and Zero-Width Characters
     Context 'AutoPad with Wide Characters' {
         It 'Handles wide padding character (2 cells)' {
-            # Test with box-drawing character or emoji (simulate 2-cell width)
-            { Write-ColorEX -Text 'Test' -AutoPad 20 -PadChar '●' -NoConsoleOutput } | Should -Not -Throw
+            # A CJK character takes 2 cells
+            { Write-ColorEX -Text 'Test' -AutoPad 20 -PadChar ([char]0x4E16) -NoConsoleOutput -Silent } | Should -Not -Throw
         }
 
         It 'Handles text already at target width' {

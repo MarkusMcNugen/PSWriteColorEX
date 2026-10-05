@@ -1,12 +1,9 @@
 #Requires -Modules Pester
 
 BeforeAll {
-    # Import the module
+    # Importing the module makes [PSColorStyle] available
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
-
-    # Dot-source the class file for tests that reference [PSColorStyle]
-    . "$ModuleRoot\Classes\PSColorStyle.ps1"
 }
 
 Describe 'Write-ColorError' -Tag 'Unit', 'Function', 'Helper' {

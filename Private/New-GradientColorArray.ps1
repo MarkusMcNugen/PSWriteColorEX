@@ -4,8 +4,8 @@
     Generates a gradient color array for character-by-character coloring
 
     .DESCRIPTION
-    Creates an array of interpolated colors between waypoints for smooth gradients.
-    Supports 2+ color waypoints and both TrueColor (RGB) and ANSI8 (256-color) modes.
+    Interpolates colors evenly between 2 or more waypoint colors, one color per step,
+    as RGB arrays (TrueColor) or ANSI 256-color codes (ANSI8).
 
     .PARAMETER Colors
     Array of gradient waypoints (minimum 2 colors).
@@ -36,10 +36,9 @@
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    This is a private function used internally by Write-ColorEX for gradient processing.
-    It performs linear interpolation between color waypoints to create smooth gradients.
-
-    Performance: Uses List[object] for array building (18000x faster than += operator).
+    Write-ColorEX calls this private function for -Gradient. Each step's color is a linear
+    interpolation between the two waypoints around it. A color name not in the color table and
+    an invalid hex code are gray.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -66,74 +65,46 @@
         throw "Gradient requires at least 2 colors (received $($Colors.Count))"
     }
 
-    # Performance: Use List instead of array += (18,000x faster for large arrays)
     $gradientColors = [System.Collections.Generic.List[object]]::new($Steps)
 
-    # Convert all input colors to RGB first (performance: do once, reuse many times)
+    # Every waypoint as RGB
     $rgbColors = [System.Collections.Generic.List[array]]::new($Colors.Count)
 
-    # Cache command availability check (avoid repeated Get-Command calls)
-    $hasConvertHex = $null -ne (Get-Command Convert-HexToRGB -ErrorAction SilentlyContinue)
-    $hasConvertANSI8 = $null -ne (Get-Command Convert-RGBToANSI8 -ErrorAction SilentlyContinue)
-    $hasColorTable = $null -ne (Get-Command Get-ColorTableWithRGB -ErrorAction SilentlyContinue)
+    if ($null -eq $script:CachedColorTable) {
+        $script:CachedColorTable = Get-ColorTableWithRGB
+    }
 
     foreach ($color in $Colors) {
         if ($color -is [array] -and $color.Count -eq 3) {
-            # Already RGB - clamp to 0-255 range
             $null = $rgbColors.Add(@(
                 [Math]::Max(0, [Math]::Min(255, [int]$color[0])),
                 [Math]::Max(0, [Math]::Min(255, [int]$color[1])),
                 [Math]::Max(0, [Math]::Min(255, [int]$color[2]))
             ))
         } elseif ($color -is [string] -and $color -match '^#|^0x') {
-            # Hex color - convert to RGB
-            if ($hasConvertHex) {
-                $rgb = Convert-HexToRGB -Hex $color
-                $null = $rgbColors.Add($rgb)
-            } else {
-                # Fallback to gray if conversion not available
-                $null = $rgbColors.Add(@(128, 128, 128))
-            }
+            $null = $rgbColors.Add((Convert-HexToRGB -Hex $color))
         } else {
-            # Named color - get RGB from color table
-            if ($null -eq $script:CachedColorTable -and $hasColorTable) {
-                $script:CachedColorTable = Get-ColorTableWithRGB
-            }
-
-            if ($null -ne $script:CachedColorTable) {
-                # Direct hashtable access (2x faster than ContainsKey + lookup)
-                $colorEntry = $script:CachedColorTable[$color]
-                if ($colorEntry) {
-                    $null = $rgbColors.Add($colorEntry[4])
-                } else {
-                    # Color not found - fallback to gray
-                    $null = $rgbColors.Add(@(128, 128, 128))
-                }
+            $colorEntry = $script:CachedColorTable[$color]
+            if ($colorEntry) {
+                $null = $rgbColors.Add($colorEntry[4])
             } else {
-                # No color table - fallback to gray
                 $null = $rgbColors.Add(@(128, 128, 128))
             }
         }
     }
 
-    # Edge case: single step (return first color)
+    # One step is the first color
     if ($Steps -eq 1) {
         $rgb = $rgbColors[0]
         if ($Mode -eq 'ANSI8') {
-            if ($hasConvertANSI8) {
-                $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB $rgb))
-            } else {
-                $null = $gradientColors.Add(7)  # Gray fallback
-            }
+            $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB $rgb))
         } else {
             $null = $gradientColors.Add($rgb)
         }
         return ,$gradientColors.ToArray()
     }
 
-    # Calculate gradient colors
     if ($rgbColors.Count -eq 2) {
-        # Two-color gradient (optimized fast path)
         $startRGB = $rgbColors[0]
         $endRGB = $rgbColors[1]
 
@@ -146,17 +117,13 @@
             $b = [int]($startRGB[2] + ($endRGB[2] - $startRGB[2]) * $ratio)
 
             if ($Mode -eq 'ANSI8') {
-                if ($hasConvertANSI8) {
-                    $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB @($r, $g, $b)))
-                } else {
-                    $null = $gradientColors.Add(7)  # Gray fallback
-                }
+                $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB @($r, $g, $b)))
             } else {
                 $null = $gradientColors.Add(@($r, $g, $b))
             }
         }
     } else {
-        # Multi-stop gradient (3+ colors)
+        # Three or more waypoints: each step falls between the two waypoints around it
         $segmentCount = $rgbColors.Count - 1
 
         for ($step = 0; $step -lt $Steps; $step++) {
@@ -174,17 +141,13 @@
             $b = [int]($startRGB[2] + ($endRGB[2] - $startRGB[2]) * $segmentProgress)
 
             if ($Mode -eq 'ANSI8') {
-                if ($hasConvertANSI8) {
-                    $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB @($r, $g, $b)))
-                } else {
-                    $null = $gradientColors.Add(7)  # Gray fallback
-                }
+                $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB @($r, $g, $b)))
             } else {
                 $null = $gradientColors.Add(@($r, $g, $b))
             }
         }
     }
 
-    # Return as array (comma operator prevents unwrapping)
+    # The comma keeps the array whole rather than unrolled into the pipeline
     return ,$gradientColors.ToArray()
 }

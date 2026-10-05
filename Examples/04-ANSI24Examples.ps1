@@ -108,7 +108,7 @@ Write-ColorEX -Text "║ ", "ID", " │ ", "Name", " │ ", "Status", " │ ", "
               -TrueColor
 #endregion
 
-#region Gradient Effects (New Feature!)
+#region Gradient Effects
 Write-Host "`n▼ Gradient Effects - Automatic Color Interpolation" -ForegroundColor Yellow
 Write-Host "  Create smooth color transitions with the -Gradient parameter`n" -ForegroundColor Gray
 

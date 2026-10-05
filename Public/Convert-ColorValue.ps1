@@ -25,8 +25,7 @@ function Convert-HexToRGB {
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    Accepts multiple hex formats: #RRGGBB, 0xRRGGBB, RRGGBB
-    Gracefully handles invalid input by defaulting to gray.
+    Accepts #RRGGBB, 0xRRGGBB and RRGGBB. An invalid code gives a warning and gray.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -75,16 +74,17 @@ function Convert-RGBToANSI8 {
 
     .OUTPUTS
     System.Int32
-    Returns an integer between 0-255 representing the closest ANSI 256-color code.
-    Uses 6x6x6 color cube (16-231) for colors and 24-step grayscale ramp (232-255) for grays.
+    Returns the nearest ANSI 256-color code, from the 6x6x6 color cube (16-231) or the 24 grays
+    (232-255).
 
     .NOTES
     Author: MarkusMcNugen
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    Uses intelligent grayscale detection (R≈G≈B within 10) to choose between color cube and grayscale ramp.
-    Performance optimized with RGB6LevelLookup table (5-10x faster than conditional logic).
+    A color whose channels are within 10 of each other maps to the grays, or to 16 (black) and
+    231 (white) at the ends. Any other color maps to the color cube. Values outside 0-255 are
+    clamped.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -102,13 +102,12 @@ function Convert-RGBToANSI8 {
         [int[]]$RGB
     )
     
-    $r = $RGB[0]
-    $g = $RGB[1]
-    $b = $RGB[2]
-    
-    # Check if it's grayscale
+    $r = [Math]::Max(0, [Math]::Min(255, $RGB[0]))
+    $g = [Math]::Max(0, [Math]::Min(255, $RGB[1]))
+    $b = [Math]::Max(0, [Math]::Min(255, $RGB[2]))
+
     if ([Math]::Abs($r - $g) -lt 10 -and [Math]::Abs($g - $b) -lt 10) {
-        # Use grayscale ramp (colors 232-255)
+        # The 24 grays, 232-255
         $gray = [Math]::Round(($r + $g + $b) / 3)
         if ($gray -lt 8) {
             return 16  # Black
@@ -121,15 +120,13 @@ function Convert-RGBToANSI8 {
         }
     }
     
-    # Map to 6x6x6 color cube (colors 16-231)
-    # Convert RGB to 6-level values (0-5) using lookup table
+    # The 6x6x6 color cube, 16-231: each channel's step, 0 to 5
     if ($null -eq $script:RGB6LevelLookup) {
-        # Fallback if lookup table not initialized
+        # The module fills the lookup table at import; this runs without it
         $r6 = if ($r -lt 48) { 0 } elseif ($r -lt 115) { 1 } elseif ($r -lt 155) { 2 } elseif ($r -lt 195) { 3 } elseif ($r -lt 235) { 4 } else { 5 }
         $g6 = if ($g -lt 48) { 0 } elseif ($g -lt 115) { 1 } elseif ($g -lt 155) { 2 } elseif ($g -lt 195) { 3 } elseif ($g -lt 235) { 4 } else { 5 }
         $b6 = if ($b -lt 48) { 0 } elseif ($b -lt 115) { 1 } elseif ($b -lt 155) { 2 } elseif ($b -lt 195) { 3 } elseif ($b -lt 235) { 4 } else { 5 }
     } else {
-        # Fast lookup table access
         $r6 = $script:RGB6LevelLookup[$r]
         $g6 = $script:RGB6LevelLookup[$g]
         $b6 = $script:RGB6LevelLookup[$b]
@@ -151,22 +148,23 @@ function Convert-RGBToANSI4 {
     
     .EXAMPLE
     Convert-RGBToANSI4 @(255, 128, 0)
-    Returns: 33 (Yellow in 16-color palette)
+    Returns: 93 (bright yellow in the 16-color palette)
 
     .OUTPUTS
     System.Int32
     Returns an ANSI 4-bit foreground color code:
     - Normal colors: 30-37 (Black, Red, Green, Yellow, Blue, Magenta, Cyan, White)
     - Bright colors: 90-97 (Bright versions of above)
-    Brightness determined by maximum RGB channel value (≥200 is bright).
 
     .NOTES
     Author: MarkusMcNugen
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    Uses intelligent color matching based on dominant RGB channels and brightness analysis.
-    Returns foreground codes only (add 10 for background codes: 40-47, 100-107).
+    A color whose channels are within 30 of each other maps to black, dark gray, gray or white by
+    its brightness. Any other color maps by its strongest channels, and to the bright variant
+    when the strongest channel is 200 or more. Returns foreground codes; a background code is
+    10 more (40-47, 100-107).
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -256,8 +254,8 @@ function Get-ColorTableWithRGB {
     Returns the complete color table with RGB values
 
     .DESCRIPTION
-    Returns a comprehensive hashtable containing 70+ color families with Dark/Normal/Light variants.
-    Each color entry maps to all supported color modes for seamless conversion.
+    Returns a hashtable of 129 color names in 44 families, most with Dark, normal and Light
+    variants. Each entry holds the color in every color mode.
 
     ENTRY FORMAT:
     @(Native, ANSI4FG, ANSI4BG, ANSI8, @(R,G,B))
@@ -284,7 +282,7 @@ function Get-ColorTableWithRGB {
     .EXAMPLE
     $table = Get-ColorTableWithRGB
     $table.Keys | Sort-Object
-    # Lists all 70+ available color names
+    # Lists the 129 color names
 
     .OUTPUTS
     System.Collections.Hashtable
@@ -297,8 +295,7 @@ function Get-ColorTableWithRGB {
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    This table is cached in $script:CachedColorTable during module initialization
-    for performance (~1000x faster repeated access).
+    Write-ColorEX builds this table on first use and keeps it for the session.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -533,14 +530,15 @@ function Get-ColorTableWithRGB {
     }
 }
 
-function Lighten-RGBColor {
+function Get-LighterRGBColor {
     <#
     .SYNOPSIS
-    Lightens an RGB color for terminals that don't support true bold fonts
+    Answers a lighter version of an RGB color
 
     .DESCRIPTION
-    Multiplies RGB values to create a lighter variant, used when Bold style
-    is applied in terminals that only brighten colors instead of rendering bold fonts
+    Multiplies each channel by a factor, with a floor so black becomes dark gray.
+    Write-ColorEX uses it for -Bold in terminals that show bold as brighter colors
+    rather than a bold font.
 
     .PARAMETER RGB
     Array of RGB values [R, G, B]
@@ -549,12 +547,12 @@ function Lighten-RGBColor {
     Lightening factor (default 1.4 for 40% lighter)
 
     .EXAMPLE
-    Lighten-RGBColor @(139, 0, 0)
-    Returns: @(195, 0, 0) - 40% lighter red
+    Get-LighterRGBColor @(139, 0, 0)
+    Returns: @(195, 102, 102)
 
     .EXAMPLE
-    Lighten-RGBColor @(50, 50, 50) -Factor 2.0
-    Returns: @(100, 100, 100) - Doubled brightness (2x factor)
+    Get-LighterRGBColor @(50, 50, 50) -Factor 2.0
+    Returns: @(255, 255, 255)
 
     .OUTPUTS
     System.Array
@@ -565,10 +563,8 @@ function Lighten-RGBColor {
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    This function is automatically called by Write-ColorEX when Bold styling is applied
-    in terminals that don't support true bold fonts (e.g., PowerShell 5.1, conhost.exe).
-
-    Default 1.4 factor provides 40% brighter colors, visually simulating bold effect.
+    Each channel becomes the channel times the factor, at least 255 times (factor - 1) and at most 255.
+    Lighten-RGBColor is an alias of this function.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -580,6 +576,7 @@ function Lighten-RGBColor {
     Test-AnsiSupport
     #>
     [CmdletBinding()]
+    [Alias('Lighten-RGBColor')]
     param(
         [Parameter(Mandatory)]
         [int[]]$RGB,
@@ -587,8 +584,7 @@ function Lighten-RGBColor {
         [double]$Factor = 1.4
     )
 
-    # Calculate minimum lightening amount (40% of 255 = ~102)
-    # This ensures pure black (0,0,0) becomes dark gray instead of staying black
+    # The floor each channel is raised to, so black becomes dark gray rather than staying black
     $minLighten = [Math]::Round(255 * ($Factor - 1.0))
 
     $r = [Math]::Min(255, [Math]::Max($minLighten, [Math]::Round($RGB[0] * $Factor)))
@@ -598,19 +594,15 @@ function Lighten-RGBColor {
     return @([int]$r, [int]$g, [int]$b)
 }
 
-function Lighten-ANSI8Color {
+function Get-LighterANSI8Color {
     <#
     .SYNOPSIS
-    Lightens an ANSI8 (256-color) code for terminals that don't support true bold fonts
+    Answers a lighter ANSI 8-bit (256-color) code
 
     .DESCRIPTION
-    Algorithmically lightens ANSI 256-color codes when Bold style is applied in terminals
-    that only brighten colors instead of rendering bold fonts. Works across all three ANSI8
-    color ranges: standard colors (0-15), RGB cube (16-231), and grayscale ramp (232-255).
-
-    This provides a more robust lightening solution compared to color-name-based shifting,
-    as it works with direct ANSI8 codes, named colors, and can lighten colors beyond their
-    predefined family ranges.
+    Write-ColorEX uses it for -Bold in ANSI8 mode in terminals that show bold as brighter
+    colors rather than a bold font. It handles each part of the 256-color table: the standard
+    colors (0-15), the RGB cube (16-231) and the gray ramp (232-255).
 
     .PARAMETER ANSI8Code
     ANSI 256-color code to lighten (0-255)
@@ -619,19 +611,19 @@ function Lighten-ANSI8Color {
     Lightening factor (default 1.4 for 40% lighter, matching TrueColor behavior)
 
     .EXAMPLE
-    Lighten-ANSI8Color 196
-    Returns: 9 (brightened red)
-    # ANSI8 code 196 is bright red in RGB cube, lightened to bright red variant
+    Get-LighterANSI8Color 196
+    Returns: 203
+    # 196 is red in the RGB cube; its RGB value is lightened and mapped back to the cube
 
     .EXAMPLE
-    Lighten-ANSI8Color 240 -Factor 1.4
-    Returns: 246 (lighter gray)
-    # Grayscale ramp: moves up ~6 steps for 40% brightness increase
+    Get-LighterANSI8Color 240 -Factor 1.4
+    Returns: 244
+    # The gray ramp moves up four steps
 
     .EXAMPLE
-    Lighten-ANSI8Color 4
-    Returns: 12 (bright blue)
-    # Standard colors: 4 (dark blue) → 12 (bright blue)
+    Get-LighterANSI8Color 4
+    Returns: 12
+    # A dark standard color (0-7) becomes its bright form (8-15)
 
     .OUTPUTS
     System.Int32
@@ -647,15 +639,9 @@ function Lighten-ANSI8Color {
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    This function is automatically called by Write-ColorEX when Bold styling is applied
-    in ANSI8 color mode on terminals without true bold font support.
-
-    Benefits over color-name-based lightening:
-    - Works with direct ANSI8 codes: Write-ColorEX -Text "Test" -Color 196 -Bold -ANSI8
-    - Works with named colors (converted to ANSI8 first)
-    - Can lighten "Light*" colors beyond their predefined family
-    - Consistent with TrueColor lightening (same 1.4 factor)
-    - No need to maintain color family mappings
+    The RGB cube and the bright standard colors are lightened as Get-LighterRGBColor lightens
+    RGB, with the same factor, and mapped back to the nearest 256-color code.
+    Lighten-ANSI8Color, Lighten-ANSI8 and LA8 are aliases of this function.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -670,7 +656,7 @@ function Lighten-ANSI8Color {
     Write-ColorEX
     #>
     [CmdletBinding()]
-    [Alias('LA8', 'Lighten-ANSI8')]
+    [Alias('LA8', 'Lighten-ANSI8', 'Lighten-ANSI8Color')]
     param(
         [Parameter(Mandatory)]
         [ValidateRange(0, 255)]
@@ -707,7 +693,7 @@ function Lighten-ANSI8Color {
         )
 
         $rgb = $standardRGB[$ANSI8Code]
-        $lightenedRGB = Lighten-RGBColor -RGB $rgb -Factor $Factor
+        $lightenedRGB = Get-LighterRGBColor -RGB $rgb -Factor $Factor
         return Convert-RGBToANSI8 -RGB $lightenedRGB
     }
 
@@ -737,59 +723,57 @@ function Lighten-ANSI8Color {
         $rgbLevels[$b6]
     )
 
-    # Lighten RGB values
-    $lightenedRGB = Lighten-RGBColor -RGB $rgb -Factor $Factor
+    $lightenedRGB = Get-LighterRGBColor -RGB $rgb -Factor $Factor
 
     # Convert back to ANSI8
     return Convert-RGBToANSI8 -RGB $lightenedRGB
 }
 
-function Lighten-ColorName {
+function Get-LighterColorName {
     <#
     .SYNOPSIS
-    Lightens a color name for terminals that don't support true bold fonts
+    Answers the next lighter color name in the color table
 
     .DESCRIPTION
-    Shifts color names from Dark→Normal→Light variants for ANSI4/ANSI8 modes
-    when Bold style is applied in terminals that only brighten colors
+    Shifts a color name one step lighter within its family: DarkRed to Red, Red to LightRed.
+    A name with no lighter name in the color table, such as White or LightRed, is returned
+    unchanged. Write-ColorEX uses it for -Bold in terminals that show bold as brighter colors
+    rather than a bold font.
 
     .PARAMETER ColorName
     Color name to lighten (e.g., "DarkRed", "Red")
 
     .EXAMPLE
-    Lighten-ColorName "DarkRed"
+    Get-LighterColorName "DarkRed"
     Returns: "Red"
 
     .EXAMPLE
-    Lighten-ColorName "Red"
+    Get-LighterColorName "Red"
     Returns: "LightRed"
 
     .EXAMPLE
-    Lighten-ColorName "LightGreen"
-    Returns: "LightGreen" (already at lightest, no change)
+    Get-LighterColorName "White"
+    Returns: "White" (the table has no LightWhite)
 
     .OUTPUTS
     System.String
-    Returns the lightened color name using the following rules:
-    - Dark* → Remove "Dark" prefix (e.g., DarkRed → Red)
-    - Normal → Add "Light" prefix (e.g., Red → LightRed)
-    - Light* → Return unchanged (already lightest)
+    Returns the lighter color name:
+    - Dark* without "Dark", when that name is in the table (DarkRed to Red)
+    - Light* in front of a name, when that name is in the table (Red to LightRed)
+    - The name unchanged otherwise
 
     .NOTES
     Author: MarkusMcNugen
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    This function is automatically called by Write-ColorEX when Bold styling is applied
-    in ANSI4/ANSI8 color modes on terminals without true bold font support.
-
-    Works with all color families in the PSWriteColorEX color table.
+    Lighten-ColorName is an alias of this function.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
 
     .LINK
-    Lighten-RGBColor
+    Get-LighterRGBColor
 
     .LINK
     Write-ColorEX
@@ -798,21 +782,29 @@ function Lighten-ColorName {
     Get-ColorTableWithRGB
     #>
     [CmdletBinding()]
+    [Alias('Lighten-ColorName')]
     param(
         [Parameter(Mandatory)]
         [string]$ColorName
     )
 
-    # If already Light*, return as-is (can't lighten further)
+    if ($null -eq $script:CachedColorTable) {
+        $script:CachedColorTable = Get-ColorTableWithRGB
+    }
+    $table = $script:CachedColorTable
+
     if ($ColorName -like 'Light*') {
         return $ColorName
     }
 
-    # If Dark*, remove Dark prefix to get normal variant
     if ($ColorName -like 'Dark*') {
-        return $ColorName -replace '^Dark', ''
+        $lighter = $ColorName -replace '^Dark', ''
+    } else {
+        $lighter = "Light$ColorName"
     }
 
-    # Otherwise, add Light prefix
-    return "Light$ColorName"
+    if ($table.ContainsKey($lighter)) {
+        return $lighter
+    }
+    return $ColorName
 }

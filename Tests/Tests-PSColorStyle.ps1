@@ -1,12 +1,9 @@
 ﻿#Requires -Modules Pester
 
 BeforeAll {
-    # Import the module first
+    # Importing the module makes [PSColorStyle] available
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
-
-    # Dot-source the class file directly into test scope (same as module does)
-    . "$ModuleRoot\Classes\PSColorStyle.ps1"
 }
 
 Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
@@ -461,8 +458,7 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
             $debugProfile.Italic | Should -Be $true
         }
 
-        It 'Default profile cache is pre-warmed' {
-            # Default profiles should have cached params
+        It 'Default profile answers its parameters' {
             $defaultProfile = [PSColorStyle]::GetProfile('Default')
             $params = $defaultProfile.ToWriteColorParams()
 
@@ -470,166 +466,116 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
         }
     }
 
-    # NEW TESTS: InvalidateCache Method
-    Context 'Cache Invalidation' {
-        It 'InvalidateCache clears cached parameters' {
+    Context 'Parameters follow property changes' {
+        It 'ToWriteColorParams reflects a change to Bold' {
             $style = [PSColorStyle]::new('Test', 'Red', $null)
+            $style.ToWriteColorParams().ContainsKey('Bold') | Should -Be $false
 
-            # Force cache population by calling ToWriteColorParams
+            $style.Bold = $true
+
+            $style.ToWriteColorParams().Bold | Should -Be $true
+        }
+
+        It 'ToWriteColorParams reflects a change to ForegroundColor' {
+            $style = [PSColorStyle]::new('Test', 'Red', $null)
+            $style.ToWriteColorParams().Color | Should -Be 'Red'
+
+            $style.ForegroundColor = 'Blue'
+
+            $style.ToWriteColorParams().Color | Should -Be 'Blue'
+        }
+
+        It 'ToWriteColorParams reflects a change to BackgroundColor' {
+            $style = [PSColorStyle]::new('Test', 'Red', 'Yellow')
+            $style.ToWriteColorParams().BackGroundColor | Should -Be 'Yellow'
+
+            $style.BackgroundColor = 'Green'
+
+            $style.ToWriteColorParams().BackGroundColor | Should -Be 'Green'
+        }
+
+        It 'ToWriteColorParams reflects changes to several properties' {
+            $style = [PSColorStyle]::new('Test', 'Red', $null)
             $null = $style.ToWriteColorParams()
 
-            # Verify cache was populated (internal property)
-            $style._cachedParams | Should -Not -BeNullOrEmpty
-
-            # Invalidate cache
-            $style.InvalidateCache()
-
-            # Verify cache is cleared
-            $style._cachedParams | Should -BeNullOrEmpty
-        }
-
-        It 'Cache regenerates after invalidation' {
-            $style = [PSColorStyle]::new('Test', 'Blue', 'Yellow')
-
-            # Populate cache
-            $params1 = $style.ToWriteColorParams()
-            $params1 | Should -Not -BeNullOrEmpty
-
-            # Invalidate cache
-            $style.InvalidateCache()
-
-            # Cache should regenerate on next call
-            $params2 = $style.ToWriteColorParams()
-            $params2 | Should -Not -BeNullOrEmpty
-            $params2.Count | Should -BeGreaterThan 0
-        }
-
-        It 'Changing property and invalidating cache allows regeneration' {
-            $style = [PSColorStyle]::new('Test', 'Red', $null)
-
-            # Populate cache
-            $params1 = $style.ToWriteColorParams()
-            $params1.ContainsKey('Bold') | Should -Be $false
-
-            # Change a property and invalidate
-            $style.Bold = $true
-            $style.InvalidateCache()
-
-            # Cache should regenerate with new value
-            $params2 = $style.ToWriteColorParams()
-            $params2.ContainsKey('Bold') | Should -Be $true
-            $params2.Bold | Should -Be $true
-        }
-
-        It 'Changing ForegroundColor and invalidating cache works' {
-            $style = [PSColorStyle]::new('Test', 'Red', $null)
-
-            # Populate cache
-            $params1 = $style.ToWriteColorParams()
-            $params1.Color | Should -Be 'Red'
-
-            # Change ForegroundColor and invalidate
-            $style.ForegroundColor = 'Blue'
-            $style.InvalidateCache()
-
-            # Cache should regenerate
-            $params2 = $style.ToWriteColorParams()
-            $params2.Color | Should -Be 'Blue'
-        }
-
-        It 'Changing BackgroundColor and invalidating cache works' {
-            $style = [PSColorStyle]::new('Test', 'Red', 'Yellow')
-
-            # Populate cache
-            $params1 = $style.ToWriteColorParams()
-            $params1.BackGroundColor | Should -Be 'Yellow'
-
-            # Change BackgroundColor and invalidate
-            $style.BackgroundColor = 'Green'
-            $style.InvalidateCache()
-
-            # Cache should regenerate
-            $params2 = $style.ToWriteColorParams()
-            $params2.BackGroundColor | Should -Be 'Green'
-        }
-
-        It 'Changing multiple properties and invalidating cache works' {
-            $style = [PSColorStyle]::new('Test', 'Red', $null)
-
-            # Populate cache
-            $params1 = $style.ToWriteColorParams()
-
-            # Change multiple properties and invalidate
             $style.Bold = $true
             $style.Italic = $true
             $style.Underline = $true
             $style.StartTab = 2
-            $style.InvalidateCache()
 
-            # Cache should regenerate with all new values
-            $params2 = $style.ToWriteColorParams()
-            $params2.Bold | Should -Be $true
-            $params2.Italic | Should -Be $true
-            $params2.Underline | Should -Be $true
-            $params2.StartTab | Should -Be 2
+            $params = $style.ToWriteColorParams()
+            $params.Bold | Should -Be $true
+            $params.Italic | Should -Be $true
+            $params.Underline | Should -Be $true
+            $params.StartTab | Should -Be 2
         }
 
-        It 'SetAsDefault does not break cache' {
+        It 'Each call answers a new hashtable' {
+            $style = [PSColorStyle]::new('Test', 'Red', $null)
+            $first = $style.ToWriteColorParams()
+            $first['Color'] = 'Green'
+
+            $style.ToWriteColorParams().Color | Should -Be 'Red'
+        }
+
+        It 'InvalidateCache can still be called' {
+            $style = [PSColorStyle]::new('Test', 'Red', $null)
+
+            { $style.InvalidateCache() } | Should -Not -Throw
+            $style.ToWriteColorParams().Color | Should -Be 'Red'
+        }
+
+        It 'A change to a built-in profile reaches its helper' {
+            $errorProfile = [PSColorStyle]::GetProfile('Error')
+            $saved = $errorProfile.ForegroundColor
+            try {
+                $errorProfile.ForegroundColor = 'Magenta'
+
+                [PSColorStyle]::GetProfile('Error').ToWriteColorParams().Color | Should -Be 'Magenta'
+            } finally {
+                $errorProfile.ForegroundColor = $saved
+            }
+        }
+
+        It 'SetAsDefault keeps the parameters' {
+            $originalDefault = [PSColorStyle]::Default
             $style = [PSColorStyle]::new('Test', 'Cyan', $null)
             $style.Bold = $true
 
-            # Populate cache
-            $params1 = $style.ToWriteColorParams()
+            try {
+                $style.SetAsDefault()
 
-            # Set as default
-            $style.SetAsDefault()
-
-            # Cache should still work
-            $params2 = $style.ToWriteColorParams()
-            $params2 | Should -Not -BeNullOrEmpty
-            $params2.Bold | Should -Be $true
+                $params = $style.ToWriteColorParams()
+                $params | Should -Not -BeNullOrEmpty
+                $params.Bold | Should -Be $true
+            } finally {
+                $originalDefault.SetAsDefault()
+            }
         }
 
-        It 'AddToProfiles does not break cache' {
-            $style = [PSColorStyle]::new('CacheTest', 'Magenta', $null)
+        It 'AddToProfiles keeps the parameters' {
+            $style = [PSColorStyle]::new('ParamsTest', 'Magenta', $null)
             $style.Italic = $true
 
-            # Populate cache
-            $params1 = $style.ToWriteColorParams()
-
-            # Add to profiles
             $style.AddToProfiles()
 
-            # Cache should still work
-            $params2 = $style.ToWriteColorParams()
-            $params2 | Should -Not -BeNullOrEmpty
-            $params2.Italic | Should -Be $true
+            $params = $style.ToWriteColorParams()
+            $params | Should -Not -BeNullOrEmpty
+            $params.Italic | Should -Be $true
 
-            # Cleanup
-            [PSColorStyle]::Profiles.Remove('CacheTest')
+            [PSColorStyle]::Profiles.Remove('ParamsTest')
         }
 
-        It 'Clone creates new instance without shared cache' {
+        It 'A clone changes apart from the original' {
             $original = [PSColorStyle]::new('Original', 'Red', $null)
             $original.Bold = $true
 
-            # Populate original cache
-            $null = $original.ToWriteColorParams()
-            $original._cachedParams | Should -Not -BeNullOrEmpty
-
-            # Clone should have null cache initially
             $clone = $original.Clone()
-            $clone._cachedParams | Should -BeNullOrEmpty
-
-            # Changing clone and invalidating should not affect original cache
             $clone.Bold = $false
-            $clone.InvalidateCache()
-            $cloneParams = $clone.ToWriteColorParams()
 
-            # Original cache should still have Bold = true
-            $originalParams = $original.ToWriteColorParams()
-            $originalParams.Bold | Should -Be $true
-            $cloneParams.ContainsKey('Bold') | Should -Be $false  # Bold = $false means key not included
+            $original.ToWriteColorParams().Bold | Should -Be $true
+            # Bold = $false leaves the key out
+            $clone.ToWriteColorParams().ContainsKey('Bold') | Should -Be $false
         }
     }
 }

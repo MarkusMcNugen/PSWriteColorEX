@@ -3,17 +3,15 @@
     PSColorStyle class for managing reusable color and style configurations
 
 .DESCRIPTION
-    The PSColorStyle class provides a comprehensive system for defining and managing
-    color and style profiles for Write-ColorEX output. It implements a singleton pattern
-    for default styles and a named profiles system for common output patterns.
+    A PSColorStyle holds the colors, styles and layout settings of a Write-ColorEX call, so
+    they can be reused with -StyleProfile.
 
-    KEY FEATURES:
-    - Singleton default style accessible via [PSColorStyle]::Default
-    - Named profile collection via [PSColorStyle]::Profiles
+    - [PSColorStyle]::Default is the style -Default applies
+    - [PSColorStyle]::Profiles holds named styles
     - Built-in profiles: Default, Error, Warning, Info, Success, Critical, Debug
-    - Performance-optimized parameter caching (36x faster with ToWriteColorParams())
-    - Full support for all Write-ColorEX features including AutoPad
-    - Clone method for creating style variations
+    - ToWriteColorParams() answers the Write-ColorEX parameters a style sets, read from its
+      properties on each call, so a change to a style applies to its next use
+    - Clone() copies a style
 
     USAGE PATTERN:
     - Create custom styles with New-ColorStyle function
@@ -26,8 +24,8 @@
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    This class is automatically loaded when the PSWriteColorEX module is imported.
-    Default profiles are initialized via InitializeDefaultProfiles() static method.
+    Importing the module defines the class, makes [PSColorStyle] usable in the session, and
+    creates the built-in profiles with InitializeDefaultProfiles().
 
 .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -83,16 +81,12 @@ class PSColorStyle {
     [bool]$PadLeft = $false
     [char]$PadChar = ' '
 
-    # Static property for singleton default instance
+    # The style -Default applies
     static [PSColorStyle]$Default
 
-    # Static property for named profiles
+    # Named styles
     static [hashtable]$Profiles = @{}
 
-    # Hidden cached params hashtable
-    hidden [hashtable]$_cachedParams = $null
-
-    # Constructor
     PSColorStyle() {
         $this.Initialize("Custom", "Gray", $null)
     }
@@ -131,17 +125,14 @@ class PSColorStyle {
         $this.PadChar = ' '
     }
     
-    # Method to set as default
     [void]SetAsDefault() {
         [PSColorStyle]::Default = $this
     }
     
-    # Method to add to profiles
     [void]AddToProfiles() {
         [PSColorStyle]::Profiles[$this.Name] = $this
     }
     
-    # Static method to get profile
     static [PSColorStyle]GetProfile([string]$name) {
         $styleProfile = [PSColorStyle]::Profiles[$name]
         if ($styleProfile) {
@@ -150,63 +141,40 @@ class PSColorStyle {
         return $null
     }
     
-    # Static method to initialize default profiles
+    # The built-in profiles
     static [void]InitializeDefaultProfiles() {
-        # Default profile
         $defaultProfile = [PSColorStyle]::new("Default", "Gray", $null)
         [PSColorStyle]::Default = $defaultProfile
         [PSColorStyle]::Profiles["Default"] = $defaultProfile
 
-        # Error profile
         $errorProfile = [PSColorStyle]::new("Error", "Red", $null)
         $errorProfile.Bold = $true
         $errorProfile.AddToProfiles()
 
-        # Warning profile
         $warningProfile = [PSColorStyle]::new("Warning", "Yellow", $null)
         $warningProfile.AddToProfiles()
 
-        # Info profile
         $infoProfile = [PSColorStyle]::new("Info", "Cyan", $null)
         $infoProfile.AddToProfiles()
 
-        # Success profile
         $successProfile = [PSColorStyle]::new("Success", "Green", $null)
         $successProfile.AddToProfiles()
 
-        # Critical profile
         $criticalProfile = [PSColorStyle]::new("Critical", "White", "DarkRed")
         $criticalProfile.Bold = $true
         $criticalProfile.Blink = $true
         $criticalProfile.AddToProfiles()
 
-        # Debug profile
         $debugProfile = [PSColorStyle]::new("Debug", "DarkGray", $null)
         $debugProfile.Italic = $true
         $debugProfile.AddToProfiles()
-
-        # Pre-warm cache for default profiles (performance optimization)
-        $null = $defaultProfile.ToWriteColorParams()
-        $null = $errorProfile.ToWriteColorParams()
-        $null = $warningProfile.ToWriteColorParams()
-        $null = $infoProfile.ToWriteColorParams()
-        $null = $successProfile.ToWriteColorParams()
-        $null = $criticalProfile.ToWriteColorParams()
-        $null = $debugProfile.ToWriteColorParams()
     }
-    
-    # Method to apply style to Write-ColorEX parameters (with caching)
-    [hashtable]ToWriteColorParams() {
-        # Return cached params if available
-        if ($null -ne $this._cachedParams) {
-            # Return a shallow copy to prevent external modification
-            return $this._cachedParams.Clone()
-        }
 
-        # Build params hashtable
+    # The Write-ColorEX parameters this style sets, read from its properties
+    [hashtable]ToWriteColorParams() {
         $params = @{}
 
-        # Important: If Gradient is present, don't include ForegroundColor (gradient takes precedence)
+        # A gradient replaces the foreground color
         if ($this.Gradient -and $this.Gradient.Count -ge 2) {
             $params['Gradient'] = $this.Gradient
         } elseif ($this.ForegroundColor) {
@@ -233,23 +201,17 @@ class PSColorStyle {
         if ($this.PadLeft) { $params['PadLeft'] = $true }
         if ($this.PadChar -ne ' ') { $params['PadChar'] = $this.PadChar }
 
-        # Cache for future calls
-        $this._cachedParams = $params
-
-        return $params.Clone()
+        return $params
     }
 
-    # Method to invalidate cache (call after property changes)
+    # Does nothing: ToWriteColorParams reads the properties on each call. Kept so scripts
+    # that call it after changing a style keep working.
     hidden [void]InvalidateCache() {
-        $this._cachedParams = $null
     }
-    
-    # Clone method for creating variations
-    # Note: Explicit property copying ensures compatibility with PowerShell 5.1
+
+    # A copy named with _Copy, property by property, which Windows PowerShell 5.1 classes need
     [PSColorStyle]Clone() {
-        # Clones should not share cache
         $newStyle = [PSColorStyle]::new($this.Name + "_Copy", $this.ForegroundColor, $this.BackgroundColor)
-        $newStyle._cachedParams = $null
         $newStyle.Gradient = $this.Gradient
         $newStyle.Style = $this.Style
         $newStyle.StartTab = $this.StartTab

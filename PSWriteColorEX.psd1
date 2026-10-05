@@ -3,7 +3,7 @@
     RootModule = 'PSWriteColorEX.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.0.0'
+    ModuleVersion = '1.1.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Desktop', 'Core')
@@ -21,7 +21,7 @@
     Copyright = '(c) 2024 MarkusMcNugen. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description = 'Advanced PowerShell module for colored console output with comprehensive ANSI support including TrueColor (24-bit RGB), style profiles, cross-platform compatibility, and extensive logging capabilities.'
+    Description = 'Colored and styled console output for PowerShell: TrueColor (24-bit RGB), ANSI 256 and 16 colors, gradients, text styles, style profiles, padding that counts wide characters, and logging to a file. Pure PowerShell, for Windows PowerShell 5.1 and PowerShell 7 on Windows, Linux and macOS.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = '5.1'
@@ -77,9 +77,9 @@
         'Convert-RGBToANSI4',
         'Get-ColorTableWithRGB',
         'Measure-DisplayWidth',
-        'Lighten-RGBColor',
-        'Lighten-ColorName',
-        'Lighten-ANSI8Color'
+        'Get-LighterRGBColor',
+        'Get-LighterColorName',
+        'Get-LighterANSI8Color'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -122,8 +122,12 @@
         'GCT', 'Get-ColorTable', 'Get-ColourTable',
         # Measure-DisplayWidth aliases
         'MDW', 'Get-DisplayWidth',
-        # Lighten-ANSI8Color aliases
-        'LA8', 'Lighten-ANSI8'
+        # Get-LighterRGBColor aliases
+        'Lighten-RGBColor',
+        # Get-LighterColorName aliases
+        'Lighten-ColorName',
+        # Get-LighterANSI8Color aliases
+        'Lighten-ANSI8Color', 'LA8', 'Lighten-ANSI8'
     )
 
     # DSC resources to export from this module
@@ -171,31 +175,28 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = @'
-PSWriteColorEX - Advanced colored console output with comprehensive ANSI support
+1.1.0
 
-FEATURES:
-- TrueColor (24-bit RGB) support with 16.7 million colors
-- Multi-stop gradient colors with character-by-character interpolation
-- Unicode-aware text padding (AutoPad) for perfect table alignment
-- Style profiles: Error, Warning, Info, Success, Critical, Debug
-- Automatic terminal detection with graceful color degradation
-- Cross-platform: Windows, Linux, macOS
-- Bold font support detection with automatic color lightening
-- Comprehensive logging with timestamps and log levels
-- Performance optimized with extensive caching (1000x-18000x improvements)
-- Helper functions: Write-ColorError, Write-ColorWarning, Write-ColorInfo, Write-ColorSuccess, Write-ColorCritical, Write-ColorDebug
-- 70+ color families with Dark/Normal/Light variants
-- Hex color support (#RRGGBB format)
-- RGB array support @(R, G, B)
-- Default style configuration with Set-ColorDefault
-- Compatible with PowerShell 5.1+ (Desktop and Core editions)
+Fixed:
+- A transcript (Start-Transcript) records each line as one line, with no blank line after it, and as many blank lines as -LinesBefore and -LinesAfter ask for (issue #2). In Windows PowerShell 5.1 a line of several console colors is still one transcript line per color, as PowerShell records each Write-Host call.
+- Every string piped to Write-ColorEX or a Write-Color* helper is written; only the last one was before.
+- -LogFile given as a file name alone goes in the calling script's folder, or the current location at the prompt; it went in the module's own folder before. A missing log folder is created.
+- -BlankLine works with output redirected, -BackGroundColor 'None' works, -Gradient alone draws the gradient, -Color 0 is black, and text without -Color takes the terminal's default color.
+- Color names such as Orange keep working after a call without a color mode, and -Bold keeps White text white.
+- -ANSI8 color numbers take the nearest of the 16 colors on a 16-color terminal, and -ANSI4 and -ANSI8 numbers the nearest console color where the terminal has no ANSI support.
+- [PSColorStyle] can be used after Import-Module, and a change to a style profile applies to its next use.
 
-TERMINAL SUPPORT:
-- Windows: Windows Terminal, PowerShell Console (conhost), ConEmu, VS Code, Git Bash
-- macOS: iTerm2, Terminal.app, VS Code
-- Linux: GNOME Terminal, Konsole, xterm, rxvt-unicode, Kitty
+Changed:
+- On PowerShell 7.2 and later, where escape codes reach the screen, each line goes to the host in one Write-Host call.
+- Log files are UTF-8 without a byte order mark by default, and each -Encoding name writes the same bytes in Windows PowerShell 5.1 and PowerShell 7.
+- Measure-DisplayWidth uses the table of the Rust crate unicode-width 0.2.2 and the emoji sequence rules terminals follow, with the same widths in 5.1 and 7. Characters such as a filled circle and box drawing are 1 cell, 2 with -AmbiguousAsWide.
+- Importing the module prints nothing.
+- Lighten-RGBColor, Lighten-ColorName and Lighten-ANSI8Color are Get-LighterRGBColor, Get-LighterColorName and Get-LighterANSI8Color, with the old names as aliases.
 
-For full documentation visit: https://github.com/MarkusMcNugen/PSWriteColorEX
+Added:
+- TERM=dumb turns colors off, Windows Terminal under WSL is detected as TrueColor, and -Encoding takes utf8BOM, utf8NoBOM, bigendianutf32 and ansi.
+
+The full list is in CHANGELOG.md: https://github.com/MarkusMcNugen/PSWriteColorEX/blob/main/CHANGELOG.md
 '@
 
             # Prerelease string of this module

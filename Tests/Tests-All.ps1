@@ -119,6 +119,8 @@ $testFiles = @(
     'Tests-WriteColorHelpers.ps1'
     'Tests-WriteColorEX.ps1'
     'Tests-WriteColorEXAutoPad.ps1'
+    'Tests-WriteColorEXOutput.ps1'
+    'Tests-MeasureDisplayWidth.ps1'
 )
 
 # Verify all test files exist

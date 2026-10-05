@@ -479,14 +479,14 @@ graph TD
     InitProfiles --> Profile5[🔥 Critical<br/>White/DarkRed]
     InitProfiles --> Profile6[⚫ Debug<br/>DarkGray + Italic]
 
-    Profile1 --> Cache[Pre-warm Cache]
-    Profile2 --> Cache
-    Profile3 --> Cache
-    Profile4 --> Cache
-    Profile5 --> Cache
-    Profile6 --> Cache
+    Profile1 --> Register[Add to Profiles]
+    Profile2 --> Register
+    Profile3 --> Register
+    Profile4 --> Register
+    Profile5 --> Register
+    Profile6 --> Register
 
-    Cache --> Ready([✅ Ready])
+    Register --> Ready([✅ Ready])
 
     style Start fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style Ready fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
@@ -531,20 +531,14 @@ graph TD
 
     GetDefault --> GetParams
 
-    GetParams --> CheckCache{Cached?}
-    CheckCache -->|Yes| UseCached[✅ Use Cached]
-    CheckCache -->|No| Build[Build Params]
-
-    Build --> CacheIt[Cache for Next Time]
-    CacheIt --> Apply[Apply to Output]
-    UseCached --> Apply
+    GetParams --> Build[Build Params]
+    Build --> Apply[Apply to Output]
 
     Apply --> Merge[Merge with User Params]
     Merge --> Output([🖥️ Output])
 
     style Use fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style Output fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
-    style UseCached fill:#c5e1a5,stroke:#558b2f,stroke-width:2px,color:#000
 ```
 
 **Profile Management**
@@ -693,12 +687,13 @@ Write-ColorEX -Text "CI Build Status: ", "PASSED" -Color Cyan, Green
 The module respects these cross-platform environment variables:
 - `TERM` - Terminal type (e.g., xterm-256color)
 - `COLORTERM` - Color terminal indicator (truecolor/24bit)
-- `FORCE_COLOR` - Force color level (0=None, 1=ANSI4, 2=ANSI8, 3=TrueColor) - **Bypasses cache for dynamic switching**
-- `NO_COLOR` - Disable all colors (follows NO_COLOR standard)
+- `FORCE_COLOR` - Force color level (0=None, 1=ANSI4, 2=ANSI8, 3=TrueColor) - **Read on every call, so a change takes effect on the next call**
+- `NO_COLOR` - Disable all colors (follows NO_COLOR standard) - read on every call
+- `TERM=dumb` - Disable all colors, as for a terminal that interprets no escape codes
 - `WT_SESSION` - Windows Terminal session indicator
 
 > [!TIP]
-> Use `FORCE_COLOR` to test color fallback behavior. See [Color Conversions](Docs/Private/Color-Conversions.md) for detailed conversion documentation.
+> Use `FORCE_COLOR` to test color fallback behavior. See [Color Conversions](Docs/Public/Color-Conversions.md) for detailed conversion documentation.
 
 ### Platform Detection
 
@@ -836,6 +831,7 @@ Not all terminals support all ANSI SGR (Select Graphic Rendition) styles equally
 - **Konsole**: No support for DoubleUnderline (SGR 21) or Blink
 
 #### Cross-Platform
+- **Transcripts**: `Start-Transcript` records each `Write-Host` call as its own line. Where escape codes reach the screen on PowerShell 7.2 and later, `Write-ColorEX` writes each line in one call, so each line is one transcript line. On Windows PowerShell 5.1, and on PowerShell 7 hosts without virtual terminal support, a line of several console colors is one call per color, and a transcript shows each color on its own line
 - **VS Code Terminal**: Based on xterm.js. Support for underline/strikethrough improved significantly in xterm.js v5 (2022)
 - **Blink (SGR 5)**: Many modern terminals ignore or disable blink as it's considered annoying. Support is inconsistent
 - **DoubleUnderline (SGR 21)**: Very limited support due to standard ambiguity (defined as "Bold off OR double underline")
@@ -856,7 +852,7 @@ TrueColor (24-bit) → ANSI 256 (8-bit) → ANSI 16 (4-bit) → Native PowerShel
 
 **Style Support with Color Modes:**
 - ✅ **ANSI4 (16-color) limitations**: Bold/Blink only work on dark colors (DarkRed→Red), Faint only works on bright colors (Red→DarkRed)
-- ✅ **ANSI8 (256-color) support**: The module's 70+ color families include Dark/Normal/Light variants, enabling proper bold/faint color transitions in ANSI8 mode
+- ✅ **ANSI8 (256-color) support**: The module's 44 color families include Dark/Normal/Light variants, enabling proper bold/faint color transitions in ANSI8 mode
 - ✅ **TrueColor mode**: Full RGB color range with smooth bold/faint color adjustments
 
 When a terminal doesn't support a specific style (e.g., Italic), the style is silently ignored, and the text is still displayed with supported attributes.
@@ -866,75 +862,58 @@ When a terminal doesn't support a specific style (e.g., Italic), the style is si
 
 ## ⚡ Performance Optimizations
 
-PSWriteColorEX is designed for both power and performance, with several optimization techniques that ensure minimal overhead:
+PSWriteColorEX keeps the work done on each call small:
 
 ### Fast Path for Simple Output
-When you use `Write-ColorEX` without any ANSI features (no colors, styles, or formatting), the module automatically takes a **fast path** that:
-- ✅ **Skips ANSI terminal detection** entirely (saves ~1-2ms per call)
-- ✅ **Bypasses color processing** and escape sequence generation
-- ✅ **Outputs directly** to the console with minimal overhead
+When you use `Write-ColorEX` without any ANSI features (no `-ANSI4`, `-ANSI8` or `-TrueColor`, styles, or gradients), the module takes a **fast path** that:
+- ✅ **Skips ANSI terminal detection** entirely
+- ✅ **Bypasses style and color mode processing**
+- ✅ **Writes console colors only**
 
 ```powershell
 # Fast path - no ANSI detection needed
 Write-ColorEX -Text "Simple text" -NoConsoleOutput
 
 # Regular path - ANSI features trigger detection
-Write-ColorEX -Text "Colored text" -Color Red
+Write-ColorEX -Text "Bold text" -Color Red -Bold
 ```
 
-### Intelligent Caching System
-The module implements multiple layers of caching to avoid redundant operations:
+### Caching
+The module keeps the results of work that does not change between calls:
 
 #### 1. ANSI Support Caching (`$script:CachedANSISupport`)
 - Terminal capabilities detected **once** at module load
 - Cached result reused for all subsequent calls
-- Reduces terminal detection from ~2ms to **< 0.001ms**
-- **Exception**: `FORCE_COLOR` and `NO_COLOR` environment variables bypass cache for dynamic switching
+- **Exception**: `FORCE_COLOR`, `NO_COLOR` and `TERM=dumb` are read on every call, so a change takes effect on the next call
 
 #### 2. Color Table Caching (`$script:CachedColorTable`)
-- 70+ color families with RGB values built **once** at module initialization
-- **~1000x performance improvement** over building the table on every call
-- Enables instant color name lookups (Red, DarkBlue, LightCyan, etc.)
+- 129 color names in 44 families with RGB values, built on first use and kept for the session
+- Color name lookups (Red, DarkBlue, LightCyan, etc.) read the kept table
 
-#### 3. PSColorStyle Parameter Caching
-- Style profiles cache their `ToWriteColorParams()` output
-- **36x faster** when reusing the same style profile
-- Automatic cache invalidation when properties change (call `.InvalidateCache()` manually)
-
-#### 4. Helper Function Style Caching (`$script:CachedHelperStyles`)
-- Pre-cached parameters for Error, Warning, Info, Success, Critical, Debug helpers
-- **2-5x performance improvement** on repeated helper function calls
-
-#### 5. Command Availability Caching
-- `Get-Command` results cached with boolean flags
-- **10-100x faster** than repeated `Get-Command` lookups in loops
+#### 3. Style Profiles
+- Style profiles are read on every call, so a change to a profile's properties shows on the next call
+- `InvalidateCache()` is kept for scripts that call it, and does nothing
 
 ### Array Building Optimizations
-All array operations use `List<object>` instead of the `+=` operator:
-- **18,000x faster** for processing 1000+ text segments
-- Eliminates exponential slowdown from array copying
+All array operations use `List<object>` instead of the `+=` operator, which copies the whole array on each addition.
 
-### String Concatenation Optimizations
-ANSI escape sequences built using `List<string>` with `[string]::Concat()`:
-- **790x faster** than `+=` concatenation for complex styling
-- Critical for gradient rendering and multi-segment output
+### String Building
+Each line is built with a `StringBuilder`, and goes to the host in one `Write-Host` call where escape codes reach the screen.
 
 ### Performance Benchmarks
-Based on internal testing:
-- **1000 text segments**: Processed in ~2ms
-- **100 repeated calls**: Completed in ~97ms (~1ms per call)
-- **Gradient generation**: 1000-character gradient in ~5-10ms
-- **Module load time**: ~50-80ms (includes cache pre-warming)
+Measured with PowerShell 7.6 on Linux; numbers vary by machine:
+- **1000 text segments**: ~220ms
+- **100 repeated calls**: ~160ms (~1.6ms per call)
+- **Gradient generation**: 1000-character gradient in ~15ms
+- **Module load time**: ~270ms
 
 ### Best Practices for Maximum Performance
 1. **Use `-NoConsoleOutput`** when only logging to files (skips console rendering)
-2. **Reuse `PSColorStyle` objects** to leverage parameter caching
-3. **Batch operations** instead of individual calls in tight loops
-4. **Use helper functions** (Write-ColorError, etc.) for common patterns - they're optimized
-5. **Avoid nested pipelines** - pass collections to functions instead of per-item calls
+2. **Batch operations** instead of individual calls in tight loops
+3. **Avoid nested pipelines** - pass collections to functions instead of per-item calls
 
 > [!TIP]
-> For the absolute fastest output, use plain text with `-NoConsoleOutput`. For colored output, the caching system ensures subsequent calls are nearly as fast as native `Write-Host`.
+> For the fastest output, use plain text with `-NoConsoleOutput`. A colored call takes a millisecond or two, more than a bare `Write-Host` call, so in a loop of thousands of lines write fewer, longer lines.
 
 ## 📚 Documentation
 
@@ -948,8 +927,8 @@ Comprehensive documentation is available in the [Docs](Docs/) folder, organized 
   - **[Set-ColorDefault](Docs/Public/Set-ColorDefault.md)** - Configure default style _(wrapper function)_
   - **[PSColorStyle Class](Docs/Public/PSColorStyle-Class.md)** - Advanced style management
 - **[Measure-DisplayWidth](Docs/Public/Measure-DisplayWidth.md)** - Unicode-aware string width calculation
-- **[Test-AnsiSupport](Docs/Private/Test-AnsiSupport.md)** - Terminal detection and capability testing
-- **[Color Conversions](Docs/Private/Color-Conversions.md)** - Automatic conversion chain, validation, environment variables
+- **[Test-AnsiSupport](Docs/Public/Test-AnsiSupport.md)** - Terminal detection and capability testing
+- **[Color Conversions](Docs/Public/Color-Conversions.md)** - Automatic conversion chain, validation, environment variables
 
 ### 🔒 Private Functions
 - **[Gradient Functions](Docs/Private/New-GradientColorArray.md)** - 🌈 Color gradients and smooth transitions
@@ -965,7 +944,7 @@ Main function for colored output with extensive customization options.
 Write-ColorEX [-Text] <String[]>
               [-Color <Array>]
               [-BackGroundColor <Array>]
-              [-Gradient <Object[]>]  # NEW: Rainbow gradient effects
+              [-Gradient <Object[]>]  # Gradient across the characters
               [-TrueColor] [-ANSI8] [-ANSI4]
               [-Style <Object>]
               [-Bold] [-Italic] [-Underline]
@@ -990,20 +969,20 @@ Write-ColorEX [-Text] <String[]>
 
 #### Unicode Width Handling & AutoPad
 
-**🎯 NEW: AutoPad - Unicode-Aware Text Padding**
+**🎯 AutoPad - Unicode-Aware Text Padding**
 
 Fix alignment issues with emoji, CJK characters, and box-drawing in tables and dashboards!
 
 **The Problem:** `.PadRight()` and `.PadLeft()` don't understand Unicode character widths:
 ```powershell
-# BROKEN: ● displays as 2 cells but counted as 1
-"Server ●".PadRight(21)  # Misaligned! ❌
+# BROKEN: ✅ displays as 2 cells but counted as 1
+"Server ✅".PadRight(21)  # Misaligned! ❌
 ```
 
 **The Solution:** `-AutoPad` uses `Measure-DisplayWidth` for perfect alignment:
 ```powershell
-# FIXED: Correctly accounts for ● = 2 cells
-Write-ColorEX "Server ●" -AutoPad 21  # Perfectly aligned! ✅
+# FIXED: Correctly accounts for ✅ = 2 cells
+Write-ColorEX "Server ✅" -AutoPad 21  # Perfectly aligned!
 ```
 
 **AutoPad Parameters:**
@@ -1012,9 +991,9 @@ Write-ColorEX "Server ●" -AutoPad 21  # Perfectly aligned! ✅
 - `-PadChar <char>` - Padding character (default: space)
 
 **Automatically accounts for:**
-- Wide characters (CJK, emoji) that take 2 cells: `世界` = 4 cells, `●` = 2 cells
+- Wide characters (CJK, emoji) that take 2 cells: `世界` = 4 cells, `✅` = 2 cells
 - Zero-width characters (combining marks) that take 0 cells
-- East Asian Ambiguous Width characters (configurable)
+- East Asian Ambiguous characters such as `●` and box drawing take 1 cell; `Measure-DisplayWidth -AmbiguousAsWide` counts them as 2
 - Regular ASCII characters that take 1 cell: `Hello` = 5 cells
 
 **Integrated features:**
@@ -1025,7 +1004,7 @@ Write-ColorEX "Server ●" -AutoPad 21  # Perfectly aligned! ✅
 ```powershell
 # Manual width calculation
 Measure-DisplayWidth "Hello 世界"  # Returns: 10 (5 ASCII + 1 space + 4 for CJK)
-Measure-DisplayWidth "Server ●"    # Returns: 9 (7 ASCII + 2 for ●)
+Measure-DisplayWidth "Server ✅"    # Returns: 9 (7 ASCII + 2 for ✅)
 
 # Basic left-align padding (default)
 Write-ColorEX "Test" -AutoPad 20 -Color Cyan -NoNewLine
@@ -1047,12 +1026,12 @@ Write-ColorEX 'Web Server' -AutoPad 21 -Color White -NoNewLine
 Write-ColorEX ' [OK] ║' -Color Green
 
 Write-ColorEX '║ ' -Color Cyan -NoNewLine
-Write-ColorEX 'Database ●' -AutoPad 21 -Color White -NoNewLine  # ● = 2 cells
+Write-ColorEX 'Database ✅' -AutoPad 21 -Color White -NoNewLine  # ✅ = 2 cells
 Write-ColorEX ' [OK] ║' -Color Green
 
 # Output:
 # ║ Web Server           [OK] ║
-# ║ Database ●           [OK] ║  ← Perfectly aligned!
+# ║ Database ✅          [OK] ║  ← Perfectly aligned!
 
 # File listing with mixed alignment
 foreach ($file in $files) {
@@ -1101,8 +1080,8 @@ The module includes comprehensive example scripts demonstrating all features. Af
 Install-Module PSWriteColorEX -Scope CurrentUser
 
 # Navigate to the Examples directory
-cd (Get-Module PSWriteColorEX -ListAvailable).ModuleBase
-cd ..\Examples
+$module = Get-Module PSWriteColorEX -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
+cd (Join-Path $module.ModuleBase 'Examples')
 
 # Run any example script
 .\01-BasicUsage.ps1
@@ -1135,10 +1114,10 @@ The module includes comprehensive Pester tests:
 
 ```powershell
 # Run all tests
-Invoke-Pester ./Tests/
+./Tests/Tests-All.ps1
 
 # Run with coverage
-Invoke-Pester ./Tests/ -CodeCoverage ./Public/*.ps1, ./Private/*.ps1
+./Tests/Tests-All.ps1 -CodeCoverage
 ```
 
 ## 🤝 Contributing

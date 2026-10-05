@@ -1,5 +1,10 @@
 #Requires -Modules Pester
 
+BeforeDiscovery {
+    # $IsWindows does not exist in Windows PowerShell 5.1
+    $onWindows = [System.Environment]::OSVersion.Platform -eq 'Win32NT'
+}
+
 BeforeAll {
     # Import the module
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
@@ -7,6 +12,12 @@ BeforeAll {
 }
 
 Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
+
+    BeforeAll {
+        # These tests read the terminal from the environment. A process without a console, such
+        # as a CI runner, has no virtual terminal support; that case has its own tests below.
+        Mock -ModuleName PSWriteColorEX Test-ColorHostVirtualTerminal { $true }
+    }
 
     Context 'Basic Functionality' {
         It 'Returns a PSCustomObject' {
@@ -220,7 +231,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $env:NO_COLOR = $script:OriginalNoColor
         }
 
-        It 'Detects TrueColor when WT_SESSION is set' -Skip:($PSVersionTable.Platform -eq 'Unix') {
+        It 'Detects TrueColor when WT_SESSION is set' {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:WT_SESSION = 'test-session-guid'
@@ -244,7 +255,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $env:NO_COLOR = $script:OriginalNoColor
         }
 
-        It 'Detects ConEmu when ConEmuANSI is set' -Skip:($PSVersionTable.Platform -eq 'Unix') {
+        It 'Detects ConEmu when ConEmuANSI is set' -Skip:(-not $onWindows) {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:ConEmuANSI = 'ON'
@@ -269,7 +280,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $env:NO_COLOR = $script:OriginalNoColor
         }
 
-        It 'Detects Apple Terminal when TERM_PROGRAM is Apple_Terminal' -Skip:($PSVersionTable.Platform -eq 'Win32NT') {
+        It 'Detects Apple Terminal when TERM_PROGRAM is Apple_Terminal' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM_PROGRAM = 'Apple_Terminal'
@@ -280,7 +291,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.ColorSupport | Should -BeIn @('ANSI8', 'ANSI4')
         }
 
-        It 'Detects iTerm2 when TERM_PROGRAM is iTerm.app' -Skip:($PSVersionTable.Platform -eq 'Win32NT') {
+        It 'Detects iTerm2 when TERM_PROGRAM is iTerm.app' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM_PROGRAM = 'iTerm.app'
@@ -316,7 +327,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $env:NO_COLOR = $script:OriginalNoColor
         }
 
-        It 'Detects VTE-based terminal when VTE_VERSION is set' -Skip:($PSVersionTable.Platform -eq 'Win32NT') {
+        It 'Detects VTE-based terminal when VTE_VERSION is set' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:VTE_VERSION = '5200'
@@ -499,7 +510,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.TerminalType | Should -Match 'Windows Terminal'
         }
 
-        It 'Detects ConEmu via ConEmuANSI' {
+        It 'Detects ConEmu via ConEmuANSI' -Skip:(-not $onWindows) {
             $env:ConEmuANSI = 'ON'
 
             $result = Test-AnsiSupport -Silent
@@ -517,7 +528,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.TerminalType | Should -Match 'VS Code'
         }
 
-        It 'Detects iTerm2 via TERM_PROGRAM' -Skip:($IsWindows) {
+        It 'Detects iTerm2 via TERM_PROGRAM' -Skip:$onWindows {
             $env:TERM_PROGRAM = 'iTerm.app'
 
             $result = Test-AnsiSupport -Silent
@@ -527,7 +538,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.TerminalType | Should -Match 'iTerm'
         }
 
-        It 'Detects Terminal.app with ANSI8 limitation' -Skip:($IsWindows) {
+        It 'Detects Terminal.app with ANSI8 limitation' -Skip:$onWindows {
             $env:TERM_PROGRAM = 'Apple_Terminal'
 
             $result = Test-AnsiSupport -Silent
@@ -537,7 +548,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.TerminalType | Should -Match 'Terminal.app'
         }
 
-        It 'Detects VTE-based terminals (modern version)' {
+        It 'Detects VTE-based terminals (modern version)' -Skip:$onWindows {
             $env:VTE_VERSION = '6000'  # VTE 0.60+
 
             $result = Test-AnsiSupport -Silent
@@ -565,6 +576,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
     Context 'FORCE_COLOR Environment Variable Override' {
         BeforeEach {
             $script:OriginalForceColor = $env:FORCE_COLOR
+            $script:OriginalWTSession = $env:WT_SESSION
         }
 
         AfterEach {
@@ -572,6 +584,11 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
                 Remove-Item env:FORCE_COLOR -ErrorAction SilentlyContinue
             } else {
                 $env:FORCE_COLOR = $script:OriginalForceColor
+            }
+            if ($null -eq $script:OriginalWTSession) {
+                Remove-Item env:WT_SESSION -ErrorAction SilentlyContinue
+            } else {
+                $env:WT_SESSION = $script:OriginalWTSession
             }
         }
 
@@ -637,7 +654,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             }
         }
 
-        It 'Warns about Terminal.app TrueColor limitation' -Skip:($IsWindows) {
+        It 'Warns about Terminal.app TrueColor limitation' -Skip:$onWindows {
             $env:TERM_PROGRAM = 'Apple_Terminal'
 
             $result = Test-AnsiSupport  # No -Silent to get warnings
@@ -646,7 +663,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.Warnings | Where-Object { $_ -match 'Terminal.app.*TrueColor' } | Should -Not -BeNullOrEmpty
         }
 
-        It 'Warns about ConEmu limited TrueColor support' -Skip:($IsWindows) {
+        It 'Warns about ConEmu limited TrueColor support' -Skip:(-not $onWindows) {
             $env:ConEmuANSI = 'ON'
 
             $result = Test-AnsiSupport  # No -Silent to get warnings
@@ -727,7 +744,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $env:NO_COLOR = $script:OriginalNoColor
         }
 
-        It 'Detects Konsole via TERM environment variable' -Skip:($IsWindows) {
+        It 'Detects Konsole via TERM environment variable' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'konsole-256color'
@@ -739,7 +756,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.SupportsBoldFonts | Should -Be $true
         }
 
-        It 'Detects Konsole via KONSOLE_VERSION' -Skip:($IsWindows) {
+        It 'Detects Konsole via KONSOLE_VERSION' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:KONSOLE_VERSION = '220801'
@@ -750,7 +767,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.SupportsBoldFonts | Should -Be $true
         }
 
-        It 'Sets appropriate style support for Konsole' -Skip:($IsWindows) {
+        It 'Sets appropriate style support for Konsole' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'konsole'
@@ -786,7 +803,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $env:NO_COLOR = $script:OriginalNoColor
         }
 
-        It 'Detects mintty via TERM environment variable' {
+        It 'Detects mintty via TERM environment variable' -Skip:(-not $onWindows) {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'mintty'
@@ -797,7 +814,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.SupportsBoldFonts | Should -Be $true
         }
 
-        It 'Detects mintty via TERM_PROGRAM' {
+        It 'Detects mintty via TERM_PROGRAM' -Skip:(-not $onWindows) {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM_PROGRAM = 'mintty'
@@ -807,7 +824,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.SupportsBoldFonts | Should -Be $true
         }
 
-        It 'Sets appropriate style support for mintty' -Skip:($PSVersionTable.Platform -eq 'Unix') {
+        It 'Sets appropriate style support for mintty' -Skip:(-not $onWindows) {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'mintty'
@@ -836,7 +853,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $env:NO_COLOR = $script:OriginalNoColor
         }
 
-        It 'Detects rxvt-unicode-256color' -Skip:($IsWindows) {
+        It 'Detects rxvt-unicode-256color' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'rxvt-unicode-256color'
@@ -847,7 +864,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.StyleSupport.Italic | Should -Be $true
         }
 
-        It 'Detects basic rxvt with limitations' -Skip:($IsWindows) {
+        It 'Detects basic rxvt with limitations' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'rxvt'
@@ -858,7 +875,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.TerminalType | Should -Match 'rxvt'
         }
 
-        It 'Warns about basic rxvt limitations' -Skip:($IsWindows) {
+        It 'Warns about basic rxvt limitations' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'rxvt'
@@ -869,7 +886,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.Warnings | Where-Object { $_ -match 'rxvt.*256 colors' } | Should -Not -BeNullOrEmpty
         }
 
-        It 'Sets bold font support for rxvt-unicode' -Skip:($IsWindows) {
+        It 'Sets bold font support for rxvt-unicode' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'rxvt-unicode'
@@ -897,7 +914,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $env:NO_COLOR = $script:OriginalNoColor
         }
 
-        It 'Detects xterm-256color' -Skip:($IsWindows) {
+        It 'Detects xterm-256color' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'xterm-256color'
@@ -908,7 +925,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.TerminalType | Should -Match 'xterm'
         }
 
-        It 'Detects basic xterm' -Skip:($IsWindows) {
+        It 'Detects basic xterm' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'xterm'
@@ -919,7 +936,7 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.ColorSupport | Should -BeIn @('ANSI4', 'ANSI8', 'TrueColor')
         }
 
-        It 'Sets bold font support to false for xterm (default coupling)' -Skip:($IsWindows) {
+        It 'Sets bold font support to false for xterm (default coupling)' -Skip:$onWindows {
             $env:FORCE_COLOR = $null
             $env:NO_COLOR = $null
             $env:TERM = 'xterm-256color'
@@ -927,6 +944,113 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result = Test-AnsiSupport -Silent
 
             $result.SupportsBoldFonts | Should -Be $false
+        }
+    }
+
+    Context 'TERM=dumb' {
+        BeforeEach {
+            $script:OriginalTerm = $env:TERM
+            $script:OriginalForceColor = $env:FORCE_COLOR
+            $script:OriginalNoColor = $env:NO_COLOR
+            $script:OriginalColorTerm = $env:COLORTERM
+            $env:FORCE_COLOR = $null
+            $env:NO_COLOR = $null
+        }
+
+        AfterEach {
+            $env:TERM = $script:OriginalTerm
+            $env:FORCE_COLOR = $script:OriginalForceColor
+            $env:NO_COLOR = $script:OriginalNoColor
+            $env:COLORTERM = $script:OriginalColorTerm
+        }
+
+        It 'Returns None when TERM is dumb' {
+            $env:TERM = 'dumb'
+            $env:COLORTERM = 'truecolor'
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.ColorSupport | Should -Be 'None'
+            $result.Details.TerminalType | Should -Be 'dumb'
+        }
+
+        It 'FORCE_COLOR still sets the mode when TERM is dumb' {
+            $env:TERM = 'dumb'
+            $env:FORCE_COLOR = '2'
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.ColorSupport | Should -Be 'ANSI8'
+        }
+    }
+
+    Context 'Windows Terminal running a WSL shell' {
+        BeforeEach {
+            $script:OriginalWTSession = $env:WT_SESSION
+            $script:OriginalTermProgram = $env:TERM_PROGRAM
+            $script:OriginalForceColor = $env:FORCE_COLOR
+            $script:OriginalNoColor = $env:NO_COLOR
+            $env:FORCE_COLOR = $null
+            $env:NO_COLOR = $null
+            $env:TERM_PROGRAM = $null
+        }
+
+        AfterEach {
+            $env:WT_SESSION = $script:OriginalWTSession
+            $env:TERM_PROGRAM = $script:OriginalTermProgram
+            $env:FORCE_COLOR = $script:OriginalForceColor
+            $env:NO_COLOR = $script:OriginalNoColor
+        }
+
+        It 'Detects Windows Terminal from WT_SESSION on Linux and macOS' -Skip:$onWindows {
+            $env:WT_SESSION = 'test-session-guid'
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.ColorSupport | Should -Be 'TrueColor'
+            $result.SupportsBoldFonts | Should -Be $true
+            $result.Details.TerminalType | Should -Be 'Windows Terminal (WSL)'
+        }
+    }
+
+    Context 'Host without virtual terminal support' {
+        BeforeAll {
+            Mock -ModuleName PSWriteColorEX Test-ColorHostVirtualTerminal { $false }
+        }
+
+        BeforeEach {
+            $script:OriginalColorTerm = $env:COLORTERM
+            $script:OriginalForceColor = $env:FORCE_COLOR
+            $script:OriginalNoColor = $env:NO_COLOR
+            $script:OriginalTerm = $env:TERM
+            $env:FORCE_COLOR = $null
+            $env:NO_COLOR = $null
+            $env:TERM = 'xterm-256color'
+        }
+
+        AfterEach {
+            $env:COLORTERM = $script:OriginalColorTerm
+            $env:FORCE_COLOR = $script:OriginalForceColor
+            $env:NO_COLOR = $script:OriginalNoColor
+            $env:TERM = $script:OriginalTerm
+        }
+
+        It 'Returns None, since PowerShell removes the escape codes' {
+            $env:COLORTERM = 'truecolor'
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.ColorSupport | Should -Be 'None'
+            $result.Details.HasVirtualTerminalProcessing | Should -Be $false
+            $result.Details.Warnings | Where-Object { $_ -match 'no virtual terminal support' } | Should -Not -BeNullOrEmpty
+        }
+
+        It 'FORCE_COLOR still sets the mode' {
+            $env:FORCE_COLOR = '3'
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.ColorSupport | Should -Be 'TrueColor'
         }
     }
 }

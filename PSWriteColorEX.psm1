@@ -1,29 +1,19 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 
 <#
 .SYNOPSIS
-    PSWriteColorEX - Advanced colored console output module with comprehensive ANSI support
+    PSWriteColorEX - colored and styled console output with ANSI and TrueColor support
 
 .DESCRIPTION
-    PSWriteColorEX is an advanced PowerShell module providing enhanced colored console output
-    with comprehensive ANSI support including TrueColor (24-bit RGB), style profiles,
-    cross-platform compatibility, and extensive logging capabilities.
+    PSWriteColorEX writes colored and styled text through Write-Host:
 
-    KEY FEATURES:
-    - TrueColor (24-bit RGB) support for 16.7 million colors
-    - Multi-stop gradient colors with smooth transitions
-    - Unicode-aware text padding (AutoPad) for perfect table alignment
-    - Style profiles for consistent output (Error, Warning, Info, Success, Critical, Debug)
-    - Automatic terminal detection with graceful color degradation
-    - Cross-platform: Windows, Linux, macOS
-    - Bold font support detection and automatic color lightening
-    - Comprehensive logging with timestamps and log levels
-    - Performance optimized with caching (1000x-18000x improvements)
-
-    TERMINAL SUPPORT:
-    - Windows: Windows Terminal, PowerShell Console, ConEmu, VS Code, Git Bash
-    - macOS: iTerm2, Terminal.app, VS Code
-    - Linux: GNOME Terminal, Konsole, xterm, rxvt-unicode, Kitty
+    - TrueColor (24-bit RGB), ANSI 256-color and 16-color modes, and the console's own colors
+    - Gradients across the characters of a line
+    - Padding to a display width (AutoPad) that counts emoji and CJK characters as 2 cells
+    - Style profiles: Error, Warning, Info, Success, Critical, Debug, and custom ones
+    - Detection of the terminal's color support, falling back to the modes it has
+    - Windows, Linux and macOS, in Windows PowerShell 5.1 and PowerShell 7
+    - Logging to a file, with timestamps and levels
 
 .NOTES
     Author: MarkusMcNugen
@@ -31,8 +21,7 @@
     Requires: PowerShell 5.1 or later
     Compatible: PowerShell Desktop and Core editions
 
-    Module initialization automatically detects terminal capabilities and caches results
-    for optimal performance.
+    Importing the module detects the terminal's color support once and keeps the result.
 
 .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -49,23 +38,25 @@
     Write-ColorEX "GRADIENT" -Gradient @('Red','Yellow','Green','Cyan','Blue','Magenta')
 #>
 
-# Module variables
 $script:ModuleRoot = $PSScriptRoot
-$script:ModuleVersion = '1.0.0'
-$script:DebugMode = $false
-$script:CachedANSISupport = $null  # Cached ANSI support level for performance
-$script:SupportsBoldFonts = $false  # Cached bold font support detection
-$script:CachedColorTable = $null  # Cached color table for performance
-$script:CachedHelperStyles = @{}  # Cached helper function style params
-$script:RGB6LevelLookup = $null   # Lookup table for RGB to 6-level conversion
+$script:DebugMode = $env:PSWRITECOLOREX_DEBUG -eq 'true'
+$script:CachedANSISupport = $null   # The terminal's color support, detected at import
+$script:SupportsBoldFonts = $false  # Whether the terminal draws bold as a bold font
+$script:CachedColorTable = $null    # The color table, built on first use
+$script:RGB6LevelLookup = $null     # Each 0-255 channel value's step in the 6-step RGB cube
 
-# Enable debug mode if requested
-if ($env:PSWRITECOLOREX_DEBUG -eq 'true') {
-    $script:DebugMode = $true
+# The ANSI4 foreground code of each console color; a background code is 10 more
+$script:ConsoleColorSgr = @{
+    Black = 30; DarkRed = 31; DarkGreen = 32; DarkYellow = 33
+    DarkBlue = 34; DarkMagenta = 35; DarkCyan = 36; Gray = 37
+    DarkGray = 90; Red = 91; Green = 92; Yellow = 93
+    Blue = 94; Magenta = 95; Cyan = 96; White = 97
+}
+
+if ($script:DebugMode) {
     Write-Verbose "PSWriteColorEX Debug Mode Enabled" -Verbose
 }
 
-# Initialize RGB to 6-level lookup table for ANSI8 conversion
 function Initialize-RGB6LevelLookup {
     if ($null -eq $script:RGB6LevelLookup) {
         $script:RGB6LevelLookup = [int[]]::new(256)
@@ -80,16 +71,15 @@ function Initialize-RGB6LevelLookup {
     }
 }
 
-# Initialize the lookup table
 Initialize-RGB6LevelLookup
 
-# Load classes first (they need to be loaded before functions that use them)
+# Classes load before the functions that use them
 $ClassFiles = @(
-    "$PSScriptRoot\Classes\PSColorStyle.ps1"
+    [System.IO.Path]::Combine($PSScriptRoot, 'Classes', 'PSColorStyle.ps1')
 )
 
 foreach ($file in $ClassFiles) {
-    if (Test-Path $file) {
+    if (Test-Path -LiteralPath $file) {
         try {
             . $file
             if ($script:DebugMode) {
@@ -101,13 +91,15 @@ foreach ($file in $ClassFiles) {
     }
 }
 
-# Load private functions (hardcoded for faster loading)
 $PrivateFunctions = @(
-    "$PSScriptRoot\Private\New-GradientColorArray.ps1"
+    [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'DisplayWidthTable.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'ColorHost.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'Get-ColorHelperParams.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'New-GradientColorArray.ps1')
 )
 
 foreach ($file in $PrivateFunctions) {
-    if (Test-Path $file) {
+    if (Test-Path -LiteralPath $file) {
         try {
             . $file
             if ($script:DebugMode) {
@@ -121,17 +113,16 @@ foreach ($file in $PrivateFunctions) {
     }
 }
 
-# Load public functions (hardcoded for faster loading)
 $PublicFunctions = @(
-    "$PSScriptRoot\Public\Test-AnsiSupport.ps1"
-    "$PSScriptRoot\Public\Convert-ColorValue.ps1"
-    "$PSScriptRoot\Public\Write-ColorEX.ps1"
-    "$PSScriptRoot\Public\Write-ColorHelpers.ps1"
-    "$PSScriptRoot\Public\Measure-DisplayWidth.ps1"
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Test-AnsiSupport.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Convert-ColorValue.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Write-ColorEX.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Write-ColorHelpers.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Measure-DisplayWidth.ps1')
 )
 
 foreach ($file in $PublicFunctions) {
-    if (Test-Path $file) {
+    if (Test-Path -LiteralPath $file) {
         try {
             . $file
             if ($script:DebugMode) {
@@ -145,7 +136,6 @@ foreach ($file in $PublicFunctions) {
     }
 }
 
-# Initialize default color profiles
 try {
     [PSColorStyle]::InitializeDefaultProfiles()
     if ($script:DebugMode) {
@@ -155,24 +145,29 @@ try {
     Write-Warning "Could not initialize default color profiles: $_"
 }
 
-# Module initialization
+# A class defined in a module is not visible to the session that imports it, only to scripts
+# with 'using module'. A type accelerator makes [PSColorStyle] resolve after Import-Module too,
+# and is removed with the module.
+$TypeAcceleratorsClass = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
+$ExportableTypes = @([PSColorStyle])
+foreach ($Type in $ExportableTypes) {
+    $TypeAcceleratorsClass::Add($Type.FullName, $Type)
+}
+
 $script:ModuleInitialized = $false
 
 function Initialize-PSWriteColorEX {
     <#
     .SYNOPSIS
-        Initializes the PSWriteColorEX module
-    .DESCRIPTION
-        Performs module initialization tasks including ANSI support detection
+        Detects the terminal's color support once and keeps the result for Write-ColorEX
     #>
     [CmdletBinding()]
     param()
-    
+
     if ($script:ModuleInitialized) {
         return
     }
-    
-    # Detect initial ANSI support and cache it
+
     $ansiResult = Test-AnsiSupport -Silent
     $script:CachedANSISupport = $ansiResult.ColorSupport
     $script:SupportsBoldFonts = $ansiResult.SupportsBoldFonts
@@ -182,29 +177,11 @@ function Initialize-PSWriteColorEX {
         Write-Verbose "Bold font support: $script:SupportsBoldFonts" -Verbose
     }
 
-    # Set module initialization flag
     $script:ModuleInitialized = $true
-
-    # Display module banner if in interactive mode and not suppressed
-    if ($Host.UI.RawUI -and -not $env:PSWRITECOLOREX_NO_BANNER) {
-        Write-ColorEX -Text "PSWriteColorEX v$script:ModuleVersion loaded" -Color Cyan -Italic
-
-        if ($script:CachedANSISupport -eq 'TrueColor') {
-            Write-ColorEX -Text "TrueColor support detected - 16.7 million colors available!" -Color @(0, 255, 128) -TrueColor
-        } elseif ($script:CachedANSISupport -eq 'ANSI8') {
-            Write-ColorEX -Text "256-color support detected" -Color 208 -ANSI8
-        } elseif ($script:CachedANSISupport -eq 'ANSI4') {
-            Write-ColorEX -Text "16-color ANSI support detected" -Color Yellow -ANSI4
-        } else {
-            Write-Host "Basic console colors available" -ForegroundColor Gray
-        }
-    }
 }
 
-# Initialize module
 Initialize-PSWriteColorEX
 
-# Export module members
 $ExportParams = @{
     Function = @(
         'Write-ColorEX',
@@ -223,11 +200,11 @@ $ExportParams = @{
         'Convert-RGBToANSI4',
         'Get-ColorTableWithRGB',
         'Measure-DisplayWidth',
-        'Lighten-RGBColor',
-        'Lighten-ColorName',
-        'Lighten-ANSI8Color'
+        'Get-LighterRGBColor',
+        'Get-LighterColorName',
+        'Get-LighterANSI8Color'
     )
-    
+
     Alias = @(
         # Write-ColorEX aliases
         'Write-ColourEX', 'Write-Color', 'Write-Colour', 'WC', 'WCEX', 'wcolor', 'wcolour',
@@ -261,19 +238,21 @@ $ExportParams = @{
         'GCT', 'Get-ColorTable', 'Get-ColourTable',
         # Measure-DisplayWidth aliases
         'MDW', 'Get-DisplayWidth',
-        # Lighten-ANSI8Color aliases
-        'LA8', 'Lighten-ANSI8'
+        # Get-LighterRGBColor aliases
+        'Lighten-RGBColor',
+        # Get-LighterColorName aliases
+        'Lighten-ColorName',
+        # Get-LighterANSI8Color aliases
+        'Lighten-ANSI8Color', 'LA8', 'Lighten-ANSI8'
     )
-    
+
     Variable = @()
 }
 
 Export-ModuleMember @ExportParams
 
-# Module removal cleanup
 $MyInvocation.MyCommand.ScriptBlock.Module.OnRemove = {
-    # Clean up any module resources
-    if ($script:DebugMode) {
-        Write-Verbose "PSWriteColorEX module removed" -Verbose
+    foreach ($Type in $ExportableTypes) {
+        $null = $TypeAcceleratorsClass::Remove($Type.FullName)
     }
-}
+}.GetNewClosure()

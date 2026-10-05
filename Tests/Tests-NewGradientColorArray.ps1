@@ -5,8 +5,7 @@ BeforeAll {
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
 
-    # Dot-source the class file and private function for testing
-    . "$ModuleRoot\Classes\PSColorStyle.ps1"
+    # Dot-source the private function for testing
     . "$ModuleRoot\Private\New-GradientColorArray.ps1"
 }
 
@@ -58,12 +57,16 @@ Describe 'New-GradientColorArray' -Tag 'Unit', 'Function', 'Gradient' {
             { New-GradientColorArray -Colors @('Red', 'Green', 'Blue', 'Yellow') -Steps 20 -Mode TrueColor } | Should -Not -Throw
         }
 
+        # A call without a mandatory parameter would prompt for it in an interactive session,
+        # so these read the parameter's attributes
         It 'Requires Steps parameter' {
-            { New-GradientColorArray -Colors @('Red', 'Blue') -Mode TrueColor } | Should -Throw
+            $attributes = (Get-Command New-GradientColorArray).Parameters['Steps'].Attributes
+            ($attributes | Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] }).Mandatory | Should -Be $true
         }
 
         It 'Requires Mode parameter' {
-            { New-GradientColorArray -Colors @('Red', 'Blue') -Steps 10 } | Should -Throw
+            $attributes = (Get-Command New-GradientColorArray).Parameters['Mode'].Attributes
+            ($attributes | Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] }).Mandatory | Should -Be $true
         }
 
         It 'Accepts TrueColor mode' {

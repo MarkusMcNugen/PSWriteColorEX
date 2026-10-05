@@ -1,0 +1,57 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / ${{ matrix.shell }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows PowerShell 5.1
+          - os: windows-latest
+            shell: powershell
+          # PowerShell 7
+          - os: windows-latest
+            shell: pwsh
+          - os: ubuntu-latest
+            shell: pwsh
+          - os: macos-latest
+            shell: pwsh
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show PowerShell version
+        run: $PSVersionTable | Format-Table -AutoSize | Out-String -Width 200
+
+      - name: Install Pester 5
+        run: |
+          $pester = Get-Module -ListAvailable -Name Pester | Where-Object { $_.Version -ge [version]'5.0.0' }
+          if (-not $pester) {
+              Install-Module -Name Pester -MinimumVersion 5.0.0 -Force -SkipPublisherCheck -Scope CurrentUser
+          }
+          Get-Module -ListAvailable -Name Pester | Select-Object Name, Version | Format-Table -AutoSize
+
+      # -NonInteractive makes a missing mandatory parameter an error rather than a prompt
+      - name: Run tests
+        shell: ${{ matrix.shell }} -NonInteractive -NoProfile -Command ". '{0}'"
+        run: |
+          ./Tests/Tests-All.ps1 -CodeCoverage:$false -OutputFile TestResults.xml
+          exit $LASTEXITCODE
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.shell }}
+          path: TestResults.xml
+          if-no-files-found: ignore

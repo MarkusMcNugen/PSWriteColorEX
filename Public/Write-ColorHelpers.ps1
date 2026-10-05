@@ -1,41 +1,34 @@
-﻿# Helper functions for common Write-ColorEX operations with style profiles
+﻿# Write-ColorEX with the built-in profiles, and the commands that manage profiles
 
 function Write-ColorError {
     <#
     .SYNOPSIS
-        Displays error messages using the Error style profile (red, bold)
+        Writes an error message with the Error profile (red, bold)
 
     .DESCRIPTION
-        Write-ColorError is a convenience wrapper for Write-ColorEX that applies the
-        built-in Error style profile. This provides consistent error message formatting
-        across your scripts with minimal code.
-
-        The Error style uses red foreground color and bold text by default.
-        Style parameters are cached for performance (2-5x faster than creating styles repeatedly).
+        Write-ColorError calls Write-ColorEX with the built-in Error profile, which starts as
+        red, bold text. A change to [PSColorStyle]::Profiles['Error'] applies to the next call.
 
     .PARAMETER Text
-        The error message text to display. Accepts an array of strings.
-        Can be passed via pipeline.
+        The message. Several strings are written on one line; strings piped in are written one
+        line each.
 
     .PARAMETER NoNewLine
-        Suppresses the newline character at the end of the output.
-        Useful for building output across multiple calls.
+        Leaves the line open, so the next output continues it.
 
     .PARAMETER LogFile
-        Path to log file for writing the error message.
-        If only a filename is provided, uses current directory or $LogPath.
+        Writes the message to this log file as well. A file name alone goes in the folder of the
+        calling script, or the current location when called from the prompt.
 
     .PARAMETER NoConsoleOutput
-        Suppresses console output and only writes to log file.
-        Only active when LogFile is specified.
-        Aliases: HideConsole, NoConsole, LogOnly, LO
+        Writes nothing to the host, only to the log file.
 
     .PARAMETER PassThru
-        Returns the text that was written, allowing for pipeline chaining.
+        Writes the text to the pipeline after writing it to the host.
 
     .INPUTS
         System.String[]
-        You can pipe text strings to this function.
+        Strings piped in are written one line each.
 
     .OUTPUTS
         None (default) or System.String[] (with -PassThru)
@@ -43,12 +36,12 @@ function Write-ColorError {
     .EXAMPLE
         Write-ColorError "Operation failed"
 
-        Displays "Operation failed" in red bold text.
+        Writes "Operation failed" in red, bold.
 
     .EXAMPLE
         Write-ColorError "Critical error" -LogFile "errors.log"
 
-        Displays error on console and writes to errors.log file.
+        Writes the message to the host and to errors.log.
 
     .EXAMPLE
         $result = Write-ColorError "Warning" -PassThru
@@ -59,8 +52,7 @@ function Write-ColorError {
         License: MIT
         Requires: PowerShell 5.1 or later
 
-        This function uses the Error profile from [PSColorStyle]::Profiles['Error'].
-        Style parameters are cached on first use for improved performance.
+        Uses the Error profile, [PSColorStyle]::Profiles['Error'].
 
     .LINK
         https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -85,58 +77,54 @@ function Write-ColorError {
         [switch]$PassThru
     )
 
-    # Use cached params for performance
-    $cachedStyle = $script:CachedHelperStyles['Error']
-    if (-not $cachedStyle) {
-        $style = [PSColorStyle]::GetProfile("Error")
-        if (-not $style) {
-            $style = [PSColorStyle]::new("Error", "Red", $null)
-            $style.Bold = $true
-        }
-        $script:CachedHelperStyles['Error'] = $style.ToWriteColorParams()
+    begin {
+        # A bare -LogFile name goes in the folder of the script that called this function
+        $callerScriptRoot = $MyInvocation.PSScriptRoot
     }
 
-    # Clone cached params to avoid modification
-    $params = $script:CachedHelperStyles['Error'].Clone()
-    $params['Text'] = $Text
-    if ($NoNewLine) { $params['NoNewLine'] = $true }
-    if ($LogFile) { $params['LogFile'] = $LogFile }
-    if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
+    process {
+        $params = Get-ColorHelperParams -Name 'Error'
+        $params['Text'] = $Text
+        if ($NoNewLine) { $params['NoNewLine'] = $true }
+        if ($LogFile) {
+            $params['LogFile'] = $LogFile
+            $params['LogPath'] = Resolve-ColorLogFolder -ScriptRoot $callerScriptRoot
+        }
+        if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-    Write-ColorEX @params
+        Write-ColorEX @params
 
-    if ($PassThru) {
-        return $Text
+        if ($PassThru) {
+            $Text
+        }
     }
 }
 
 function Write-ColorWarning {
     <#
     .SYNOPSIS
-        Displays warning messages using the Warning style profile (yellow)
+        Writes a warning message with the Warning profile (yellow)
 
     .DESCRIPTION
-        Write-ColorWarning is a convenience wrapper for Write-ColorEX that applies the
-        built-in Warning style profile for consistent warning message formatting.
-
-        The Warning style uses yellow foreground color by default.
-        Style parameters are cached for performance (2-5x faster than creating styles repeatedly).
+        Write-ColorWarning calls Write-ColorEX with the built-in Warning profile, which starts
+        as yellow text. A change to [PSColorStyle]::Profiles['Warning'] applies to the next call.
 
     .PARAMETER Text
-        The warning message text to display. Accepts an array of strings.
-        Can be passed via pipeline.
+        The message. Several strings are written on one line; strings piped in are written one
+        line each.
 
     .PARAMETER NoNewLine
-        Suppresses the newline character at the end of the output.
+        Leaves the line open, so the next output continues it.
 
     .PARAMETER LogFile
-        Path to log file for writing the warning message.
+        Writes the message to this log file as well. A file name alone goes in the folder of the
+        calling script, or the current location when called from the prompt.
 
     .PARAMETER NoConsoleOutput
-        Suppresses console output and only writes to log file.
+        Writes nothing to the host, only to the log file.
 
     .PARAMETER PassThru
-        Returns the text that was written.
+        Writes the text to the pipeline after writing it to the host.
 
     .INPUTS
         System.String[]
@@ -154,7 +142,7 @@ function Write-ColorWarning {
         Author: MarkusMcNugen
         License: MIT
 
-        Uses Warning profile from [PSColorStyle]::Profiles['Warning'].
+        Uses the Warning profile, [PSColorStyle]::Profiles['Warning'].
 
     .LINK
         https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -173,56 +161,58 @@ function Write-ColorWarning {
         [switch]$PassThru
     )
 
-    # Use cached params for performance
-    $cachedStyle = $script:CachedHelperStyles['Warning']
-    if (-not $cachedStyle) {
-        $style = [PSColorStyle]::GetProfile("Warning")
-        if (-not $style) {
-            $style = [PSColorStyle]::new("Warning", "Yellow", $null)
-        }
-        $script:CachedHelperStyles['Warning'] = $style.ToWriteColorParams()
+    begin {
+        # A bare -LogFile name goes in the folder of the script that called this function
+        $callerScriptRoot = $MyInvocation.PSScriptRoot
     }
 
-    # Clone cached params to avoid modification
-    $params = $script:CachedHelperStyles['Warning'].Clone()
-    $params['Text'] = $Text
-    if ($NoNewLine) { $params['NoNewLine'] = $true }
-    if ($LogFile) { $params['LogFile'] = $LogFile }
-    if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
+    process {
+        $params = Get-ColorHelperParams -Name 'Warning'
+        $params['Text'] = $Text
+        if ($NoNewLine) { $params['NoNewLine'] = $true }
+        if ($LogFile) {
+            $params['LogFile'] = $LogFile
+            $params['LogPath'] = Resolve-ColorLogFolder -ScriptRoot $callerScriptRoot
+        }
+        if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-    Write-ColorEX @params
+        Write-ColorEX @params
 
-    if ($PassThru) {
-        return $Text
+        if ($PassThru) {
+            $Text
+        }
     }
 }
 
 function Write-ColorInfo {
     <#
     .SYNOPSIS
-        Displays informational messages using the Info style profile (cyan)
+        Writes an informational message with the Info profile (cyan)
 
     .DESCRIPTION
-        Write-ColorInfo applies the built-in Info style profile for consistent
-        informational message formatting. Uses cyan foreground color by default.
+        Write-ColorInfo calls Write-ColorEX with the built-in Info profile, which starts as cyan text.
+        A change to [PSColorStyle]::Profiles['Info'] applies to the next call.
 
     .PARAMETER Text
-        The informational message text. Accepts string array, supports pipeline input.
+        The message. Several strings are written on one line; strings piped in are written one
+        line each.
 
     .PARAMETER NoNewLine
-        Suppresses newline at end of output.
+        Leaves the line open, so the next output continues it.
 
     .PARAMETER LogFile
-        Log file path for writing the message.
+        Writes the message to this log file as well. A file name alone goes in the folder of the
+        calling script, or the current location when called from the prompt.
 
     .PARAMETER NoConsoleOutput
-        Suppresses console output, writes to log file only.
+        Writes nothing to the host, only to the log file.
 
     .PARAMETER PassThru
-        Returns the written text.
+        Writes the text to the pipeline after writing it to the host.
 
     .INPUTS
         System.String[]
+        Strings piped in are written one line each.
 
     .OUTPUTS
         None (default) or System.String[] (with -PassThru)
@@ -237,7 +227,7 @@ function Write-ColorInfo {
         Author: MarkusMcNugen
         License: MIT
 
-        Uses Info profile from [PSColorStyle]::Profiles['Info'].
+        Uses the Info profile, [PSColorStyle]::Profiles['Info'].
 
     .LINK
         https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -256,56 +246,58 @@ function Write-ColorInfo {
         [switch]$PassThru
     )
 
-    # Use cached params for performance
-    $cachedStyle = $script:CachedHelperStyles['Info']
-    if (-not $cachedStyle) {
-        $style = [PSColorStyle]::GetProfile("Info")
-        if (-not $style) {
-            $style = [PSColorStyle]::new("Info", "Cyan", $null)
-        }
-        $script:CachedHelperStyles['Info'] = $style.ToWriteColorParams()
+    begin {
+        # A bare -LogFile name goes in the folder of the script that called this function
+        $callerScriptRoot = $MyInvocation.PSScriptRoot
     }
 
-    # Clone cached params to avoid modification
-    $params = $script:CachedHelperStyles['Info'].Clone()
-    $params['Text'] = $Text
-    if ($NoNewLine) { $params['NoNewLine'] = $true }
-    if ($LogFile) { $params['LogFile'] = $LogFile }
-    if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
+    process {
+        $params = Get-ColorHelperParams -Name 'Info'
+        $params['Text'] = $Text
+        if ($NoNewLine) { $params['NoNewLine'] = $true }
+        if ($LogFile) {
+            $params['LogFile'] = $LogFile
+            $params['LogPath'] = Resolve-ColorLogFolder -ScriptRoot $callerScriptRoot
+        }
+        if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-    Write-ColorEX @params
+        Write-ColorEX @params
 
-    if ($PassThru) {
-        return $Text
+        if ($PassThru) {
+            $Text
+        }
     }
 }
 
 function Write-ColorSuccess {
     <#
     .SYNOPSIS
-        Displays success messages using the Success style profile (green)
+        Writes a success message with the Success profile (green)
 
     .DESCRIPTION
-        Write-ColorSuccess applies the built-in Success style profile for consistent
-        success message formatting. Uses green foreground color by default.
+        Write-ColorSuccess calls Write-ColorEX with the built-in Success profile, which starts as green text.
+        A change to [PSColorStyle]::Profiles['Success'] applies to the next call.
 
     .PARAMETER Text
-        The success message text. Accepts string array, supports pipeline input.
+        The message. Several strings are written on one line; strings piped in are written one
+        line each.
 
     .PARAMETER NoNewLine
-        Suppresses newline at end of output.
+        Leaves the line open, so the next output continues it.
 
     .PARAMETER LogFile
-        Log file path.
+        Writes the message to this log file as well. A file name alone goes in the folder of the
+        calling script, or the current location when called from the prompt.
 
     .PARAMETER NoConsoleOutput
-        Suppresses console output.
+        Writes nothing to the host, only to the log file.
 
     .PARAMETER PassThru
-        Returns the text.
+        Writes the text to the pipeline after writing it to the host.
 
     .INPUTS
         System.String[]
+        Strings piped in are written one line each.
 
     .OUTPUTS
         None (default) or System.String[] (with -PassThru)
@@ -320,7 +312,7 @@ function Write-ColorSuccess {
         Author: MarkusMcNugen
         License: MIT
 
-        Uses Success profile from [PSColorStyle]::Profiles['Success'].
+        Uses the Success profile, [PSColorStyle]::Profiles['Success'].
 
     .LINK
         https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -339,56 +331,58 @@ function Write-ColorSuccess {
         [switch]$PassThru
     )
 
-    # Use cached params for performance
-    $cachedStyle = $script:CachedHelperStyles['Success']
-    if (-not $cachedStyle) {
-        $style = [PSColorStyle]::GetProfile("Success")
-        if (-not $style) {
-            $style = [PSColorStyle]::new("Success", "Green", $null)
-        }
-        $script:CachedHelperStyles['Success'] = $style.ToWriteColorParams()
+    begin {
+        # A bare -LogFile name goes in the folder of the script that called this function
+        $callerScriptRoot = $MyInvocation.PSScriptRoot
     }
 
-    # Clone cached params to avoid modification
-    $params = $script:CachedHelperStyles['Success'].Clone()
-    $params['Text'] = $Text
-    if ($NoNewLine) { $params['NoNewLine'] = $true }
-    if ($LogFile) { $params['LogFile'] = $LogFile }
-    if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
+    process {
+        $params = Get-ColorHelperParams -Name 'Success'
+        $params['Text'] = $Text
+        if ($NoNewLine) { $params['NoNewLine'] = $true }
+        if ($LogFile) {
+            $params['LogFile'] = $LogFile
+            $params['LogPath'] = Resolve-ColorLogFolder -ScriptRoot $callerScriptRoot
+        }
+        if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-    Write-ColorEX @params
+        Write-ColorEX @params
 
-    if ($PassThru) {
-        return $Text
+        if ($PassThru) {
+            $Text
+        }
     }
 }
 
 function Write-ColorCritical {
     <#
     .SYNOPSIS
-        Displays critical messages using the Critical style profile (white on dark red, bold, blink)
+        Writes a critical message with the Critical profile (white on dark red, bold, blinking)
 
     .DESCRIPTION
-        Write-ColorCritical applies the built-in Critical style profile for high-priority alerts.
-        Uses white foreground on dark red background with bold and blink styling.
+        Write-ColorCritical calls Write-ColorEX with the built-in Critical profile, which starts as bold, blinking white text on dark red. Many terminals do not blink.
+        A change to [PSColorStyle]::Profiles['Critical'] applies to the next call.
 
     .PARAMETER Text
-        The critical message text. Accepts string array, supports pipeline input.
+        The message. Several strings are written on one line; strings piped in are written one
+        line each.
 
     .PARAMETER NoNewLine
-        Suppresses newline.
+        Leaves the line open, so the next output continues it.
 
     .PARAMETER LogFile
-        Log file path.
+        Writes the message to this log file as well. A file name alone goes in the folder of the
+        calling script, or the current location when called from the prompt.
 
     .PARAMETER NoConsoleOutput
-        Suppresses console output.
+        Writes nothing to the host, only to the log file.
 
     .PARAMETER PassThru
-        Returns the text.
+        Writes the text to the pipeline after writing it to the host.
 
     .INPUTS
         System.String[]
+        Strings piped in are written one line each.
 
     .OUTPUTS
         None (default) or System.String[] (with -PassThru)
@@ -403,8 +397,7 @@ function Write-ColorCritical {
         Author: MarkusMcNugen
         License: MIT
 
-        Uses Critical profile from [PSColorStyle]::Profiles['Critical'].
-        Note: Blink may not work in all terminals.
+        Uses the Critical profile, [PSColorStyle]::Profiles['Critical'].
 
     .LINK
         https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -423,58 +416,58 @@ function Write-ColorCritical {
         [switch]$PassThru
     )
 
-    # Use cached params for performance
-    $cachedStyle = $script:CachedHelperStyles['Critical']
-    if (-not $cachedStyle) {
-        $style = [PSColorStyle]::GetProfile("Critical")
-        if (-not $style) {
-            $style = [PSColorStyle]::new("Critical", "White", "DarkRed")
-            $style.Bold = $true
-            $style.Blink = $true
-        }
-        $script:CachedHelperStyles['Critical'] = $style.ToWriteColorParams()
+    begin {
+        # A bare -LogFile name goes in the folder of the script that called this function
+        $callerScriptRoot = $MyInvocation.PSScriptRoot
     }
 
-    # Clone cached params to avoid modification
-    $params = $script:CachedHelperStyles['Critical'].Clone()
-    $params['Text'] = $Text
-    if ($NoNewLine) { $params['NoNewLine'] = $true }
-    if ($LogFile) { $params['LogFile'] = $LogFile }
-    if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
+    process {
+        $params = Get-ColorHelperParams -Name 'Critical'
+        $params['Text'] = $Text
+        if ($NoNewLine) { $params['NoNewLine'] = $true }
+        if ($LogFile) {
+            $params['LogFile'] = $LogFile
+            $params['LogPath'] = Resolve-ColorLogFolder -ScriptRoot $callerScriptRoot
+        }
+        if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-    Write-ColorEX @params
+        Write-ColorEX @params
 
-    if ($PassThru) {
-        return $Text
+        if ($PassThru) {
+            $Text
+        }
     }
 }
 
 function Write-ColorDebug {
     <#
     .SYNOPSIS
-        Displays debug messages using the Debug style profile (dark gray, italic)
+        Writes a debug message with the Debug profile (dark gray, italic)
 
     .DESCRIPTION
-        Write-ColorDebug applies the built-in Debug style profile for debug output.
-        Uses dark gray foreground with italic styling for subtle debug messages.
+        Write-ColorDebug calls Write-ColorEX with the built-in Debug profile, which starts as dark gray italic text. The Windows console host (conhost.exe) does not show italics.
+        A change to [PSColorStyle]::Profiles['Debug'] applies to the next call.
 
     .PARAMETER Text
-        The debug message text. Accepts string array, supports pipeline input.
+        The message. Several strings are written on one line; strings piped in are written one
+        line each.
 
     .PARAMETER NoNewLine
-        Suppresses newline.
+        Leaves the line open, so the next output continues it.
 
     .PARAMETER LogFile
-        Log file path.
+        Writes the message to this log file as well. A file name alone goes in the folder of the
+        calling script, or the current location when called from the prompt.
 
     .PARAMETER NoConsoleOutput
-        Suppresses console output.
+        Writes nothing to the host, only to the log file.
 
     .PARAMETER PassThru
-        Returns the text.
+        Writes the text to the pipeline after writing it to the host.
 
     .INPUTS
         System.String[]
+        Strings piped in are written one line each.
 
     .OUTPUTS
         None (default) or System.String[] (with -PassThru)
@@ -489,8 +482,7 @@ function Write-ColorDebug {
         Author: MarkusMcNugen
         License: MIT
 
-        Uses Debug profile from [PSColorStyle]::Profiles['Debug'].
-        Note: Italic may not work in PowerShell Console (conhost.exe).
+        Uses the Debug profile, [PSColorStyle]::Profiles['Debug'].
 
     .LINK
         https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -509,28 +501,26 @@ function Write-ColorDebug {
         [switch]$PassThru
     )
 
-    # Use cached params for performance
-    $cachedStyle = $script:CachedHelperStyles['Debug']
-    if (-not $cachedStyle) {
-        $style = [PSColorStyle]::GetProfile("Debug")
-        if (-not $style) {
-            $style = [PSColorStyle]::new("Debug", "DarkGray", $null)
-            $style.Italic = $true
-        }
-        $script:CachedHelperStyles['Debug'] = $style.ToWriteColorParams()
+    begin {
+        # A bare -LogFile name goes in the folder of the script that called this function
+        $callerScriptRoot = $MyInvocation.PSScriptRoot
     }
 
-    # Clone cached params to avoid modification
-    $params = $script:CachedHelperStyles['Debug'].Clone()
-    $params['Text'] = $Text
-    if ($NoNewLine) { $params['NoNewLine'] = $true }
-    if ($LogFile) { $params['LogFile'] = $LogFile }
-    if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
+    process {
+        $params = Get-ColorHelperParams -Name 'Debug'
+        $params['Text'] = $Text
+        if ($NoNewLine) { $params['NoNewLine'] = $true }
+        if ($LogFile) {
+            $params['LogFile'] = $LogFile
+            $params['LogPath'] = Resolve-ColorLogFolder -ScriptRoot $callerScriptRoot
+        }
+        if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-    Write-ColorEX @params
+        Write-ColorEX @params
 
-    if ($PassThru) {
-        return $Text
+        if ($PassThru) {
+            $Text
+        }
     }
 }
 

@@ -699,11 +699,10 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
     }
 }
 
-# NEW TESTS: Lighten-RGBColor Function
-Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
+Describe 'Get-LighterRGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
     Context 'Basic Functionality' {
         It 'Lightens RGB color by default factor (1.4)' {
-            $result = Lighten-RGBColor -RGB @(100, 100, 100)
+            $result = Get-LighterRGBColor -RGB @(100, 100, 100)
 
             $result[0] | Should -BeGreaterThan 100
             $result[1] | Should -BeGreaterThan 100
@@ -714,7 +713,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Returns array of 3 integers' {
-            $result = Lighten-RGBColor -RGB @(100, 100, 100)
+            $result = Get-LighterRGBColor -RGB @(100, 100, 100)
 
             $result.Count | Should -Be 3
             $result[0] | Should -BeOfType [int]
@@ -723,7 +722,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Accepts Factor parameter' {
-            $result = Lighten-RGBColor -RGB @(100, 100, 100) -Factor 2.0
+            $result = Get-LighterRGBColor -RGB @(100, 100, 100) -Factor 2.0
 
             # With Factor 2.0: minLighten = 255 * (2.0-1.0) = 255
             # max(255, 200) = 255
@@ -733,7 +732,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Accepts Factor parameter with decimal values' {
-            $result = Lighten-RGBColor -RGB @(50, 50, 50) -Factor 1.5
+            $result = Get-LighterRGBColor -RGB @(50, 50, 50) -Factor 1.5
 
             # With Factor 1.5: minLighten = 255 * (1.5-1.0) = 128
             # max(128, 75) = 128
@@ -745,7 +744,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Clamping to 255 Maximum' {
         It 'Clamps values to 255 maximum' {
-            $result = Lighten-RGBColor -RGB @(200, 200, 200)
+            $result = Get-LighterRGBColor -RGB @(200, 200, 200)
 
             $result[0] | Should -BeLessOrEqual 255
             $result[1] | Should -BeLessOrEqual 255
@@ -753,7 +752,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Clamps individual channels that exceed 255' {
-            $result = Lighten-RGBColor -RGB @(200, 150, 100) -Factor 1.4
+            $result = Get-LighterRGBColor -RGB @(200, 150, 100) -Factor 1.4
 
             $result[0] | Should -Be 255  # 200 * 1.4 = 280, clamped to 255
             $result[1] | Should -Be 210  # 150 * 1.4 = 210
@@ -761,13 +760,13 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Handles already maxed-out values (255)' {
-            $result = Lighten-RGBColor -RGB @(255, 255, 255)
+            $result = Get-LighterRGBColor -RGB @(255, 255, 255)
 
             $result | Should -Be @(255, 255, 255)
         }
 
         It 'Handles large factor that would overflow' {
-            $result = Lighten-RGBColor -RGB @(150, 150, 150) -Factor 3.0
+            $result = Get-LighterRGBColor -RGB @(150, 150, 150) -Factor 3.0
 
             $result[0] | Should -Be 255  # 150 * 3 = 450, clamped
             $result[1] | Should -Be 255
@@ -777,14 +776,14 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Edge Cases' {
         It 'Handles black color (0,0,0)' {
-            $result = Lighten-RGBColor -RGB @(0, 0, 0)
+            $result = Get-LighterRGBColor -RGB @(0, 0, 0)
 
             # With minLighten = 102: max(102, 0) = 102
             $result | Should -Be @(102, 102, 102)  # Lightened to dark gray
         }
 
         It 'Handles pure red' {
-            $result = Lighten-RGBColor -RGB @(255, 0, 0)
+            $result = Get-LighterRGBColor -RGB @(255, 0, 0)
 
             $result[0] | Should -Be 255  # Clamped
             $result[1] | Should -Be 102  # max(102, 0) = 102
@@ -792,7 +791,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Handles pure green' {
-            $result = Lighten-RGBColor -RGB @(0, 255, 0)
+            $result = Get-LighterRGBColor -RGB @(0, 255, 0)
 
             $result[0] | Should -Be 102  # max(102, 0) = 102
             $result[1] | Should -Be 255  # Clamped
@@ -800,7 +799,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Handles pure blue' {
-            $result = Lighten-RGBColor -RGB @(0, 0, 255)
+            $result = Get-LighterRGBColor -RGB @(0, 0, 255)
 
             $result[0] | Should -Be 102  # max(102, 0) = 102
             $result[1] | Should -Be 102  # max(102, 0) = 102
@@ -808,7 +807,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Handles very dark colors' {
-            $result = Lighten-RGBColor -RGB @(10, 10, 10)
+            $result = Get-LighterRGBColor -RGB @(10, 10, 10)
 
             # max(102, 14) = 102
             $result[0] | Should -Be 102
@@ -817,7 +816,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Handles mid-range gray' {
-            $result = Lighten-RGBColor -RGB @(128, 128, 128)
+            $result = Get-LighterRGBColor -RGB @(128, 128, 128)
 
             $result[0] | Should -Be 179  # 128 * 1.4 = 179.2, rounded
             $result[1] | Should -Be 179
@@ -827,14 +826,14 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Rounding Behavior' {
         It 'Rounds fractional values correctly' {
-            $result = Lighten-RGBColor -RGB @(75, 75, 75)
+            $result = Get-LighterRGBColor -RGB @(75, 75, 75)
 
             # 75 * 1.4 = 105
             $result | Should -Be @(105, 105, 105)
         }
 
         It 'Handles rounding up' {
-            $result = Lighten-RGBColor -RGB @(71, 71, 71)
+            $result = Get-LighterRGBColor -RGB @(71, 71, 71)
 
             # 71 * 1.4 = 99.4, rounds to 99
             # max(102, 99) = 102
@@ -842,7 +841,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Handles rounding down' {
-            $result = Lighten-RGBColor -RGB @(70, 70, 70)
+            $result = Get-LighterRGBColor -RGB @(70, 70, 70)
 
             # 70 * 1.4 = 98
             # max(102, 98) = 102
@@ -852,7 +851,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Different Color Values' {
         It 'Lightens dark red' {
-            $result = Lighten-RGBColor -RGB @(100, 0, 0)
+            $result = Get-LighterRGBColor -RGB @(100, 0, 0)
 
             $result[0] | Should -Be 140  # 100 * 1.4 = 140
             $result[1] | Should -Be 102  # max(102, 0) = 102
@@ -860,7 +859,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Lightens orange' {
-            $result = Lighten-RGBColor -RGB @(255, 165, 0)
+            $result = Get-LighterRGBColor -RGB @(255, 165, 0)
 
             $result[0] | Should -Be 255  # Clamped
             $result[1] | Should -Be 231  # 165 * 1.4 = 231
@@ -868,7 +867,7 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Lightens purple' {
-            $result = Lighten-RGBColor -RGB @(128, 0, 128)
+            $result = Get-LighterRGBColor -RGB @(128, 0, 128)
 
             $result[0] | Should -Be 179  # 128 * 1.4 = 179
             $result[1] | Should -Be 102  # max(102, 0) = 102
@@ -877,261 +876,264 @@ Describe 'Lighten-RGBColor' -Tag 'Unit', 'Function', 'ColorConversion' {
     }
 }
 
-# NEW TESTS: Lighten-ColorName Function
-Describe 'Lighten-ColorName' -Tag 'Unit', 'Function', 'ColorConversion' {
+Describe 'Get-LighterColorName' -Tag 'Unit', 'Function', 'ColorConversion' {
     Context 'Dark to Normal Conversion' {
         It 'Converts DarkRed to Red' {
-            $result = Lighten-ColorName -ColorName 'DarkRed'
+            $result = Get-LighterColorName -ColorName 'DarkRed'
             $result | Should -Be 'Red'
         }
 
         It 'Converts DarkBlue to Blue' {
-            $result = Lighten-ColorName -ColorName 'DarkBlue'
+            $result = Get-LighterColorName -ColorName 'DarkBlue'
             $result | Should -Be 'Blue'
         }
 
         It 'Converts DarkGreen to Green' {
-            $result = Lighten-ColorName -ColorName 'DarkGreen'
+            $result = Get-LighterColorName -ColorName 'DarkGreen'
             $result | Should -Be 'Green'
         }
 
         It 'Converts DarkYellow to Yellow' {
-            $result = Lighten-ColorName -ColorName 'DarkYellow'
+            $result = Get-LighterColorName -ColorName 'DarkYellow'
             $result | Should -Be 'Yellow'
         }
 
         It 'Converts DarkCyan to Cyan' {
-            $result = Lighten-ColorName -ColorName 'DarkCyan'
+            $result = Get-LighterColorName -ColorName 'DarkCyan'
             $result | Should -Be 'Cyan'
         }
 
         It 'Converts DarkMagenta to Magenta' {
-            $result = Lighten-ColorName -ColorName 'DarkMagenta'
+            $result = Get-LighterColorName -ColorName 'DarkMagenta'
             $result | Should -Be 'Magenta'
         }
 
         It 'Converts DarkGray to Gray' {
-            $result = Lighten-ColorName -ColorName 'DarkGray'
+            $result = Get-LighterColorName -ColorName 'DarkGray'
             $result | Should -Be 'Gray'
         }
     }
 
     Context 'Normal to Light Conversion' {
         It 'Converts Red to LightRed' {
-            $result = Lighten-ColorName -ColorName 'Red'
+            $result = Get-LighterColorName -ColorName 'Red'
             $result | Should -Be 'LightRed'
         }
 
         It 'Converts Blue to LightBlue' {
-            $result = Lighten-ColorName -ColorName 'Blue'
+            $result = Get-LighterColorName -ColorName 'Blue'
             $result | Should -Be 'LightBlue'
         }
 
         It 'Converts Green to LightGreen' {
-            $result = Lighten-ColorName -ColorName 'Green'
+            $result = Get-LighterColorName -ColorName 'Green'
             $result | Should -Be 'LightGreen'
         }
 
         It 'Converts Yellow to LightYellow' {
-            $result = Lighten-ColorName -ColorName 'Yellow'
+            $result = Get-LighterColorName -ColorName 'Yellow'
             $result | Should -Be 'LightYellow'
         }
 
         It 'Converts Cyan to LightCyan' {
-            $result = Lighten-ColorName -ColorName 'Cyan'
+            $result = Get-LighterColorName -ColorName 'Cyan'
             $result | Should -Be 'LightCyan'
         }
 
         It 'Converts Magenta to LightMagenta' {
-            $result = Lighten-ColorName -ColorName 'Magenta'
+            $result = Get-LighterColorName -ColorName 'Magenta'
             $result | Should -Be 'LightMagenta'
         }
 
         It 'Converts Gray to LightGray' {
-            $result = Lighten-ColorName -ColorName 'Gray'
+            $result = Get-LighterColorName -ColorName 'Gray'
             $result | Should -Be 'LightGray'
         }
     }
 
     Context 'Already Light Colors' {
         It 'Returns LightRed unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightRed'
+            $result = Get-LighterColorName -ColorName 'LightRed'
             $result | Should -Be 'LightRed'
         }
 
         It 'Returns LightBlue unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightBlue'
+            $result = Get-LighterColorName -ColorName 'LightBlue'
             $result | Should -Be 'LightBlue'
         }
 
         It 'Returns LightGreen unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightGreen'
+            $result = Get-LighterColorName -ColorName 'LightGreen'
             $result | Should -Be 'LightGreen'
         }
 
         It 'Returns LightYellow unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightYellow'
+            $result = Get-LighterColorName -ColorName 'LightYellow'
             $result | Should -Be 'LightYellow'
         }
 
         It 'Returns LightCyan unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightCyan'
+            $result = Get-LighterColorName -ColorName 'LightCyan'
             $result | Should -Be 'LightCyan'
         }
 
         It 'Returns LightMagenta unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightMagenta'
+            $result = Get-LighterColorName -ColorName 'LightMagenta'
             $result | Should -Be 'LightMagenta'
         }
 
         It 'Returns LightGray unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightGray'
+            $result = Get-LighterColorName -ColorName 'LightGray'
             $result | Should -Be 'LightGray'
         }
     }
 
     Context 'Extended Color Names' {
         It 'Converts DarkOrange to Orange' {
-            $result = Lighten-ColorName -ColorName 'DarkOrange'
+            $result = Get-LighterColorName -ColorName 'DarkOrange'
             $result | Should -Be 'Orange'
         }
 
         It 'Converts Orange to LightOrange' {
-            $result = Lighten-ColorName -ColorName 'Orange'
+            $result = Get-LighterColorName -ColorName 'Orange'
             $result | Should -Be 'LightOrange'
         }
 
         It 'Converts DarkPurple to Purple' {
-            $result = Lighten-ColorName -ColorName 'DarkPurple'
+            $result = Get-LighterColorName -ColorName 'DarkPurple'
             $result | Should -Be 'Purple'
         }
 
         It 'Converts Purple to LightPurple' {
-            $result = Lighten-ColorName -ColorName 'Purple'
+            $result = Get-LighterColorName -ColorName 'Purple'
             $result | Should -Be 'LightPurple'
         }
 
         It 'Returns LightOrange unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightOrange'
+            $result = Get-LighterColorName -ColorName 'LightOrange'
             $result | Should -Be 'LightOrange'
         }
     }
 
     Context 'Special Colors' {
         It 'Converts Black to LightBlack' {
-            $result = Lighten-ColorName -ColorName 'Black'
+            $result = Get-LighterColorName -ColorName 'Black'
             $result | Should -Be 'LightBlack'
         }
 
-        It 'Converts White to LightWhite' {
-            $result = Lighten-ColorName -ColorName 'White'
-            $result | Should -Be 'LightWhite'
+        It 'Returns White unchanged, since the color table has no LightWhite' {
+            $result = Get-LighterColorName -ColorName 'White'
+            $result | Should -Be 'White'
+        }
+
+        It 'Returns a name the color table does not have unchanged' {
+            $result = Get-LighterColorName -ColorName 'NotAColor'
+            $result | Should -Be 'NotAColor'
         }
 
         It 'Returns LightWhite unchanged' {
-            $result = Lighten-ColorName -ColorName 'LightWhite'
+            $result = Get-LighterColorName -ColorName 'LightWhite'
             $result | Should -Be 'LightWhite'
         }
     }
 
     Context 'Return Value Type' {
         It 'Returns a string' {
-            $result = Lighten-ColorName -ColorName 'Red'
+            $result = Get-LighterColorName -ColorName 'Red'
             $result | Should -BeOfType [string]
         }
 
         It 'Returns non-empty string' {
-            $result = Lighten-ColorName -ColorName 'Blue'
+            $result = Get-LighterColorName -ColorName 'Blue'
             $result | Should -Not -BeNullOrEmpty
         }
     }
 }
 
-# NEW TESTS: Lighten-ANSI8Color Function
-Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
+Describe 'Get-LighterANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
     Context 'Standard Colors (0-15) - Dark to Bright Mapping' {
         It 'Converts Black (0) to Dark Gray (8)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 0
+            $result = Get-LighterANSI8Color -ANSI8Code 0
             $result | Should -Be 8
         }
 
         It 'Converts Dark Red/Maroon (1) to Red (9)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 1
+            $result = Get-LighterANSI8Color -ANSI8Code 1
             $result | Should -Be 9
         }
 
         It 'Converts Dark Green (2) to Green (10)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 2
+            $result = Get-LighterANSI8Color -ANSI8Code 2
             $result | Should -Be 10
         }
 
         It 'Converts Dark Yellow/Olive (3) to Yellow (11)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 3
+            $result = Get-LighterANSI8Color -ANSI8Code 3
             $result | Should -Be 11
         }
 
         It 'Converts Dark Blue/Navy (4) to Blue (12)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 4
+            $result = Get-LighterANSI8Color -ANSI8Code 4
             $result | Should -Be 12
         }
 
         It 'Converts Dark Magenta/Purple (5) to Magenta (13)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 5
+            $result = Get-LighterANSI8Color -ANSI8Code 5
             $result | Should -Be 13
         }
 
         It 'Converts Dark Cyan/Teal (6) to Cyan (14)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 6
+            $result = Get-LighterANSI8Color -ANSI8Code 6
             $result | Should -Be 14
         }
 
         It 'Converts Light Gray (7) to White (15)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 7
+            $result = Get-LighterANSI8Color -ANSI8Code 7
             $result | Should -Be 15
         }
     }
 
     Context 'Standard Colors (0-15) - Bright Colors (Already Bright)' {
         It 'Lightens Dark Gray (8) via RGB conversion' {
-            $result = Lighten-ANSI8Color -ANSI8Code 8
+            $result = Get-LighterANSI8Color -ANSI8Code 8
             # Dark Gray @(128,128,128) * 1.4 = @(179,179,179) -> maps to ANSI8
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterThan 7
         }
 
         It 'Lightens Red (9) via RGB conversion' {
-            $result = Lighten-ANSI8Color -ANSI8Code 9
+            $result = Get-LighterANSI8Color -ANSI8Code 9
             # Red @(255,0,0) * 1.4 = @(255,0,0) clamped -> maps to ANSI8
             $result | Should -BeOfType [int]
         }
 
         It 'Lightens Green (10) via RGB conversion' {
-            $result = Lighten-ANSI8Color -ANSI8Code 10
+            $result = Get-LighterANSI8Color -ANSI8Code 10
             $result | Should -BeOfType [int]
         }
 
         It 'Lightens Yellow (11) via RGB conversion' {
-            $result = Lighten-ANSI8Color -ANSI8Code 11
+            $result = Get-LighterANSI8Color -ANSI8Code 11
             $result | Should -BeOfType [int]
         }
 
         It 'Lightens Blue (12) via RGB conversion' {
-            $result = Lighten-ANSI8Color -ANSI8Code 12
+            $result = Get-LighterANSI8Color -ANSI8Code 12
             $result | Should -BeOfType [int]
         }
 
         It 'Lightens Magenta (13) via RGB conversion' {
-            $result = Lighten-ANSI8Color -ANSI8Code 13
+            $result = Get-LighterANSI8Color -ANSI8Code 13
             $result | Should -BeOfType [int]
         }
 
         It 'Lightens Cyan (14) via RGB conversion' {
-            $result = Lighten-ANSI8Color -ANSI8Code 14
+            $result = Get-LighterANSI8Color -ANSI8Code 14
             $result | Should -BeOfType [int]
         }
 
         It 'Lightens White (15) via RGB conversion (already at max)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 15
+            $result = Get-LighterANSI8Color -ANSI8Code 15
             # White @(255,255,255) * 1.4 = @(255,255,255) clamped -> stays white-ish
             $result | Should -BeOfType [int]
         }
@@ -1139,42 +1141,42 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'RGB Cube (16-231) - Common Colors' {
         It 'Lightens ANSI8 code 196 (bright red in cube)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 196
+            $result = Get-LighterANSI8Color -ANSI8Code 196
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Lightens ANSI8 code 46 (bright green in cube)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 46
+            $result = Get-LighterANSI8Color -ANSI8Code 46
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Lightens ANSI8 code 21 (bright blue in cube)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 21
+            $result = Get-LighterANSI8Color -ANSI8Code 21
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Lightens ANSI8 code 208 (orange in cube)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 208
+            $result = Get-LighterANSI8Color -ANSI8Code 208
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Lightens ANSI8 code 165 (purple in cube)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 165
+            $result = Get-LighterANSI8Color -ANSI8Code 165
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Lightens dark RGB cube color (code 16 - pure black)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 16
+            $result = Get-LighterANSI8Color -ANSI8Code 16
             # Code 16 = RGB @(0,0,0) in cube
             # With min lightening (102,102,102), should map to dark gray
             $result | Should -BeOfType [int]
@@ -1182,7 +1184,7 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
 
         It 'Lightens bright RGB cube color (code 231 - near white)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 231
+            $result = Get-LighterANSI8Color -ANSI8Code 231
             # Code 231 = RGB @(255,255,255) in cube, stays near white
             $result | Should -BeOfType [int]
         }
@@ -1190,34 +1192,34 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Grayscale Ramp (232-255)' {
         It 'Lightens darkest gray (232)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 232
+            $result = Get-LighterANSI8Color -ANSI8Code 232
             # Should move up the grayscale ramp
             $result | Should -BeGreaterThan 232
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Lightens middle gray (243)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 243
+            $result = Get-LighterANSI8Color -ANSI8Code 243
             # Should move up the grayscale ramp
             $result | Should -BeGreaterThan 243
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Lightens gray near white (250)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 250
+            $result = Get-LighterANSI8Color -ANSI8Code 250
             # Should move up but may cap at 255
             $result | Should -BeGreaterOrEqual 250
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Lightens brightest gray (255) - should clamp at 255' {
-            $result = Lighten-ANSI8Color -ANSI8Code 255
+            $result = Get-LighterANSI8Color -ANSI8Code 255
             # Already at max, should stay at 255 or near it
             $result | Should -Be 255
         }
 
         It 'Increments grayscale by approximately 25% (Factor 1.4)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 240
+            $result = Get-LighterANSI8Color -ANSI8Code 240
             # Increment should be roughly 4-6 steps with factor 1.4
             $increment = $result - 240
             $increment | Should -BeGreaterOrEqual 1
@@ -1227,61 +1229,61 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Custom Lightening Factor' {
         It 'Accepts custom factor (2.0 - doubling)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 100 -Factor 2.0
+            $result = Get-LighterANSI8Color -ANSI8Code 100 -Factor 2.0
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Accepts custom factor (1.2 - subtle lightening)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 100 -Factor 1.2
+            $result = Get-LighterANSI8Color -ANSI8Code 100 -Factor 1.2
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Uses default factor 1.4 when not specified' {
-            $result1 = Lighten-ANSI8Color -ANSI8Code 100
-            $result2 = Lighten-ANSI8Color -ANSI8Code 100 -Factor 1.4
+            $result1 = Get-LighterANSI8Color -ANSI8Code 100
+            $result2 = Get-LighterANSI8Color -ANSI8Code 100 -Factor 1.4
             $result1 | Should -Be $result2
         }
     }
 
     Context 'Edge Cases and Validation' {
         It 'Handles minimum ANSI8 code (0)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 0
+            $result = Get-LighterANSI8Color -ANSI8Code 0
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Handles maximum ANSI8 code (255)' {
-            $result = Lighten-ANSI8Color -ANSI8Code 255
+            $result = Get-LighterANSI8Color -ANSI8Code 255
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
         }
 
         It 'Returns integer type for all inputs' {
-            $result = Lighten-ANSI8Color -ANSI8Code 128
+            $result = Get-LighterANSI8Color -ANSI8Code 128
             $result | Should -BeOfType [int]
         }
 
         It 'Does not return negative values' {
-            $result = Lighten-ANSI8Color -ANSI8Code 0
+            $result = Get-LighterANSI8Color -ANSI8Code 0
             $result | Should -BeGreaterOrEqual 0
         }
 
         It 'Does not exceed 255' {
-            $result = Lighten-ANSI8Color -ANSI8Code 255
+            $result = Get-LighterANSI8Color -ANSI8Code 255
             $result | Should -BeLessOrEqual 255
         }
     }
 
     Context 'Algorithm Consistency' {
         It 'Produces consistent results for same input' {
-            $result1 = Lighten-ANSI8Color -ANSI8Code 100
-            $result2 = Lighten-ANSI8Color -ANSI8Code 100
+            $result1 = Get-LighterANSI8Color -ANSI8Code 100
+            $result2 = Get-LighterANSI8Color -ANSI8Code 100
             $result1 | Should -Be $result2
         }
 
@@ -1290,16 +1292,16 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
             # Exception: RGB cube might map to lower codes if nearest color is different
             $testCodes = @(1, 2, 3, 4, 5, 6, 232, 233, 234)
             foreach ($code in $testCodes) {
-                $result = Lighten-ANSI8Color -ANSI8Code $code
+                $result = Get-LighterANSI8Color -ANSI8Code $code
                 # Should return valid ANSI8 code
                 $result | Should -BeGreaterOrEqual 0
                 $result | Should -BeLessOrEqual 255
             }
         }
 
-        It 'Works with Lighten-RGBColor internally for RGB calculations' {
+        It 'Lightens a color cube code through its RGB value' {
             # Test that RGB conversion works correctly
-            $result = Lighten-ANSI8Color -ANSI8Code 196  # Bright red in cube
+            $result = Get-LighterANSI8Color -ANSI8Code 196  # Bright red in cube
             # Should lighten the red color
             $result | Should -BeOfType [int]
         }
@@ -1325,7 +1327,7 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
         It 'Can lighten named color ANSI8 codes from color table' {
             $colors = Get-ColorTableWithRGB
             $redCode = $colors['Red'][3]  # ANSI8 code for Red
-            $result = Lighten-ANSI8Color -ANSI8Code $redCode
+            $result = Get-LighterANSI8Color -ANSI8Code $redCode
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
             $result | Should -BeLessOrEqual 255
@@ -1334,14 +1336,14 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
         It 'Can lighten DarkRed ANSI8 code' {
             $colors = Get-ColorTableWithRGB
             $darkRedCode = $colors['DarkRed'][3]
-            $result = Lighten-ANSI8Color -ANSI8Code $darkRedCode
+            $result = Get-LighterANSI8Color -ANSI8Code $darkRedCode
             $result | Should -BeOfType [int]
         }
 
         It 'Can lighten LightRed ANSI8 code (beyond predefined family)' {
             $colors = Get-ColorTableWithRGB
             $lightRedCode = $colors['LightRed'][3]
-            $result = Lighten-ANSI8Color -ANSI8Code $lightRedCode
+            $result = Get-LighterANSI8Color -ANSI8Code $lightRedCode
             # This is the advantage - can lighten beyond predefined families
             $result | Should -BeOfType [int]
             $result | Should -BeGreaterOrEqual 0
@@ -1352,7 +1354,7 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
     Context 'Performance' {
         It 'Completes lightening in reasonable time (< 10ms for single call)' {
             $elapsed = Measure-Command {
-                $null = Lighten-ANSI8Color -ANSI8Code 128
+                $null = Get-LighterANSI8Color -ANSI8Code 128
             }
             $elapsed.TotalMilliseconds | Should -BeLessThan 10
         }
@@ -1360,10 +1362,29 @@ Describe 'Lighten-ANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
         It 'Handles batch processing efficiently (100 calls < 50ms)' {
             $elapsed = Measure-Command {
                 foreach ($i in 1..100) {
-                    $null = Lighten-ANSI8Color -ANSI8Code 128
+                    $null = Get-LighterANSI8Color -ANSI8Code 128
                 }
             }
             $elapsed.TotalMilliseconds | Should -BeLessThan 50
         }
+    }
+}
+
+Describe 'Lighten-* aliases' -Tag 'Unit', 'Function', 'ColorConversion' {
+    It 'Lighten-RGBColor runs Get-LighterRGBColor' {
+        (Get-Command Lighten-RGBColor).ResolvedCommandName | Should -Be 'Get-LighterRGBColor'
+        Lighten-RGBColor -RGB @(100, 100, 100) | Should -Be (Get-LighterRGBColor -RGB @(100, 100, 100))
+    }
+
+    It 'Lighten-ColorName runs Get-LighterColorName' {
+        (Get-Command Lighten-ColorName).ResolvedCommandName | Should -Be 'Get-LighterColorName'
+        Lighten-ColorName -ColorName 'DarkRed' | Should -Be 'Red'
+    }
+
+    It 'Lighten-ANSI8Color, Lighten-ANSI8 and LA8 run Get-LighterANSI8Color' {
+        foreach ($name in 'Lighten-ANSI8Color', 'Lighten-ANSI8', 'LA8') {
+            (Get-Command $name).ResolvedCommandName | Should -Be 'Get-LighterANSI8Color'
+        }
+        Lighten-ANSI8Color -ANSI8Code 1 | Should -Be 9
     }
 }

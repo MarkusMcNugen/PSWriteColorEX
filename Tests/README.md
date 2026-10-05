@@ -17,7 +17,7 @@ Comprehensive Pester V5 test suite for the PSWriteColorEX PowerShell module.
 
 This test suite provides comprehensive coverage of all PSWriteColorEX functionality using Pester V5, the PowerShell testing framework. The tests are organized into individual files by component for better maintainability and faster targeted testing.
 
-**Total Test Files:** 6 individual test files + 1 master test runner
+**Total Test Files:** 9 individual test files + 1 master test runner
 
 **Test Coverage:**
 - Classes (PSColorStyle)
@@ -32,12 +32,14 @@ This test suite provides comprehensive coverage of all PSWriteColorEX functional
 | Test File | Component | Description |
 |-----------|-----------|-------------|
 | `Tests-PSColorStyle.ps1` | Class | Tests for PSColorStyle class including constructors, properties, methods, and static members |
-| `Tests-TestAnsiSupport.ps1` | Private Function | Tests for ANSI terminal detection across platforms and terminals |
-| `Tests-ConvertColorValue.ps1` | Private Functions | Tests for color conversion utilities (Hex→RGB, RGB→ANSI8, RGB→ANSI4, color table) |
+| `Tests-TestAnsiSupport.ps1` | Public Function | Tests for ANSI terminal detection across platforms and terminals |
+| `Tests-ConvertColorValue.ps1` | Public Functions | Tests for color conversion utilities (Hex→RGB, RGB→ANSI8, RGB→ANSI4, color table) |
 | `Tests-NewGradientColorArray.ps1` | Private Function | Tests for gradient color generation with multi-stop support |
 | `Tests-WriteColorHelpers.ps1` | Public Functions | Tests for helper functions (Error, Warning, Info, Success, Critical, Debug) and style management |
 | `Tests-WriteColorEX.ps1` | Main Function | Comprehensive tests for the main Write-ColorEX function with all features |
 | `Tests-WriteColorEXAutoPad.ps1` | Feature Tests | Tests for AutoPad feature with Unicode support |
+| `Tests-WriteColorEXOutput.ps1` | Main Function | Tests of what Write-ColorEX hands to Write-Host, transcripts, the log file, and module import |
+| `Tests-MeasureDisplayWidth.ps1` | Public Function | Tests for display width of ASCII, CJK, emoji sequences and East Asian Ambiguous characters |
 
 ### Master Test Runner
 
@@ -92,9 +94,11 @@ Invoke-Pester .\Tests-PSColorStyle.ps1 -Output Detailed
 # Run tests for a specific component
 Invoke-Pester .\Tests-WriteColorEX.ps1
 
-# Run with tag filtering
-Invoke-Pester -Path . -Tag 'Unit'
-Invoke-Pester -Path . -Tag 'Function', 'Class'
+# Run with tag filtering (the test files are named Tests-*.ps1, which Invoke-Pester
+# does not find in a folder by itself)
+$files = Get-ChildItem -Path . -Filter 'Tests-*.ps1' | Where-Object Name -ne 'Tests-All.ps1'
+Invoke-Pester -Path $files.FullName -TagFilter 'Unit'
+Invoke-Pester -Path $files.FullName -TagFilter 'Function', 'Class'
 ```
 
 ### Advanced Options
@@ -119,8 +123,8 @@ $result = .\Tests-All.ps1 -PassThru
 
 The test suite is fully integrated with GitHub Actions for continuous integration. The workflow (`.github/workflows/test.yml`) automatically runs on:
 
-- Push to `main`, `master`, or `develop` branches
-- Pull requests targeting these branches
+- Push to any branch
+- Pull requests
 - Manual workflow dispatch
 
 ### Test Matrix
@@ -129,21 +133,18 @@ Tests run across multiple environments:
 
 | Operating System | PowerShell Versions |
 |-----------------|---------------------|
-| Windows (latest) | 5.1, 7.2, 7.4 |
-| Ubuntu (latest) | 7.2, 7.4 |
-| macOS (latest) | 7.2, 7.4 |
+| Windows (latest) | Windows PowerShell 5.1, PowerShell 7 |
+| Ubuntu (latest) | PowerShell 7 |
+| macOS (latest) | PowerShell 7 |
 
-*Note: PowerShell 5.1 only runs on Windows*
+*Note: PowerShell 5.1 only runs on Windows. PowerShell 7 is the version installed on the runner image.*
 
 ### Workflow Features
 
 ✅ **Multi-OS Testing** - Windows, Linux, macOS
-✅ **Multi-Version Testing** - PowerShell 5.1 through 7.4
+✅ **Multi-Version Testing** - Windows PowerShell 5.1 and PowerShell 7
 ✅ **Automatic Pester Installation** - Ensures Pester V5 is available
 ✅ **Test Result Artifacts** - Uploads test results for each OS/version
-✅ **Code Coverage Artifacts** - Generates and uploads coverage reports
-✅ **Test Result Publishing** - Displays results in GitHub Actions UI
-✅ **Codecov Integration** - Optional upload to Codecov (requires token)
 
 ### Viewing Test Results
 
@@ -152,19 +153,6 @@ Tests run across multiple environments:
 3. View the test summary in the workflow summary
 4. Download test result artifacts for detailed analysis
 5. Check individual job logs for verbose output
-
-### Setting Up Codecov (Optional)
-
-To enable Codecov integration:
-
-1. Sign up at [codecov.io](https://codecov.io)
-2. Add your repository
-3. Get your Codecov token
-4. Add `CODECOV_TOKEN` as a repository secret in GitHub
-   - Go to repository Settings → Secrets and variables → Actions
-   - Click "New repository secret"
-   - Name: `CODECOV_TOKEN`
-   - Value: Your Codecov token
 
 ## Test Structure
 
@@ -229,6 +217,12 @@ Tests are tagged for filtering:
 - `ColorConversion` - Color conversion tests
 - `Gradient` - Gradient generation tests
 - `StyleManagement` - Style management tests
+- `AutoPad` - AutoPad tests
+- `DisplayWidth` - Display width tests
+- `Output` - Tests of the calls Write-ColorEX makes to Write-Host
+- `Logging` - Log file tests
+- `Transcript`, `Integration` - Transcript tests, which write to the console
+- `Module` - Module import tests
 
 ## Code Coverage
 
@@ -300,12 +294,17 @@ Aim for **80%+ code coverage** for new code:
 If adding platform-specific functionality:
 
 ```powershell
-# Use -Skip conditionally
-It 'Works on Windows' -Skip:($PSVersionTable.Platform -eq 'Unix') {
+# -Skip is read during discovery, so set the variable in BeforeDiscovery.
+# $IsWindows does not exist in Windows PowerShell 5.1.
+BeforeDiscovery {
+    $onWindows = [System.Environment]::OSVersion.Platform -eq 'Win32NT'
+}
+
+It 'Works on Windows' -Skip:(-not $onWindows) {
     # Windows-specific test
 }
 
-It 'Works on Unix' -Skip:($PSVersionTable.Platform -eq 'Win32NT') {
+It 'Works on Unix' -Skip:$onWindows {
     # Unix-specific test
 }
 ```
@@ -386,4 +385,4 @@ Test-AnsiSupport
 
 ---
 
-**Note:** All tests are designed to run without console output using the `-NoConsoleOutput` parameter to avoid cluttering test results while still validating functionality.
+**Note:** Most tests use the `-NoConsoleOutput` parameter or mock `Write-Host` to avoid cluttering test results. The transcript tests write to the console, since a transcript records what reaches the host.
