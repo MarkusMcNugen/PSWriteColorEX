@@ -19,7 +19,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             try {
                 Write-ColorEX "Test" -AutoPad 10 -LogFile $tempLog -NoConsoleOutput 2>&1 | Out-Null
                 Test-Path $tempLog | Should -Be $true
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content.Length | Should -BeGreaterThan 4  # More than "Test"
             }
             finally {
@@ -39,7 +39,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Server ●" -AutoPad 21 -LogFile $tempLog -NoConsoleOutput 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $displayWidth = Measure-DisplayWidth $content
                 $displayWidth | Should -Be 21
             }
@@ -59,7 +59,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Test" -AutoPad 10 -PadLeft -LogFile $tempLog -NoConsoleOutput 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 # Should start with spaces
                 $content | Should -Match "^\s+Test"
             }
@@ -79,7 +79,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Test" -AutoPad 10 -PadChar '.' -LogFile $tempLog -NoConsoleOutput -NoNewLine 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Be "Test......"
             }
             finally {
@@ -91,7 +91,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Test" -AutoPad 10 -PadChar '-' -PadLeft -LogFile $tempLog -NoConsoleOutput -NoNewLine 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Be "------Test"
             }
             finally {
@@ -103,7 +103,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Field" -AutoPad 12 -PadChar '_' -LogFile $tempLog -NoConsoleOutput -NoNewLine 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Be "Field_______"
             }
             finally {
@@ -118,7 +118,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Very long text here" -AutoPad 5 -LogFile $tempLog -NoConsoleOutput -NoNewLine 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Be "Very long text here"
             }
             finally {
@@ -130,7 +130,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Test" -AutoPad 4 -LogFile $tempLog -NoConsoleOutput -NoNewLine 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Be "Test"
             }
             finally {
@@ -146,7 +146,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Test" -AutoPad 0 -LogFile $tempLog -NoConsoleOutput -NoNewLine 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Be "Test"
             }
             finally {
@@ -169,7 +169,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Hello", " ", "World" -AutoPad 20 -LogFile $tempLog -NoConsoleOutput 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Match "^Hello World"
                 $displayWidth = Measure-DisplayWidth $content
                 $displayWidth | Should -Be 20
@@ -229,7 +229,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Test" -StyleProfile $style -LogFile $tempLog -NoConsoleOutput -NoNewLine 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Be "Test..........."
             }
             finally {
@@ -277,9 +277,9 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
                 Write-ColorEX "Database ●" -AutoPad 21 -LogFile $tempLog2 -NoConsoleOutput 2>&1 | Out-Null
                 Write-ColorEX "Cache" -AutoPad 21 -LogFile $tempLog3 -NoConsoleOutput 2>&1 | Out-Null
 
-                $width1 = Measure-DisplayWidth (Get-Content $tempLog1 -Raw)
-                $width2 = Measure-DisplayWidth (Get-Content $tempLog2 -Raw)
-                $width3 = Measure-DisplayWidth (Get-Content $tempLog3 -Raw)
+                $width1 = Measure-DisplayWidth (Get-Content $tempLog1 -Raw -Encoding UTF8)
+                $width2 = Measure-DisplayWidth (Get-Content $tempLog2 -Raw -Encoding UTF8)
+                $width3 = Measure-DisplayWidth (Get-Content $tempLog3 -Raw -Encoding UTF8)
 
                 $width1 | Should -Be 21
                 $width2 | Should -Be 21
@@ -296,7 +296,7 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
             $tempLog = [System.IO.Path]::GetTempFileName()
             try {
                 Write-ColorEX "Chapter 1" -AutoPad 40 -PadChar '.' -LogFile $tempLog -NoConsoleOutput 2>&1 | Out-Null
-                $content = Get-Content $tempLog -Raw
+                $content = Get-Content $tempLog -Raw -Encoding UTF8
                 $content | Should -Match "^Chapter 1\.+"
                 $displayWidth = Measure-DisplayWidth $content
                 $displayWidth | Should -Be 40
@@ -313,8 +313,8 @@ Describe "Write-ColorEX AutoPad Feature" -Tags 'AutoPad', 'Unit' {
                 Write-ColorEX "1,234" -AutoPad 12 -PadLeft -LogFile $tempLog1 -NoConsoleOutput 2>&1 | Out-Null
                 Write-ColorEX "56" -AutoPad 12 -PadLeft -LogFile $tempLog2 -NoConsoleOutput 2>&1 | Out-Null
 
-                $width1 = Measure-DisplayWidth (Get-Content $tempLog1 -Raw)
-                $width2 = Measure-DisplayWidth (Get-Content $tempLog2 -Raw)
+                $width1 = Measure-DisplayWidth (Get-Content $tempLog1 -Raw -Encoding UTF8)
+                $width2 = Measure-DisplayWidth (Get-Content $tempLog2 -Raw -Encoding UTF8)
 
                 $width1 | Should -Be 12
                 $width2 | Should -Be 12

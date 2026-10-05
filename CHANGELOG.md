@@ -27,9 +27,10 @@ All notable changes to PSWriteColorEX are recorded here. The format follows
   segment was its own call, followed by an empty call to end the line, before.
 - The log file is UTF-8 without a byte order mark by default, and each
   `-Encoding` name writes the same bytes in Windows PowerShell 5.1 and
-  PowerShell 7. A byte order mark goes only into a new or empty file. The
-  default was `unicode` (UTF-16) before, and `utf8` wrote a byte order mark in
-  5.1 only.
+  PowerShell 7. A byte order mark goes only into a new or empty file. In 5.1,
+  `Get-Content -Encoding UTF8` reads such a file's non-ASCII text, or
+  `-Encoding utf8BOM` writes a file that 5.1 reads without it. The default was
+  `unicode` (UTF-16) before, and `utf8` wrote a byte order mark in 5.1 only.
 - Importing the module writes nothing to the host. It wrote the version and
   the detected color support before.
 - The lightening functions are `Get-LighterRGBColor`, `Get-LighterColorName`

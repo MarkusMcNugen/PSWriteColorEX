@@ -1119,12 +1119,12 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
     Context 'AutoPad with Zero-Width Characters' {
         It 'Rejects zero-width character as PadChar with warning' {
             # Zero-width space U+200B
-            { Write-ColorEX -Text 'Test' -AutoPad 20 -PadChar "`u{200B}" -NoConsoleOutput } | Should -Not -Throw
+            { Write-ColorEX -Text 'Test' -AutoPad 20 -PadChar ([char]0x200B) -NoConsoleOutput } | Should -Not -Throw
         }
 
         It 'Falls back to space when PadChar is zero-width' {
             # Should complete without error, using space instead
-            { Write-ColorEX -Text 'Fallback' -AutoPad 25 -PadChar "`u{200B}" -NoConsoleOutput } | Should -Not -Throw
+            { Write-ColorEX -Text 'Fallback' -AutoPad 25 -PadChar ([char]0x200B) -NoConsoleOutput } | Should -Not -Throw
         }
     }
 
