@@ -232,6 +232,35 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
             $script:hostCalls[0].Object | Should -Be 'ab'
         }
 
+        It 'Writes a hex color without -TrueColor in the best mode the terminal has' {
+            Set-TestColorSupport -Support 'TrueColor'
+            Write-ColorEX -Text 'x' -Color '#FF6B35' -WarningVariable warnings1 -WarningAction SilentlyContinue
+            Set-TestColorSupport -Support 'ANSI8'
+            Write-ColorEX -Text 'x' -Color '#FF6B35' -WarningVariable warnings2 -WarningAction SilentlyContinue
+            Set-TestColorSupport -Support 'ANSI4'
+            Write-ColorEX -Text 'x' -Color '#FF6B35' -WarningVariable warnings3 -WarningAction SilentlyContinue
+
+            $script:hostCalls.Object | Should -Be @("$esc[38;2;255;107;53mx$esc[0m", "$esc[38;5;203mx$esc[0m", "$esc[93mx$esc[0m")
+            @($warnings1) + @($warnings2) + @($warnings3) | Should -BeNullOrEmpty
+        }
+
+        It 'Writes the hex color of a style made with New-ColorStyle' {
+            Set-TestColorSupport -Support 'TrueColor'
+            $style = New-ColorStyle -Name 'HexStyle' -ForegroundColor '#FF6B35'
+
+            Write-ColorEX -Text 'x' -StyleProfile $style
+
+            $script:hostCalls[0].Object | Should -Be "$esc[38;2;255;107;53mx$esc[0m"
+        }
+
+        It 'Keeps a console color number next to a hex color' {
+            Set-TestColorSupport -Support 'TrueColor'
+
+            Write-ColorEX -Text 'a', 'b' -Color 12, '#00FF00'
+
+            $script:hostCalls[0].Object | Should -Be "$esc[38;2;255;0;0ma$esc[0m$esc[38;2;0;255;0mb$esc[0m"
+        }
+
         It 'Writes bold as a code where the terminal draws bold fonts' {
             Set-TestColorSupport -Support 'ANSI4' -BoldFonts $true
 
@@ -263,6 +292,12 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
             Write-ColorEX -Text 'x' -Color 196 -ANSI8 -Silent
 
             $script:hostCalls.ForegroundColor | Should -Be @('DarkRed', 'Red')
+        }
+
+        It 'Writes a hex color as the nearest console color' {
+            Write-ColorEX -Text 'x' -Color '#FF6B35'
+
+            $script:hostCalls[0].ForegroundColor | Should -Be 'Yellow'
         }
 
         It 'Writes styles as plain text' {

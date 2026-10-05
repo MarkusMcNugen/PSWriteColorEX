@@ -182,7 +182,7 @@ Fixed:
 - Every string piped to Write-ColorEX or a Write-Color* helper is written; only the last one was before.
 - -LogFile given as a file name alone goes in the calling script's folder, or the current location at the prompt; it went in the module's own folder before. A missing log folder is created.
 - -BlankLine works with output redirected, -BackGroundColor 'None' works, -Gradient alone draws the gradient, -Color 0 is black, and text without -Color takes the terminal's default color.
-- Color names such as Orange keep working after a call without a color mode, and -Bold keeps White text white.
+- Hex colors work without -TrueColor, color names such as Orange keep working after a call without a color mode, and -Bold keeps White text white.
 - -ANSI8 color numbers take the nearest of the 16 colors on a 16-color terminal, and -ANSI4 and -ANSI8 numbers the nearest console color where the terminal has no ANSI support.
 - [PSColorStyle] can be used after Import-Module, and a change to a style profile applies to its next use.
 

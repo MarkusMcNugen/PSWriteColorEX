@@ -38,9 +38,13 @@
     The foreground color of each text segment, in any of these forms:
 
     - Color names: 'Red', 'Blue', 'DarkGreen', 'Cyan', and the other names of 44 color families, most with Dark and Light variants (Get-ColorTableWithRGB lists them)
-    - Hex codes: '#FF0000', '0xFF0000', 'FF0000' (with -TrueColor)
-    - RGB arrays: @(255, 0, 0) (with -TrueColor)
+    - Hex codes: '#FF0000', '0xFF0000'
+    - RGB arrays: @(255, 0, 0) with -TrueColor, or one RGB array per segment, @(@(255, 0, 0), @(0, 0, 255))
     - ANSI color numbers: 0-255 with -ANSI8, the ANSI4 codes with -ANSI4, and 0-15 (System.ConsoleColor) otherwise
+
+    A hex code or an RGB array is a TrueColor color. Without -TrueColor, -ANSI8 or -ANSI4, it is
+    written in the best mode the terminal has: TrueColor, or the nearest 256-color, 16-color or
+    console color.
 
     With fewer colors than text segments the colors repeat; extra colors are ignored.
     Without -Color the text takes the terminal's default color.
@@ -83,8 +87,8 @@
     Alias: A8
 
     .PARAMETER ANSI24
-    Uses 24-bit TrueColor (RGB).
-    Hex codes and RGB arrays need it. Without terminal support it falls back to ANSI8 or ANSI4.
+    Uses 24-bit TrueColor (RGB). Three integers for one segment, @(255, 0, 0), are one RGB color
+    only with it. Without terminal support it falls back to ANSI8 or ANSI4, with a warning.
 
     Aliases: A24, TrueColor, TC
 
@@ -560,6 +564,21 @@
             return Convert-RGBToANSI4 -RGB $rgb
         }
 
+        # Console color numbers 0-15 as their names, so they keep their meaning in another color mode
+        function ConvertConsoleColorNumber {
+            param([object[]]$Values)
+
+            $converted = [System.Collections.Generic.List[object]]::new()
+            foreach ($value in $Values) {
+                if ($value -is [int] -and $value -ge 0 -and $value -le 15) {
+                    $converted.Add(([System.ConsoleColor]$value).ToString())
+                } else {
+                    $converted.Add($value)
+                }
+            }
+            return ,$converted.ToArray()
+        }
+
         # The console color for a processed color value. An unknown name or value is Gray for
         # text and Black for a background.
         function Get-NativeColorName {
@@ -731,6 +750,24 @@
             }
         }
 
+        # A hex code or an RGB array asks for TrueColor. Without a color mode given, it takes the
+        # best mode the terminal has, without the warnings an explicit -TrueColor gives.
+        $impliedTrueColor = $false
+        if (-not ($ANSI4 -or $ANSI8 -or $ANSI24)) {
+            foreach ($value in @($Color) + @($BackGroundColor)) {
+                if (($value -is [string] -and $value -match '^#|^0x') -or $value -is [array]) {
+                    $impliedTrueColor = $true
+                    break
+                }
+            }
+            if ($impliedTrueColor) {
+                Write-DebugLog "Hex or RGB color without a color mode: using TrueColor"
+                $ANSI24 = $true
+                $Color = ConvertConsoleColorNumber -Values $Color
+                $BackGroundColor = ConvertConsoleColorNumber -Values $BackGroundColor
+            }
+        }
+
         # The color mode asked for, before any fallback, which the color checks read
         $OriginalTrueColor = [bool]$ANSI24
         $OriginalANSI8 = [bool]$ANSI8
@@ -858,12 +895,16 @@
                 Write-DebugLog "ANSI support disabled - using native PowerShell colors"
             } ElseIf ($ANSI24 -and $ANSIColorSupport -ne 'TrueColor') {
                 if ($ANSIColorSupport -eq 'ANSI8') {
-                    Write-ColorWarningMsg "TrueColor not supported by terminal. Falling back to ANSI8 (256 colors)."
+                    if (-not $impliedTrueColor) {
+                        Write-ColorWarningMsg "TrueColor not supported by terminal. Falling back to ANSI8 (256 colors)."
+                    }
                     Write-DebugLog "Downgrading from TrueColor to ANSI8"
                     $ANSI24 = $False
                     $ANSI8 = $True
                 } else {
-                    Write-ColorWarningMsg "TrueColor not supported by terminal. Falling back to ANSI4 (16 colors)."
+                    if (-not $impliedTrueColor) {
+                        Write-ColorWarningMsg "TrueColor not supported by terminal. Falling back to ANSI4 (16 colors)."
+                    }
                     Write-DebugLog "Downgrading from TrueColor to ANSI4"
                     $ANSI24 = $False
                     $ANSI4 = $True
@@ -989,7 +1030,7 @@
                                 Write-ColorWarningMsg "RGB values out of range (0-255). Original: @($($currentColor[0]),$($currentColor[1]),$($currentColor[2])). Clamped to: @($r,$g,$b)"
                                 $currentColor = @($r, $g, $b)
                             }
-                        } elseif ($currentColor -is [int]) {
+                        } elseif ($currentColor -is [int] -and -not $impliedTrueColor) {
                             Write-ColorWarningMsg "TrueColor mode expects RGB array @(R,G,B) or hex color, but received integer code $currentColor. Use -ANSI8 or -ANSI4 for integer codes."
                             Write-DebugLog "Type mismatch: integer $currentColor provided for TrueColor"
                         }
@@ -1150,7 +1191,7 @@
                                 Write-ColorWarningMsg "Background RGB values out of range (0-255). Original: @($($currentColor[0]),$($currentColor[1]),$($currentColor[2])). Clamped to: @($r,$g,$b)"
                                 $currentColor = @($r, $g, $b)
                             }
-                        } elseif ($currentColor -is [int]) {
+                        } elseif ($currentColor -is [int] -and -not $impliedTrueColor) {
                             Write-ColorWarningMsg "TrueColor mode expects RGB array @(R,G,B) or hex color for background, but received integer code $currentColor. Use -ANSI8 or -ANSI4 for integer codes."
                             Write-DebugLog "Type mismatch: integer $currentColor provided for TrueColor background"
                         }

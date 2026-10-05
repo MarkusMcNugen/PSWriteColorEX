@@ -91,6 +91,10 @@ All notable changes to PSWriteColorEX are recorded here. The format follows
   keeps the text white. `Lighten-ColorName` turned `White` into `LightWhite`,
   which the color table does not have, and the text lost its color before.
   `Get-LighterColorName` answers only names the color table has.
+- A hex code or an RGB array in `-Color` or `-BackGroundColor` without
+  `-TrueColor`, `-ANSI8` or `-ANSI4` is written in the best mode the terminal
+  has, as for a style made with `New-ColorStyle -ForegroundColor '#FF6B35'`.
+  It wrote no color before.
 - An `-ANSI8` color number on a terminal with 16 colors takes the nearest of
   the 16 colors. It went out as a 16-color code before, so 9 struck the text
   through and 208 did nothing.
@@ -104,6 +108,9 @@ All notable changes to PSWriteColorEX are recorded here. The format follows
   examples use it. It needed `using module PSWriteColorEX` before.
 - The `Write-Color*` helpers use their profile in `[PSColorStyle]::Profiles`
   as it is at each call. They used the profile as it was at import before.
+- `PSColorStyle.Clone()` copies the `Gradient` and `Style` arrays and RGB
+  colors, so changing an element of the copy leaves the original alone. The
+  copy shared those arrays with the original before.
 - The help examples of `Convert-RGBToANSI4` and the lightening functions
   give the values the functions return, and the help counts 129 color names
   in 44 families. It claimed 70+ families before.

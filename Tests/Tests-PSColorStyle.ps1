@@ -577,5 +577,20 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
             # Bold = $false leaves the key out
             $clone.ToWriteColorParams().ContainsKey('Bold') | Should -Be $false
         }
+
+        It 'A clone has its own arrays' {
+            $original = [PSColorStyle]::new('Original', @(255, 0, 0), $null)
+            $original.Gradient = @('Red', 'Blue')
+            $original.Style = @('Bold', 'Italic')
+
+            $clone = $original.Clone()
+            $clone.Gradient[0] = 'Green'
+            $clone.Style[0] = 'Underline'
+            $clone.ForegroundColor[0] = 0
+
+            $original.Gradient[0] | Should -Be 'Red'
+            $original.Style[0] | Should -Be 'Bold'
+            $original.ForegroundColor[0] | Should -Be 255
+        }
     }
 }

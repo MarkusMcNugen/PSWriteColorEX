@@ -209,11 +209,12 @@ class PSColorStyle {
     hidden [void]InvalidateCache() {
     }
 
-    # A copy named with _Copy, property by property, which Windows PowerShell 5.1 classes need
+    # A copy named with _Copy, property by property, which Windows PowerShell 5.1 classes need.
+    # Arrays are copied as well, so changing an element of the copy leaves the original alone.
     [PSColorStyle]Clone() {
-        $newStyle = [PSColorStyle]::new($this.Name + "_Copy", $this.ForegroundColor, $this.BackgroundColor)
-        $newStyle.Gradient = $this.Gradient
-        $newStyle.Style = $this.Style
+        $newStyle = [PSColorStyle]::new($this.Name + "_Copy", [PSColorStyle]::CopyValue($this.ForegroundColor), [PSColorStyle]::CopyValue($this.BackgroundColor))
+        $newStyle.Gradient = [PSColorStyle]::CopyValue($this.Gradient)
+        $newStyle.Style = [PSColorStyle]::CopyValue($this.Style)
         $newStyle.StartTab = $this.StartTab
         $newStyle.StartSpaces = $this.StartSpaces
         $newStyle.LinesBefore = $this.LinesBefore
@@ -233,5 +234,19 @@ class PSColorStyle {
         $newStyle.PadLeft = $this.PadLeft
         $newStyle.PadChar = $this.PadChar
         return $newStyle
+    }
+
+    # A copy of an array, and of the arrays in it such as RGB colors; any other value as it is
+    hidden static [object]CopyValue([object]$Value) {
+        if ($Value -isnot [array]) {
+            return $Value
+        }
+        $copy = $Value.Clone()
+        for ($i = 0; $i -lt $copy.Length; $i++) {
+            if ($copy[$i] -is [array]) {
+                $copy[$i] = $copy[$i].Clone()
+            }
+        }
+        return $copy
     }
 }
