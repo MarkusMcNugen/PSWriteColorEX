@@ -80,6 +80,10 @@ All notable changes to PSWriteColorEX are recorded here. The format follows
 - `-Gradient` without `-TrueColor` or `-ANSI8` writes the gradient in the
   best mode the terminal supports. It wrote plain text and a stray reset code
   before.
+- A gradient steps by the characters a terminal draws, so an emoji, an emoji
+  sequence or a letter with an accent takes one color. A gradient put a color
+  code between the two halves of a surrogate pair before, which broke emoji
+  outside the Basic Multilingual Plane into two replacement characters.
 - `-BlankLine` with output redirected, where the console width is unknown,
   writes an empty line. It stopped with an error before.
 - Color names outside the 16 console colors, such as `Orange` and
@@ -102,6 +106,9 @@ All notable changes to PSWriteColorEX are recorded here. The format follows
   the nearest console color. They were Gray before, and `-ANSI8 1` was
   DarkBlue.
 - `-Color 0` and `-BackGroundColor 0` write black. They were ignored before.
+- `-Style 'Bold'`, one style alone, styles the first segment, as an array of
+  one does. It styled nothing before, since PowerShell read the string's
+  letters as the styles.
 - `Convert-RGBToANSI8` clamps values outside 0-255. `@(300, 0, 0)` answered
   16 (black) before.
 - `[PSColorStyle]` resolves after `Import-Module PSWriteColorEX`, as the

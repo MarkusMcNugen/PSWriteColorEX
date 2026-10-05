@@ -32,6 +32,21 @@ BeforeDiscovery {
         @{ Name = 'flag'; CodePoints = @(0x1F1FA, 0x1F1F8); Width = 2; WideWidth = 2 }
         @{ Name = 'text after an emoji sequence'; CodePoints = @(0x1F44D, 0x1F3FD, 0x20, 0x6F, 0x6B); Width = 5; WideWidth = 5 }
     )
+
+    # Each case: a name, the code points of the text, and the code points of each character a
+    # terminal draws from it
+    $splitCases = @(
+        @{ Name = 'letters'; CodePoints = @(0x61, 0x62); Characters = @(@(0x61), @(0x62)) }
+        @{ Name = 'an emoji outside the BMP'; CodePoints = @(0x61, 0x1F600, 0x62); Characters = @(@(0x61), @(0x1F600), @(0x62)) }
+        @{ Name = 'a letter and a combining accent'; CodePoints = @(0x65, 0x301, 0x78); Characters = @(@(0x65, 0x301), @(0x78)) }
+        @{ Name = 'a tab between letters'; CodePoints = @(0x61, 0x9, 0x62); Characters = @(@(0x61), @(0x9), @(0x62)) }
+        @{ Name = 'a warning sign with U+FE0F'; CodePoints = @(0x26A0, 0xFE0F, 0x21); Characters = @(@(0x26A0, 0xFE0F), @(0x21)) }
+        @{ Name = 'a thumbs up with skin tone'; CodePoints = @(0x1F44D, 0x1F3FD, 0x20, 0x6F, 0x6B); Characters = @(@(0x1F44D, 0x1F3FD), @(0x20), @(0x6F), @(0x6B)) }
+        @{ Name = 'a family joined by U+200D'; CodePoints = @(0x1F468, 0x200D, 0x1F469, 0x200D, 0x1F467); Characters = @(, @(0x1F468, 0x200D, 0x1F469, 0x200D, 0x1F467)) }
+        @{ Name = 'a heart on fire'; CodePoints = @(0x2764, 0xFE0F, 0x200D, 0x1F525); Characters = @(, @(0x2764, 0xFE0F, 0x200D, 0x1F525)) }
+        @{ Name = 'two flags'; CodePoints = @(0x1F1FA, 0x1F1F8, 0x1F1EC, 0x1F1E7); Characters = @(@(0x1F1FA, 0x1F1F8), @(0x1F1EC, 0x1F1E7)) }
+        @{ Name = 'CJK characters'; CodePoints = @(0x4E16, 0x754C); Characters = @(@(0x4E16), @(0x754C)) }
+    )
 }
 
 BeforeAll {
@@ -90,5 +105,25 @@ Describe 'Measure-DisplayWidth' -Tag 'Unit', 'Function', 'DisplayWidth' {
         It 'Get-DisplayWidth runs Measure-DisplayWidth' {
             (Get-Command Get-DisplayWidth).ResolvedCommandName | Should -Be 'Measure-DisplayWidth'
         }
+    }
+}
+
+Describe 'Split-DisplayCharacter' -Tag 'Unit', 'Function', 'DisplayWidth' {
+
+    It 'Splits <Name> into the characters a terminal draws' -TestCases $splitCases {
+        $text = ConvertTo-TestString $CodePoints
+        $expected = @(foreach ($character in $Characters) { ConvertTo-TestString $character })
+
+        $result = @(& (Get-Module PSWriteColorEX) { param($t) Split-DisplayCharacter -Text $t } $text)
+
+        $result.Count | Should -Be $expected.Count
+        for ($i = 0; $i -lt $expected.Count; $i++) {
+            $result[$i] | Should -BeExactly $expected[$i]
+        }
+    }
+
+    It 'Answers nothing for an empty string' {
+        $result = @(& (Get-Module PSWriteColorEX) { Split-DisplayCharacter -Text '' })
+        $result.Count | Should -Be 0
     }
 }

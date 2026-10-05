@@ -93,8 +93,9 @@
     Aliases: A24, TrueColor, TC
 
     .PARAMETER Style
-    Styles for each text segment: one style, an array with one style per segment, or nested arrays
-    for several styles on one segment.
+    Styles for the text segments in order: an array with one style per segment, or with an array
+    of styles for a segment that takes several. One style alone styles the first segment, as an
+    array of one does. -Bold and the other style switches style every segment.
 
     Valid styles: Bold, Faint, Italic, Underline, Blink, CrossedOut, DoubleUnderline, Overline
 
@@ -102,6 +103,7 @@
 
     Example: -Style 'Bold'
     Example: -Style @('Bold', 'Italic', 'Underline')
+    Example: -Style @(@('Bold', 'Underline'), 'Italic')
 
     .PARAMETER StyleProfile
     A PSColorStyle object holding colors, styles and layout settings.
@@ -750,6 +752,12 @@
             }
         }
 
+        # One style alone is the first segment's, as an array of one; indexing the string itself
+        # would read its letters
+        if ($Style -is [string]) {
+            $Style = @($Style)
+        }
+
         # A hex code or an RGB array asks for TrueColor. Without a color mode given, it takes the
         # best mode the terminal has, without the warnings an explicit -TrueColor gives.
         $impliedTrueColor = $false
@@ -981,9 +989,14 @@
             If ($Gradient -and $Gradient.Count -ge 2) {
                 Write-DebugLog "Calculating gradient for text"
 
+                # Each segment split into the characters a terminal draws, so no color code lands
+                # inside an emoji or between a letter and its accent
+                $gradientCharacters = [System.Collections.Generic.List[object]]::new()
                 $totalChars = 0
                 foreach ($segment in $Text) {
-                    $totalChars += $segment.Length
+                    $characters = @(Split-DisplayCharacter -Text $segment)
+                    $gradientCharacters.Add($characters)
+                    $totalChars += $characters.Count
                 }
                 Write-DebugLog "Total characters for gradient: $totalChars"
 
@@ -1376,10 +1389,10 @@
                             [void]$builder.Append((Get-ColorSequence -Value $explicitColor -Background $false))
                             [void]$builder.Append($segment)
                             [void]$builder.Append($ANSI['Reset'])
-                            $charIndex += $segment.Length
+                            $charIndex += $gradientCharacters[$segmentIdx].Count
                         } else {
                             [void]$builder.Append((Get-StyleSequence -Index $segmentIdx))
-                            foreach ($char in $segment.ToCharArray()) {
+                            foreach ($char in $gradientCharacters[$segmentIdx]) {
                                 $gradientColor = $gradientArray[$charIndex]
                                 If ($ANSI24 -and $gradientColor -is [array] -and $gradientColor.Count -eq 3) {
                                     [void]$builder.Append("$esc[38;2;$($gradientColor[0]);$($gradientColor[1]);$($gradientColor[2])m")

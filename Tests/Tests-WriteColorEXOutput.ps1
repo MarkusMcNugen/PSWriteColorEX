@@ -223,6 +223,29 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
             Remove-EscapeCode $script:hostCalls[0].Object | Should -Be 'ab'
         }
 
+        It 'Keeps an emoji whole in a gradient' {
+            Set-TestColorSupport -Support 'TrueColor'
+            $emoji = [char]::ConvertFromUtf32(0x1F600)
+
+            Write-ColorEX -Text "a$($emoji)b" -Gradient Red, Blue
+
+            $line = $script:hostCalls[0].Object
+            ([regex]::Matches($line, [regex]::Escape("$esc[38;2;"))).Count | Should -Be 3
+            $line | Should -Match ([regex]::Escape("m$($emoji)$esc"))
+            Remove-EscapeCode $line | Should -Be "a$($emoji)b"
+        }
+
+        It 'Gives an emoji sequence one gradient step' {
+            Set-TestColorSupport -Support 'TrueColor'
+            $family = -join (@(0x1F468, 0x200D, 0x1F469, 0x200D, 0x1F467) | ForEach-Object { [char]::ConvertFromUtf32($_) })
+
+            Write-ColorEX -Text "$($family)x" -Gradient Red, Blue
+
+            $line = $script:hostCalls[0].Object
+            ([regex]::Matches($line, [regex]::Escape("$esc[38;2;"))).Count | Should -Be 2
+            $line | Should -Match ([regex]::Escape("m$($family)$esc"))
+        }
+
         It 'Turns a gradient off with a warning on a 16-color terminal' {
             Set-TestColorSupport -Support 'ANSI4'
 
@@ -259,6 +282,22 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
             Write-ColorEX -Text 'a', 'b' -Color 12, '#00FF00'
 
             $script:hostCalls[0].Object | Should -Be "$esc[38;2;255;0;0ma$esc[0m$esc[38;2;0;255;0mb$esc[0m"
+        }
+
+        It 'Styles the first segment with one style given alone' {
+            Set-TestColorSupport -Support 'ANSI4'
+
+            Write-ColorEX -Text 'x', 'y' -Style 'Bold'
+
+            $script:hostCalls[0].Object | Should -Be "$esc[1mx$esc[0my"
+        }
+
+        It 'Styles each segment with its entry in -Style' {
+            Set-TestColorSupport -Support 'ANSI4'
+
+            Write-ColorEX -Text 'x', 'y' -Style @(@('Bold', 'Underline'), 'Italic')
+
+            $script:hostCalls[0].Object | Should -Be "$esc[1m$esc[4mx$esc[0m$esc[3my$esc[0m"
         }
 
         It 'Writes bold as a code where the terminal draws bold fonts' {

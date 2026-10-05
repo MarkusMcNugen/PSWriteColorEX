@@ -208,6 +208,121 @@ function Test-DisplayWidthSet {
     return $false
 }
 
+function Split-DisplayCharacter {
+    # The text split into the characters a terminal draws: a code point with the combining marks,
+    # variation selectors, skin tone, emoji joined by U+200D, or second flag letter after it, by
+    # the rules Measure-DisplayWidth counts with. A gradient gives each one color, since a color
+    # code inside one splits it, and between the two halves of a surrogate pair breaks it.
+    param([string]$Text)
+
+    if ([string]::IsNullOrEmpty($Text)) {
+        return
+    }
+
+    $index = $script:DisplayWidthIndex
+    $starts = $index.Starts
+    $ends = $index.Ends
+    $classes = $index.Classes
+    $last = $starts.Length - 1
+    $table = $script:DisplayWidthTable
+
+    $characters = [System.Collections.Generic.List[string]]::new()
+    # Where the character being built starts
+    $start = 0
+    # The code point before this one and the cells it added, for the sequence rules
+    $previous = -1
+    $previousWidth = 0
+    # Whether the character before a U+200D was an emoji, so the next emoji joins it
+    $joining = $false
+    # Whether the character being built is one regional indicator, which the next one pairs with
+    $flagOpen = $false
+
+    $i = 0
+    $length = $Text.Length
+    while ($i -lt $length) {
+        $at = $i
+        $cp = [int]$Text[$i]
+        $i++
+
+        if ($cp -ge 0xD800 -and $cp -le 0xDBFF -and $i -lt $length) {
+            $low = [int]$Text[$i]
+            if ($low -ge 0xDC00 -and $low -le 0xDFFF) {
+                $cp = 0x10000 + (($cp - 0xD800) -shl 10) + ($low - 0xDC00)
+                $i++
+            }
+        }
+
+        $joins = $true
+        $isFlag = $false
+        if ($cp -ge 0x20 -and $cp -le 0x7E) {
+            $joins = $false
+            $previous = $cp
+            $previousWidth = 1
+            $joining = $false
+        } elseif ($cp -eq 0xFE0F) {
+            if ($previousWidth -eq 1 -and (Test-DisplayWidthSet $table.Vs16Base $previous)) {
+                $previousWidth = 2
+            }
+        } elseif ($cp -eq 0xFE0E) {
+            if ($previousWidth -eq 2 -and (Test-DisplayWidthSet $table.Vs15Base $previous)) {
+                $previousWidth = 1
+            }
+        } elseif ($cp -eq 0x200D) {
+            $joining = $previousWidth -eq 2 -and (Test-DisplayWidthSet $table.Pictographic $previous)
+        } elseif ($cp -ge 0x1F3FB -and $cp -le 0x1F3FF -and $previousWidth -eq 2 -and (Test-DisplayWidthSet $table.ModifierBase $previous)) {
+            $joining = $false
+        } elseif ($joining -and (Test-DisplayWidthSet $table.Pictographic $cp)) {
+            $joining = $false
+            $previous = $cp
+            $previousWidth = 2
+        } else {
+            $joining = $false
+
+            $class = 0
+            $lo = 0
+            $hi = $last
+            while ($lo -le $hi) {
+                $mid = ($lo + $hi) -shr 1
+                if ($cp -lt $starts[$mid]) {
+                    $hi = $mid - 1
+                } elseif ($cp -gt $ends[$mid]) {
+                    $lo = $mid + 1
+                } else {
+                    $class = $classes[$mid]
+                    break
+                }
+            }
+
+            # A character of no width belongs to the one before it; a control character is one
+            # of its own
+            if ($cp -ge 0x1F1E6 -and $cp -le 0x1F1FF) {
+                $isFlag = -not $flagOpen
+                $joins = $flagOpen
+            } elseif ($class -ne 1) {
+                $joins = $false
+            }
+            $previous = $cp
+            $previousWidth = switch ($class) {
+                1 { 0 }
+                2 { 2 }
+                3 { 3 }
+                4 { 1 }
+                5 { 0 }
+                default { 1 }
+            }
+        }
+        $flagOpen = $isFlag
+
+        if (-not $joins -and $at -gt $start) {
+            $characters.Add($Text.Substring($start, $at - $start))
+            $start = $at
+        }
+    }
+    $characters.Add($Text.Substring($start))
+
+    return $characters.ToArray()
+}
+
 function Initialize-DisplayWidthIndex {
     # One list of ranges sorted by start, each with its class: 1 zero, 2 wide, 3 three cells,
     # 4 ambiguous, 5 control. The classes do not overlap, so one search finds a code point's.
