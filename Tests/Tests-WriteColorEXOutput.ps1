@@ -300,6 +300,22 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
             $script:hostCalls[0].Object | Should -Be "$esc[1m$esc[4mx$esc[0m$esc[3my$esc[0m"
         }
 
+        It 'Writes a color code for each character of an ANSI8 gradient through grays' {
+            Set-TestColorSupport -Support 'ANSI8'
+
+            Write-ColorEX -Text 'abc' -Gradient '#202020', '#E0E0E0' -ANSI8
+
+            $script:hostCalls[0].Object | Should -Be "$esc[38;5;234ma$esc[38;5;244mb$esc[38;5;254mc$esc[0m"
+        }
+
+        It 'Writes a lighter gray for -Bold where the terminal shows bold as brighter colors' {
+            Set-TestColorSupport -Support 'ANSI8' -BoldFonts $false
+
+            Write-ColorEX -Text 'x' -Color 240 -ANSI8 -Bold
+
+            $script:hostCalls[0].Object | Should -Be "$esc[1m$esc[38;5;244mx$esc[0m"
+        }
+
         It 'Writes bold as a code where the terminal draws bold fonts' {
             Set-TestColorSupport -Support 'ANSI4' -BoldFonts $true
 

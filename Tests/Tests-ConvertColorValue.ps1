@@ -191,6 +191,13 @@ Describe 'Convert-RGBToANSI8' -Tag 'Unit', 'Function', 'ColorConversion' {
             $result | Should -BeLessOrEqual 255
         }
 
+        It 'Answers an integer for a gray' {
+            $result = Convert-RGBToANSI8 @(128, 128, 128)
+
+            $result | Should -BeOfType [int]
+            $result | Should -Be 244
+        }
+
         It 'Detects near-gray values as grayscale' {
             # RGB values within 10 of each other should be grayscale
             $result = Convert-RGBToANSI8 @(100, 105, 100)
@@ -1216,6 +1223,13 @@ Describe 'Get-LighterANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
             $result = Get-LighterANSI8Color -ANSI8Code 255
             # Already at max, should stay at 255 or near it
             $result | Should -Be 255
+        }
+
+        It 'Answers an integer for a gray' {
+            $result = Get-LighterANSI8Color -ANSI8Code 240
+
+            $result | Should -BeOfType [int]
+            $result | Should -Be 244
         }
 
         It 'Increments grayscale by approximately 25% (Factor 1.4)' {
