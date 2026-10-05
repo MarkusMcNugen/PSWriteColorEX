@@ -47,8 +47,8 @@ Set-ColorDefault
 - **🔧 Two Configuration Methods** - Use style object or individual properties
 - **💾 Session Persistence** - Default remains active for entire session
 - **🔄 Dynamic Updates** - Change default at any time during execution
-- **🎭 Profile Integration** - Automatically adds to profiles collection
-- **⚡ Performance Optimized** - Cached parameters for fast application
+- **🎭 Profile Integration** - With individual properties, the new default also replaces the `Default` profile
+- **⚡ Changes Apply on Next Use** - `Write-ColorEX -Default` reads the default style's current properties on each call
 - **🌍 Universal Scope** - Affects all subsequent `-Default` calls
 
 ---
@@ -296,8 +296,7 @@ graph TD
 
     CallSetAsDefault --> UpdateGlobal[Update PSColorStyle Default]
     AddProfiles --> UpdateGlobal
-    UpdateGlobal --> InvalidateCache[Invalidate Style Cache]
-    InvalidateCache --> Success([Default Style Set])
+    UpdateGlobal --> Success([Default Style Set])
 
     Error1 --> Fail([Error])
 
@@ -362,18 +361,13 @@ graph TD
     CheckDefault -->|No| NormalProcessing[Process Colors Normally]
     CheckDefault -->|Yes| CheckExists{PSColorStyle Default<br/>Exists?}
 
-    CheckExists -->|No| UseBuiltIn[Use Built-in Default<br/>Gray, No Styling]
+    CheckExists -->|No| UseBuiltIn[Use Terminal Default Color<br/>No Styling]
     CheckExists -->|Yes| LoadDefault[Load Default Style]
 
     LoadDefault --> GetParams[Call ToWriteColorParams]
-    GetParams --> CheckCache{Cached Params<br/>Available?}
+    GetParams --> BuildParams[Build Params Hashtable]
 
-    CheckCache -->|Yes| UseCached[Use Cached Params<br/>36x Faster]
-    CheckCache -->|No| BuildParams[Build Params Hashtable]
-    BuildParams --> CacheParams[Cache for Future Calls]
-    CacheParams --> UseCached
-
-    UseCached --> ApplyParams[Apply Style Parameters]
+    BuildParams --> ApplyParams[Apply Style Parameters]
     ApplyParams --> CheckOverride{User Override<br/>Parameters?}
 
     CheckOverride -->|Yes| MergeParams[Merge with Defaults<br/>User Params Win]
@@ -389,7 +383,6 @@ graph TD
     style Start fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style Output fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
     style LoadDefault fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
-    style UseCached fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
     style ApplyParams fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000
 ```
 
@@ -417,7 +410,7 @@ graph TD
     UseProfile --> Merge1[Merge with Explicit]
     Merge1 --> FinalParams
 
-    UseDefault --> Merge2[Merge with Explicit + Profile]
+    UseDefault --> Merge2[Merge with Explicit]
     Merge2 --> FinalParams
 
     UseNone --> FinalParams
@@ -479,17 +472,15 @@ graph TD
     ModLoad([Module Load]) --> InitProfiles[Initialize Default Profiles]
     InitProfiles --> CreateDefaults[Create Built-in Styles:<br/>Default, Error, Warning, etc.]
     CreateDefaults --> SetInitialDefault[Set Default to Gray]
-    SetInitialDefault --> PreWarm[Pre-warm Style Caches]
 
-    PreWarm --> SessionStart[🟢 Session Active]
+    SetInitialDefault --> SessionStart[🟢 Session Active]
 
     SessionStart --> UserAction1{User Action}
     UserAction1 -->|Set-ColorDefault| UpdateDefault[Update Default Style]
     UserAction1 -->|Write-ColorEX -Default| UseDefault[Apply Current Default]
     UserAction1 -->|No Action| Wait1[Waiting...]
 
-    UpdateDefault --> InvalidateOld[Invalidate Old Cache]
-    InvalidateOld --> StoreNew[Store New Default]
+    UpdateDefault --> StoreNew[Store New Default]
     StoreNew --> UpdateProfiles[Update Profiles Collection]
     UpdateProfiles --> SessionStart
 
@@ -502,9 +493,7 @@ graph TD
     UserAction2 -->|Write-ColorEX -Default| UseDefault
     UserAction2 -->|Exit PowerShell| SessionEnd
 
-    SessionEnd --> Cleanup[Module OnRemove Cleanup]
-    Cleanup --> ClearCache[Clear Cached Styles]
-    ClearCache --> End([🔴 Session End])
+    SessionEnd --> End([🔴 Session End])
 
     style ModLoad fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style SessionStart fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#000
@@ -571,66 +560,8 @@ $currentDefault = [PSColorStyle]::Default
 $currentDefault.ForegroundColor  # Returns current color
 $currentDefault.Bold             # Returns $true or $false
 
-# Modify and reapply
+# Modify in place; the next -Default call uses the change
 $currentDefault.Italic = $true
-$currentDefault.SetAsDefault()   # Apply changes
-```
-
-</details>
-
----
-
-## ⚡ Performance Considerations
-
-<details>
-<summary><b>Caching System</b></summary>
-
-### Style Parameter Caching
-
-`Set-ColorDefault` leverages the PSColorStyle caching system for optimal performance:
-
-```mermaid
-graph LR
-    A[Set-ColorDefault] --> B[Create/Update PSColorStyle]
-    B --> C[Call SetAsDefault]
-    C --> D[Store in Static Property]
-    D --> E[First Write-ColorEX -Default]
-    E --> F[ToWriteColorParams Called]
-    F --> G[Build Parameters]
-    G --> H[Cache in _cachedParams]
-    H --> I[Return Params]
-    I --> J[Subsequent -Default Calls]
-    J --> K[Return Cached Params<br/>36x Faster]
-
-    style A fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
-    style H fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
-    style K fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#000
-```
-
-### Performance Metrics
-
-| Operation | First Call | Cached Calls | Improvement |
-|-----------|-----------|--------------|-------------|
-| Set-ColorDefault (Object) | ~0.5ms | N/A | Instant |
-| Set-ColorDefault (Properties) | ~1ms | N/A | One-time |
-| ToWriteColorParams (uncached) | ~0.4ms | N/A | One-time |
-| ToWriteColorParams (cached) | N/A | ~0.011ms | **36x faster** |
-| Write-ColorEX -Default (100x) | ~97ms total | Includes cache benefits | Optimized |
-
-### Best Practices for Performance
-
-```powershell
-# ✅ GOOD: Set once, use many times
-Set-ColorDefault -ForegroundColor Cyan -Bold
-for ($i = 0; $i -lt 1000; $i++) {
-    Write-ColorEX "Line $i" -Default  # Uses cached params
-}
-
-# ⚠️ AVOID: Setting default repeatedly
-for ($i = 0; $i -lt 1000; $i++) {
-    Set-ColorDefault -ForegroundColor Cyan -Bold  # Unnecessary overhead
-    Write-ColorEX "Line $i" -Default
-}
 ```
 
 </details>
@@ -785,7 +716,8 @@ $choice = Read-Host
 
 ```powershell
 # Set default for section headers
-Set-ColorDefault -ForegroundColor Cyan -Bold -HorizontalCenter -LinesBefore 1 -LinesAfter 1
+$headerStyle = New-ColorStyle -Name "SectionHeader" -ForegroundColor Cyan -Bold -HorizontalCenter -LinesBefore 1 -LinesAfter 1
+Set-ColorDefault -Style $headerStyle
 
 Write-ColorEX "CONFIGURATION" -Default
 Write-ColorEX "PROCESSING" -Default
@@ -817,13 +749,13 @@ Set-ColorDefault -ForegroundColor Cyan -Bold
 # TrueColor default on modern terminals
 Set-ColorDefault -ForegroundColor "#3498db" -Bold
 
-# Automatic degradation on limited terminals
+# Write-ColorEX -Default writes a hex color as the nearest color a limited terminal has
 # Module handles conversion automatically
 ```
 
 ### Color Mode Awareness
 
-The default style automatically adapts to terminal capabilities:
+A hex default adapts to terminal capabilities, as does an RGB array default with `-TrueColor` on the `Write-ColorEX -Default` call:
 
 ```mermaid
 graph LR
@@ -831,7 +763,7 @@ graph LR
     B -->|TrueColor| C[Use RGB 255,128,0]
     B -->|ANSI8| D[Convert to ANSI 208]
     B -->|ANSI4| E[Convert to ANSI 93 Yellow]
-    B -->|None| F[Convert to DarkYellow]
+    B -->|None| F[Convert to Yellow]
 
     style A fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style C fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
@@ -889,16 +821,15 @@ Set-MyDefaults
 
 **Solution:**
 ```powershell
-# Ensure you call Set-ColorDefault again
+# Change the style that [PSColorStyle]::Default holds
 $currentDefault = [PSColorStyle]::Default
 $currentDefault.Bold = $true
 
-# ❌ Changes not applied yet
+# ✅ The next -Default call has the change; no other call is needed
 Write-ColorEX "Test" -Default
 
-# ✅ Must re-apply
-$currentDefault.SetAsDefault()
-Write-ColorEX "Test" -Default
+# ❌ With -StyleProfile, -Default is not applied
+Write-ColorEX "Test" -Default -StyleProfile (Get-ColorProfiles -Name "Info")
 ```
 
 ### Issue 4: TrueColor Default Not Working
@@ -927,7 +858,7 @@ Set-ColorDefault -ForegroundColor Orange
 - [`New-ColorStyle`](New-ColorStyle.md) - Create custom style profiles
 - [`Get-ColorProfiles`](Get-ColorProfiles.md) - Retrieve available style profiles
 - [`Write-ColorEX`](Write-ColorEX.md) - Main colored output function
-- [PSColorStyle Class](../README.md#pscolorstyle-class) - Style class documentation
+- [PSColorStyle Class](PSColorStyle-Class.md) - Style class documentation
 - [Module Overview](../README.md) - Complete documentation
 
 ---
@@ -978,6 +909,6 @@ Set-ColorDefault -ForegroundColor @(52, 152, 219) -Bold
 
 <div align="center">
 
-**PSWriteColorEX** v2.0.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
+**PSWriteColorEX** v1.1.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
 
 </div>

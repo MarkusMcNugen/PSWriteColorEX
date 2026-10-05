@@ -30,7 +30,7 @@ Test-AnsiSupport
 
 - **🎨 Automatic Detection** - Identifies terminal color capabilities
 - **🌍 Cross-Platform** - Windows, Linux, macOS support
-- **⚡ Cached Results** - Detection runs once per session for performance
+- **⚡ Cached Results** - The module runs detection once at import and keeps the result for Write-ColorEX
 - **🔧 Auto-Enable** - Attempts to enable VT Processing on Windows
 - **📊 Detailed Info** - Returns color level and style support details
 - **🤫 Silent Mode** - Suppresses warnings for clean output
@@ -71,7 +71,7 @@ Returns a `PSCustomObject` with the following properties:
 | `'TrueColor'` | 24-bit RGB support | 16.7 million | Windows Terminal, iTerm2, GNOME Terminal 3.28+ |
 | `'ANSI8'` | 8-bit ANSI support | 256 | macOS Terminal.app, xterm-256color |
 | `'ANSI4'` | 4-bit ANSI support | 16 | Basic xterm, older terminals |
-| `'None'` | No ANSI support | Native PS only | PowerShell ISE, Windows <10586 |
+| `'None'` | No ANSI support | Native PS only | PowerShell ISE, Windows <10586, `TERM=dumb`, a PowerShell 7.2+ host without virtual terminal support |
 
 ### SupportsBoldFonts (Boolean)
 
@@ -80,9 +80,9 @@ Returns a `PSCustomObject` with the following properties:
 | `$true` | Terminal renders true bold fonts (heavier font weight) |
 | `$false` | Terminal only brightens colors with Bold SGR (module auto-lightens colors) |
 
-**Terminals with Bold Font Support:** PowerShell 7+/Windows Terminal, iTerm2, VTE 0.56+, Konsole, VS Code, mintty, urxvt, ConEmu
+**Terminals with Bold Font Support:** PowerShell 7+ in Windows Terminal or the console, iTerm2, VTE 0.56+, Konsole, VS Code, mintty, urxvt, ConEmu, Windows Terminal under WSL
 
-**Terminals with Color Brightening Only:** conhost (all PowerShell versions), PowerShell 5.1 (all terminals), macOS Terminal.app, xterm (default), VTE < 0.56
+**Terminals with Color Brightening Only:** Windows PowerShell 5.1 in conhost or Windows Terminal, macOS Terminal.app, xterm (default), VTE < 0.56
 
 ### Details (Hashtable)
 
@@ -160,7 +160,7 @@ if ($ansi.ColorSupport -eq 'TrueColor') {
 ```powershell
 $support = Test-AnsiSupport
 @{
-    ColorSupport = $support
+    ColorSupport = $support.ColorSupport
     Terminal = $env:TERM
     ColorTerm = $env:COLORTERM
     Platform = $PSVersionTable.OS
@@ -175,7 +175,7 @@ $support = Test-AnsiSupport
 ```powershell
 # Temporarily force ANSI8 for testing
 $env:FORCE_COLOR = 2
-$support = Test-AnsiSupport -Silent
+$support = (Test-AnsiSupport -Silent).ColorSupport
 Write-Host "Forced to: $support"
 
 # Reset to auto-detect
@@ -206,7 +206,10 @@ graph TD
     ApplyForce -->|3| ReturnTC1[Return: TrueColor]
 
     CheckNoColor -->|Set| ReturnNone2[Return: None<br/>Colors Disabled]
-    CheckNoColor -->|Not Set| CheckColorTerm{COLORTERM?}
+    CheckNoColor -->|Not Set| CheckDumb{TERM = dumb?}
+
+    CheckDumb -->|Yes| ReturnNone3[Return: None<br/>Dumb Terminal]
+    CheckDumb -->|No| CheckColorTerm{COLORTERM?}
 
     CheckColorTerm -->|truecolor or 24bit| SetTCHint[Hint: TrueColor]
     CheckColorTerm -->|Not Set| CheckTerm{TERM Variable?}
@@ -223,6 +226,7 @@ graph TD
     style Start fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style ReturnNone1 fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#000
     style ReturnNone2 fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#000
+    style ReturnNone3 fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#000
     style ReturnANSI4_1 fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#000
     style ReturnANSI8_1 fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000
     style ReturnTC1 fill:#b3e5fc,stroke:#0277bd,stroke-width:2px,color:#000
@@ -272,11 +276,15 @@ graph TD
 
 ```mermaid
 graph TD
-    UnixStart([Unix/Linux Detection]) --> CheckVTE{VTE_VERSION<br/>Environment Variable?}
+    UnixStart([Unix/Linux Detection]) --> CheckWSL{WT_SESSION<br/>Environment Variable?}
+
+    CheckWSL -->|Set| WSLTerminal[Windows Terminal under WSL<br/>TrueColor]
+    CheckWSL -->|Not Set| CheckVTE{VTE_VERSION<br/>Environment Variable?}
 
     CheckVTE -->|7600+| Gnome352[GNOME Terminal 3.52+<br/>VTE 0.76+<br/>TrueColor + All Styles<br/>Ubuntu 24.04+]
     CheckVTE -->|5200-7599| Gnome328[GNOME Terminal 3.28+<br/>VTE 0.52+<br/>TrueColor + Most Styles<br/>Ubuntu 18.04+]
-    CheckVTE -->|Less than 5200 or Not Set| CheckKonsole{KONSOLE_VERSION or<br/>TERM contains konsole?}
+    CheckVTE -->|Less than 5200| OldVTE[Older VTE<br/>TrueColor<br/>Warning Issued]
+    CheckVTE -->|Not Set| CheckKonsole{KONSOLE_VERSION or<br/>TERM contains konsole?}
 
     CheckKonsole -->|Yes| KonsoleTC[Konsole<br/>TrueColor]
     CheckKonsole -->|No| CheckXterm{TERM Variable}
@@ -288,6 +296,8 @@ graph TD
     CheckXterm -->|Other| UnixGeneric[Generic Unix<br/>Use Hint from TERM/COLORTERM]
 
     style UnixStart fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
+    style WSLTerminal fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
+    style OldVTE fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
     style Gnome352 fill:#81c784,stroke:#2e7d32,stroke-width:2px,color:#000
     style Gnome328 fill:#a5d6a7,stroke:#43a047,stroke-width:2px,color:#000
     style KonsoleTC fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
@@ -303,7 +313,7 @@ graph TD
 graph TD
     MacStart([macOS Detection]) --> CheckTermProg{TERM_PROGRAM<br/>Environment Variable?}
 
-    CheckTermProg -->|iTerm.app| CheckiTermVer{iTerm2 Version}
+    CheckTermProg -->|iTerm.app| iTerm35[iTerm2<br/>TrueColor<br/>Italic, Underline, CrossedOut]
     CheckTermProg -->|Apple_Terminal| TerminalApp[Terminal.app<br/>ANSI8 Max<br/>NO TrueColor<br/>Warning Issued]
     CheckTermProg -->|vscode| VSCode[VS Code Terminal<br/>TrueColor]
     CheckTermProg -->|Other| CheckColorTerm2{COLORTERM?}
@@ -311,18 +321,15 @@ graph TD
     CheckColorTerm2 -->|truecolor| MacTC[Generic macOS<br/>TrueColor]
     CheckColorTerm2 -->|Not Set| MacDefault[Generic macOS<br/>Use Hint from TERM]
 
-    CheckiTermVer -->|3.5+| iTerm35[iTerm2 v3.5+<br/>TrueColor<br/>Advanced Styles<br/>CrossedOut Support]
-    CheckiTermVer -->|3.0-3.4| iTerm30[iTerm2 v3.0-3.4<br/>TrueColor]
-    CheckiTermVer -->|Less than 3.0| iTermOld[iTerm2 Legacy<br/>ANSI8]
-
     style MacStart fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style iTerm35 fill:#a5d6a7,stroke:#43a047,stroke-width:2px,color:#000
-    style iTerm30 fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
     style VSCode fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
     style TerminalApp fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
-    style iTermOld fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000
     style MacTC fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
 ```
+
+> [!NOTE]
+> **After the platform checks**: virtual terminal processing with no color level found answers `ANSI4`. On PowerShell 7.2 and later, a host without virtual terminal support (such as a process with no console) answers `None`, since PowerShell removes escape codes from its output; an entry in `Details.Warnings` says so.
 
 </details>
 
@@ -335,15 +342,18 @@ graph LR
     B -->|Set| C[Use Forced Value<br/>Highest Priority]
     B -->|Not Set| D{NO_COLOR?}
     D -->|Set| E[Disable Colors<br/>2nd Priority]
-    D -->|Not Set| F{COLORTERM?}
-    F -->|truecolor/24bit| G[TrueColor<br/>3rd Priority]
+    D -->|Not Set| K{TERM = dumb?}
+    K -->|Yes| L[Disable Colors<br/>3rd Priority]
+    K -->|No| F{COLORTERM?}
+    F -->|truecolor/24bit| G[TrueColor<br/>4th Priority]
     F -->|Not Set| H{TERM?}
-    H -->|Set| I[Parse TERM Value<br/>4th Priority]
+    H -->|Set| I[Parse TERM Value<br/>5th Priority]
     H -->|Not Set| J[Platform Detection<br/>Lowest Priority]
 
     style A fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style C fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
     style E fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#000
+    style L fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#000
     style G fill:#b3e5fc,stroke:#0277bd,stroke-width:2px,color:#000
     style I fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#000
     style J fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
@@ -390,11 +400,12 @@ public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 <summary><b>Unix/Linux Detection Process</b></summary>
 
 ### Detection Steps
-1. **VTE Version** - `VTE_VERSION` for GNOME Terminal and derivatives
-2. **Konsole** - Checks `KONSOLE_VERSION` or TERM contains konsole
-3. **xterm** - Examines TERM for xterm-256color or xterm
-4. **rxvt** - Detects rxvt-unicode vs basic rxvt
-5. **Generic** - Falls back to TERM and COLORTERM analysis
+1. **Windows Terminal (WSL)** - Checks `WT_SESSION`, which Windows Terminal passes to a WSL shell; answers TrueColor
+2. **VTE Version** - `VTE_VERSION` for GNOME Terminal and derivatives
+3. **Konsole** - Checks `KONSOLE_VERSION` or TERM contains konsole
+4. **xterm** - Examines TERM for xterm-256color or xterm
+5. **rxvt** - Detects rxvt-unicode vs basic rxvt
+6. **Generic** - Falls back to TERM and COLORTERM analysis
 
 ### VTE-Based Terminals
 - **VTE 0.76+** (GNOME 3.52+, Ubuntu 24.04+): All styles including DoubleUnderline
@@ -429,7 +440,7 @@ public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 |----------|--------------|-------------------|-------------|-------|
 | **Windows Terminal** | TrueColor | Any | ✅ | Best Windows experience |
 | **PowerShell 7+ Console** | TrueColor | 14931+ | ✅ | Native support |
-| **PowerShell 5.1 Console** | ANSI8 | 10586+ | ✅ | Requires VT enable |
+| **PowerShell 5.1 Console** | TrueColor | 14931+ (ANSI8 from 10586) | ✅ | Requires VT enable |
 | **ConEmu/Cmder** | TrueColor* | Any | ✅ | Limited (bottom buffer only) |
 | **Git Bash (mintty)** | TrueColor | Any | ✅ | Full support |
 | **VS Code Terminal** | TrueColor | Any | ✅ | xterm emulation |
@@ -466,6 +477,7 @@ public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 | **xterm-256color** | ANSI8 | 256 colors |
 | **rxvt-unicode** | ANSI8 | urxvt with 256 colors |
 | **basic xterm/rxvt** | ANSI4 | 16 colors only |
+| **Windows Terminal (WSL)** | TrueColor | Detected from `WT_SESSION` |
 
 </details>
 
@@ -482,16 +494,17 @@ public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 |----------|---------|--------|----------|
 | `FORCE_COLOR` | Override detection | 0=None, 1=ANSI4, 2=ANSI8, 3=TrueColor | Highest |
 | `NO_COLOR` | Disable colors | Any value disables | 2nd |
+| `TERM` | Disable colors | `dumb` disables | 3rd |
 
 ### Detection Variables
 
 | Variable | Purpose | Example Values | Priority |
 |----------|---------|---------------|----------|
-| `COLORTERM` | Color capability | truecolor, 24bit | 3rd |
-| `TERM` | Terminal type | xterm-256color, xterm | 4th |
-| `TERM_PROGRAM` | Program name | iTerm.app, vscode, Apple_Terminal | 5th |
+| `COLORTERM` | Color capability | truecolor, 24bit | 4th |
+| `TERM` | Terminal type | xterm-256color, xterm | 5th |
+| `TERM_PROGRAM` | Program name | iTerm.app, vscode, Apple_Terminal | 6th |
 | `VTE_VERSION` | VTE library version | 5200, 7600 | Terminal-specific |
-| `WT_SESSION` | Windows Terminal session ID | GUID | Windows |
+| `WT_SESSION` | Windows Terminal session ID | GUID | Windows; Linux and macOS (Windows Terminal under WSL) |
 | `ConEmuANSI` | ConEmu ANSI support | ON | Windows |
 | `KONSOLE_VERSION` | Konsole version | Version string | Linux |
 
@@ -500,11 +513,12 @@ public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
 ```powershell
 # Force TrueColor for testing
 $env:FORCE_COLOR = 3
-Test-AnsiSupport -Silent  # Returns 'TrueColor'
+(Test-AnsiSupport -Silent).ColorSupport  # Returns 'TrueColor'
 
-# Disable all colors
+# Disable all colors (FORCE_COLOR wins over NO_COLOR, so clear it first)
+$env:FORCE_COLOR = $null
 $env:NO_COLOR = 1
-Test-AnsiSupport -Silent  # Returns 'None'
+(Test-AnsiSupport -Silent).ColorSupport  # Returns 'None'
 
 # Reset to auto-detect
 $env:FORCE_COLOR = $null
@@ -545,12 +559,12 @@ Test-AnsiSupport
 <details>
 <summary><b>Module Integration</b></summary>
 
-This function is automatically called by Write-ColorEX to determine the best color mode. The result is **cached** for the session to improve performance.
+Importing the module calls this function once, and Write-ColorEX uses the **cached** result for the rest of the session to fall back to the color modes the terminal supports. `FORCE_COLOR`, `NO_COLOR` and `TERM=dumb` are read on every Write-ColorEX call. Calling `Test-AnsiSupport` yourself detects again each time.
 
 ### Automatic Usage
 ```powershell
-# Write-ColorEX calls Test-AnsiSupport internally
-Write-ColorEX -Text "Auto-detects best mode" -Color Red
+# Write-ColorEX uses the result Test-AnsiSupport gave at import
+Write-ColorEX -Text "Falls back to the best supported mode" -Color Red -TrueColor
 ```
 
 ### Manual Usage Benefits
@@ -578,10 +592,10 @@ Manual calls are useful for:
 
 ```mermaid
 graph LR
-    A[First Call] --> B[Detect + Cache]
-    B --> C[Return Result]
-    D[Subsequent Calls] --> E[Return Cached]
-    F[FORCE_COLOR Changed] --> G[Re-detect]
+    A[Module Import] --> B[Detect + Cache]
+    B --> C[Write-ColorEX Uses Result]
+    D[Direct Calls] --> E[Detect Again]
+    F[FORCE_COLOR Changed] --> G[Read on Next<br/>Write-ColorEX Call]
 
     style A fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
     style B fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
@@ -609,6 +623,6 @@ graph LR
 
 <div align="center">
 
-**PSWriteColorEX** v2.0.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
+**PSWriteColorEX** v1.1.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
 
 </div>

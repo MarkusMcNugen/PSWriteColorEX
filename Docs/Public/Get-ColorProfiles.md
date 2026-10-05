@@ -436,8 +436,7 @@ graph LR
 
     E --> C
     F --> C
-    G --> H[Call InvalidateCache]
-    H --> C
+    G --> C
 
     C --> I[PowerShell Exit]
     I --> J[All Profiles Lost]
@@ -471,7 +470,7 @@ New-ColorStyle -Name "MySuccess" -ForegroundColor Green -AddToProfiles
 > **Always check for null** when retrieving profiles that might not exist.
 
 > [!NOTE]
-> **Use built-in profiles** where possible - they're optimized and pre-cached for performance.
+> **Use built-in profiles** where possible - they are created when the module is imported, and the Write-Color* helpers use them.
 
 > [!IMPORTANT]
 > **Remember profiles are session-scoped** - they don't persist across PowerShell restarts unless added to `$PROFILE`.
@@ -491,7 +490,7 @@ if ($null -ne $profile) {
 
 # ❌ AVOID - No null check
 $profile = Get-ColorProfiles -Name "Custom"
-Write-ColorEX "Message" -StyleProfile $profile  # May fail if profile doesn't exist
+Write-ColorEX "Message" -StyleProfile $profile  # Writes without the style if profile doesn't exist
 ```
 
 ### 2. Enumerate All Profiles
@@ -600,22 +599,19 @@ Get-ColorProfiles
 
 **Symptom:** Profile changes don't appear when retrieved again
 
-**Cause:** Profile cached parameters not invalidated
+**Cause:** The changes were made to a copy from `Clone()`, not to the profile in the collection
 
 **Solution:**
 ```powershell
 # Get profile
 $profile = Get-ColorProfiles -Name "Custom"
 
-# Modify properties
+# Modify properties of the profile itself, not a clone
 $profile.Bold = $true
 $profile.ForegroundColor = "Magenta"
 
-# MUST invalidate cache
-$profile.InvalidateCache()
-
-# Now changes are reflected
-Write-ColorEX "Test" -StyleProfile $profile
+# The next retrieval and the next use have the changes; no other call is needed
+Write-ColorEX "Test" -StyleProfile (Get-ColorProfiles -Name "Custom")
 ```
 
 ---
@@ -720,6 +716,6 @@ Write-ColorEX "Done!" -StyleProfile $style
 
 <div align="center">
 
-**PSWriteColorEX** v1.0.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
+**PSWriteColorEX** v1.1.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
 
 </div>

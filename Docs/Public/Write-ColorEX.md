@@ -22,9 +22,9 @@ Write-ColorEX enhances PowerShell console output with support for multiple color
 
 - **🌈 TrueColor (24-bit RGB)** - 16.7 million colors with hex and RGB support
 - **🎯 ANSI 256 & 16 color** - Full ANSI color palette support
-- **🎨 70+ Color Families** - Extended color names with Dark/Normal/Light variants
+- **🎨 44 Color Families** - 129 color names, most with Dark/Normal/Light variants
 - **💅 Text Styling** - Bold, italic, underline, and more effects
-- **📝 Smart Logging** - File logging with timestamps and retry logic
+- **📝 Logging** - File logging with timestamps and retry logic
 - **🌍 Cross-platform** - Windows, Linux, macOS compatibility
 - **⚡ Auto-detection** - Automatic color mode selection
 - **🔄 Graceful Degradation** - Falls back to best available color mode
@@ -39,6 +39,7 @@ Write-ColorEX
     [-Text] <String[]>
     [-Color <Array>]
     [-BackGroundColor <Array>]
+    [-Gradient <Object[]>]
     [-TrueColor]
     [-ANSI8]
     [-ANSI4]
@@ -67,6 +68,7 @@ Write-ColorEX
     [-Encoding <String>]
     [-NoConsoleOutput]
     [-Debugging]
+    [-Silent]
     [<CommonParameters>]
 ```
 
@@ -97,9 +99,9 @@ Foreground color(s) for text. Accepts multiple formats:
 
 | Format | Example | Description |
 |--------|---------|-------------|
-| **Color name** | `"Red"`, `"DarkOrange"` | 70+ color families |
-| **Hex code** | `"#FF0000"`, `"#FF8000"` | Requires `-TrueColor` |
-| **RGB array** | `@(255,0,0)` | Requires `-TrueColor` |
+| **Color name** | `"Red"`, `"DarkOrange"` | 129 names in 44 color families |
+| **Hex code** | `"#FF0000"`, `"#FF8000"` | Any mode; without a mode switch, the best mode the terminal has |
+| **RGB array** | `@(255,0,0)` | One array for one segment needs `-TrueColor`; one array per segment, `@(@(255,0,0), @(0,0,255))`, works in any mode |
 | **ANSI integer** | `196`, `38` | With `-ANSI8` or `-ANSI4` |
 
 ```powershell
@@ -145,11 +147,11 @@ Write-ColorEX -Text "RGB BG" -BackGroundColor @(64,0,128) -TrueColor
 | `-ANSI4` | `A4` | 4-bit ANSI mode | 16 | Lowest |
 
 > [!NOTE]
-> If no mode is specified, the module auto-detects the best available mode.
+> If no mode is specified, colors are the console's 16 colors (a color name takes its nearest console color), unless a color is a hex code or an RGB array per segment: then the line uses the best mode the terminal has (TrueColor, else the nearest 256-color, 16-color or console color), with no fallback warning. `-Gradient` picks TrueColor or ANSI8, whichever is the best the terminal has. A mode the terminal does not support falls back to the best one it has.
 > If multiple modes are specified, priority is: TrueColor > ANSI8 > ANSI4
 
 > [!TIP]
-> The module maintains ANSI integer support when using `-ANSI4` or `-ANSI8` switches, allowing direct color codes like `38` for foreground or `48` for background.
+> The module maintains ANSI integer support when using `-ANSI4` or `-ANSI8` switches: `-Color` and `-BackGroundColor` take color numbers 0-255 with `-ANSI8`, and ANSI4 codes with `-ANSI4` (30-37 and 90-97 for `-Color`, 40-47 and 100-107 for `-BackGroundColor`).
 
 </details>
 
@@ -169,12 +171,12 @@ Write-ColorEX -Text "RGB BG" -BackGroundColor @(64,0,128) -TrueColor
 | `-DoubleUnderline` | Double underline | Modern terminals |
 | `-Overline` | Line above text | Modern terminals |
 
-¹ **Bold with Auto-Lightening:** Module automatically detects if your terminal supports true bold fonts (PS7+/Windows Terminal, iTerm2, modern Linux terminals) or only brightens colors (PS5.1, conhost, macOS Terminal.app). In terminals that only brighten colors, the module automatically lightens colors for you:
-- **TrueColor:** Multiplies RGB by 1.4 (40% lighter)
-- **ANSI8:** Algorithmically lightens ANSI8 codes using `Lighten-ANSI8Color` (supports direct codes, named colors, and super-lightening beyond Light\* families)
+¹ **Bold with Auto-Lightening:** Module automatically detects if your terminal supports true bold fonts (PS7+ in Windows Terminal or the console, iTerm2, modern Linux terminals) or only brightens colors (PS5.1 in conhost or Windows Terminal, macOS Terminal.app, xterm). In terminals that only brighten colors, the module automatically lightens colors for you. A color name takes the next lighter name in its family in every mode (DarkRed → Red → LightRed, with `Get-LighterColorName`); colors with no lighter name are lightened by mode:
+- **TrueColor:** Multiplies RGB by 1.4 (40% lighter), each channel at least 102, with `Get-LighterRGBColor`
+- **ANSI8:** Algorithmically lightens ANSI8 codes using `Get-LighterANSI8Color` (supports direct codes, named colors with no lighter name, and super-lightening beyond Light\* families)
 - **ANSI4:** Handled by terminal SGR (automatic brightening)
 
-**Super-Lightening:** In ANSI8/ANSI24 modes, colors like `LightRed` can be lightened beyond their predefined family using algorithmic lightening, enabling unlimited brightness levels.
+**Super-Lightening:** In ANSI8/ANSI24 modes, colors like `LightRed` can be lightened beyond their predefined family using algorithmic lightening.
 ² Alias: `Strikethrough`
 
 ### `-Style`
@@ -206,8 +208,8 @@ Use a predefined style profile:
 
 ```powershell
 # Built-in profiles
-$error = [PSColorStyle]::GetProfile("Error")
-Write-ColorEX -Text "Error!" -StyleProfile $error
+$errorStyle = [PSColorStyle]::GetProfile("Error")
+Write-ColorEX -Text "Error!" -StyleProfile $errorStyle
 
 # Available profiles: Default, Error, Warning, Info, Success, Critical, Debug
 ```
@@ -246,21 +248,21 @@ Write-ColorEX -Text "Uses default style" -Default
 ³ Aliases: `PaddingChar`, `FillChar`
 
 > [!TIP]
-> **NEW: AutoPad** - Fixes alignment issues with emoji, CJK characters, and box-drawing!
+> **AutoPad** - Fixes alignment issues with emoji, CJK characters, and box-drawing!
 > - Uses `Measure-DisplayWidth` for accurate Unicode character-width calculation
-> - Correctly handles wide characters (●, 世, 😀 = 2 cells) and zero-width characters
-> - Perfect for status dashboards, tables, and any text that needs precise alignment
+> - Correctly handles wide characters (✅, 世, 😀 = 2 cells) and zero-width characters; `●` and box drawing are 1 cell
+> - Useful for status dashboards, tables, and any text that needs to line up
 >
 > ```powershell
 > # Problem: .PadRight() misaligns with Unicode
-> "Server ●".PadRight(21)  # ❌ Misaligned! (● counted as 1 but displays as 2)
+> "Server ✅".PadRight(21)  # ❌ Misaligned! (✅ counted as 1 but displays as 2)
 >
 > # Solution: AutoPad handles Unicode correctly
-> Write-ColorEX "Server ●" -AutoPad 21  # ✅ Perfectly aligned!
+> Write-ColorEX "Server ✅" -AutoPad 21  # ✅ Aligned: 9 cells of text, 12 spaces added
 > ```
 
 > [!NOTE]
-> **Optimized**: LinesBefore, LinesAfter, StartTab, and StartSpaces now use string multiplication for 5-10x faster performance
+> `-LinesBefore` and `-LinesAfter` write that many blank lines, no more; `-StartTab` and `-StartSpaces` add that many tabs and spaces before the text.
 
 </details>
 
@@ -270,14 +272,15 @@ Write-ColorEX -Text "Uses default style" -Default
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `-LogFile` | `String` | Log file path/name (Alias: `L`) |
-| `-LogPath` | `String` | Directory for log file (Alias: `LP`) |
+| `-LogPath` | `String` | Directory for a `-LogFile` given as a file name alone (Alias: `LP`); default: the calling script's folder, or the current location at the prompt |
 | `-LogLevel` | `String` | Log level prefix (Alias: `LL`, `LogLvl`) |
 | `-LogTime` | `Switch` | Include timestamp (Alias: `LT`) |
 | `-DateTimeFormat` | `String` | Timestamp format¹ |
-| `-LogRetry` | `Int32` | Write retry attempts (default: 2) |
-| `-Encoding` | `String` | File encoding (default: Unicode) |
+| `-LogRetry` | `Int32` | How many times to try when the file is locked, 50 ms apart, then a warning (default: 2) |
+| `-Encoding` | `String` | File encoding (default: `utf8`, UTF-8 without a byte order mark)² |
 
 ¹ Default: `yyyy-MM-dd HH:mm:ss`, Aliases: `DateFormat`, `TimeFormat`, `Timestamp`, `TS`
+² `utf8`, `utf8NoBOM` and `default` write UTF-8 without a byte order mark (BOM); `utf8BOM` UTF-8 with a BOM; `unicode`, `string` and `unknown` UTF-16 little-endian with a BOM; `bigendianunicode` UTF-16 big-endian with a BOM; `utf32` and `bigendianutf32` UTF-32 with a BOM; `ascii`; `utf7`; `ansi` and `oem` the system's code pages on Windows and UTF-8 elsewhere. Each name gives the same bytes on Windows PowerShell 5.1 and PowerShell 7, and a BOM is written only to a new or empty file.
 
 </details>
 
@@ -343,7 +346,7 @@ Write-ColorEX -Text "[", "✓", "] ", "Operation completed" `
 # Error with logging
 Write-ColorEX -Text "[ERROR] ", "Database connection failed" `
               -Color White, Red `
-              -BackGroundColor DarkRed, $null `
+              -BackGroundColor DarkRed, None `
               -Bold -LogFile "errors.log" -LogTime -LogLevel "ERROR"
 
 # Warning message
@@ -403,7 +406,7 @@ Write-ColorEX 'Web Server' -AutoPad 21 -Color White -NoNewLine
 Write-ColorEX ' [OK] ║' -Color Green
 
 Write-ColorEX '║ ' -Color Cyan -NoNewLine
-Write-ColorEX 'Database ●' -AutoPad 21 -Color White -NoNewLine  # ● = 2 cells
+Write-ColorEX 'Database ✅' -AutoPad 21 -Color White -NoNewLine  # ✅ = 2 cells
 Write-ColorEX ' [OK] ║' -Color Green
 
 Write-ColorEX '║ ' -Color Cyan -NoNewLine
@@ -411,9 +414,9 @@ Write-ColorEX 'Cache' -AutoPad 21 -Color White -NoNewLine
 Write-ColorEX '[FAIL] ║' -Color Red
 
 # Output:
-# ║ Web Server           [OK] ║
-# ║ Database ●           [OK] ║  ← Perfectly aligned!
-# ║ Cache               [FAIL] ║
+# ║ Web Server            [OK] ║
+# ║ Database ✅           [OK] ║  ← Aligned: ✅ counts as 2 cells
+# ║ Cache                [FAIL] ║
 
 # File listing with mixed alignment
 $files = Get-ChildItem | Select-Object -First 3
@@ -462,7 +465,7 @@ Write-ColorEX -Text "Coral" -Color Coral
 Write-ColorEX -Text "Dark ","Normal ","Light" `
               -Color DarkOrange,Orange,LightOrange
 
-# All 70+ color families available
+# Some of the 44 color families
 $families = @("Red","Orange","Yellow","Green","Teal","Blue","Purple","Pink",
               "Brown","Gray","Gold","Coral","Olive","Mint","Salmon","Ruby",
               "Jade","Amber","Steel","Crimson","Emerald","Sapphire")
@@ -478,13 +481,13 @@ $families | ForEach-Object {
 
 ## 🎨 Available Colors
 
-The module includes 70+ color families, each with Dark, Normal, and Light variants:
+The module includes 44 color families with 129 color names, most with Dark, Normal, and Light variants:
 
 <details>
 <summary><b>Click to expand full color list</b></summary>
 
 ### Basic Colors
-- **Neutral**: Black, Gray, DarkGray, LightGray, White
+- **Neutral**: Black, LightBlack, Gray, DarkGray, LightGray, White
 - **Red**: DarkRed, Red, LightRed
 - **Green**: DarkGreen, Green, LightGreen
 - **Blue**: DarkBlue, Blue, LightBlue
@@ -530,7 +533,7 @@ The module includes 70+ color families, each with Dark, Normal, and Light varian
 - **Brick**: DarkBrick, Brick, LightBrick
 
 > [!TIP]
-> **Performance**: Color table is cached once at module load for ~1000x faster lookups
+> **Performance**: Write-ColorEX builds the color table on first use and keeps it for the session
 
 </details>
 
@@ -542,7 +545,7 @@ The module automatically detects terminal capabilities:
 
 ```powershell
 # Check color support level
-$support = Test-AnsiSupport
+$support = (Test-AnsiSupport).ColorSupport
 # Returns: 'None', 'ANSI4', 'ANSI8', or 'TrueColor'
 
 # Force specific color mode via environment
@@ -552,7 +555,7 @@ $env:FORCE_COLOR = 1  # Force ANSI4
 $env:FORCE_COLOR = 0  # Force None
 $env:FORCE_COLOR = $null  # Auto-detect (default)
 
-# Disable all colors
+# Disable all colors and styles (TERM=dumb does the same)
 $env:NO_COLOR = 1
 ```
 
@@ -564,7 +567,7 @@ $env:NO_COLOR = 1
 |----------|----------|-------------------|-------------|
 | **Windows 11/10** | Windows Terminal | TrueColor | ✅ |
 | | PowerShell 7+ | TrueColor | ✅ |
-| | PowerShell 5.1 | ANSI 256 | ✅* |
+| | PowerShell 5.1 | TrueColor | ✅* |
 | | ConEmu | TrueColor | ✅ |
 | | ISE | Native 16 | ❌ |
 | **Linux** | Most terminals | TrueColor | ✅ |
@@ -660,30 +663,28 @@ graph TD
 ```mermaid
 graph LR
     subgraph "Cached Systems"
-        A[Color Table Cache<br/>~1000x faster] --> B[ANSI Detection Cache<br/>One-time detection]
-        B --> C[RGB Lookup Table<br/>5-10x faster ANSI8]
-        C --> D[Helper Style Cache<br/>2-5x faster calls]
-        D --> E[Profile Params Cache<br/>36x faster ToWriteColorParams]
+        A[Color Table Cache<br/>Built on first use] --> B[ANSI Detection Cache<br/>One-time detection]
+        B --> C[RGB Lookup Table<br/>256 entries for ANSI8]
     end
 
     style A fill:#c8e6c9,stroke:#388e3c,color:#000
     style B fill:#b3e5fc,stroke:#0277bd,color:#000
     style C fill:#e1bee7,stroke:#8e24aa,color:#000
-    style D fill:#fff9c4,stroke:#f57f17,color:#000
-    style E fill:#f3e5f5,stroke:#7b1fa2,color:#000
 ```
+
+Style profiles are not cached: `ToWriteColorParams()` reads a profile's properties on each call, so a change to a profile shows on its next use.
 
 ### String Operations
 
-- **LinesBefore/After**: String multiplication (`"\n" * count`) instead of loops - **5-10x faster**
-- **StartTab/Spaces**: String multiplication (`" " * count`) - **5-10x faster**
-- **ANSI Building**: `List[string]` + `[string]::Concat()` - **790x faster** for complex styling
-- **Array Building**: `List<object>.Add()` instead of `+=` - **18,000x faster** for 1000+ segments
+- **LinesBefore/After**: one `Write-Host ''` call per blank line
+- **StartTab/Spaces**: String multiplication (`" " * count`)
+- **ANSI Building**: a `StringBuilder` builds each line, which goes to the host in one `Write-Host` call where escape codes reach the screen
+- **Array Building**: `List<object>.Add()` instead of `+=`
 
 ### Hashtable Lookups
 
-- **Direct access** instead of `ContainsKey` + lookup - **2x faster** per lookup
-- Applied to: Color name lookups, profile retrieval, helper function caching
+- **Direct access** instead of `ContainsKey` + lookup
+- Applied to: Color name lookups, profile retrieval
 
 </details>
 
@@ -698,7 +699,10 @@ graph LR
 > ```
 
 > [!TIP]
-> **Performance**: The module is highly optimized with multiple caching systems. For best performance with repeated calls, use style profiles which cache their parameters.
+> **Style Profiles**: A style profile reads its properties on each call, so a change to a profile (including a built-in one used by the `Write-Color*` helpers) shows on its next use.
+
+> [!NOTE]
+> **Transcripts**: Each line goes to the host in as few `Write-Host` calls as its colors allow, with the line end on the last call, and `Start-Transcript` records each call as one line. On PowerShell 7.2 and later, where the host shows escape codes, a line is one call, so it is one transcript line (PowerShell removes the escape codes from the transcript). On Windows PowerShell 5.1, and on a PowerShell 7 host without virtual terminal support, a line of several console colors is one call per color, so a transcript shows each color on its own line.
 
 > [!IMPORTANT]
 > **Automatic Fallback**: If a requested color mode isn't supported, the module automatically falls back to the best available mode without errors.
@@ -735,7 +739,7 @@ graph LR
 
 ## 📖 See Also
 
-- [PSColorStyle Class](PSColorStyle.md) - Style profile system
+- [PSColorStyle Class](PSColorStyle-Class.md) - Style profile system
 - [Color Conversion Functions](Color-Conversions.md) - Color format utilities
 - [Module Overview](../README.md) - Complete module documentation
 - [PowerShell Gallery](https://www.powershellgallery.com/packages/PSWriteColorEX) - Module download
@@ -744,6 +748,6 @@ graph LR
 
 <div align="center">
 
-**PSWriteColorEX** v2.0.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
+**PSWriteColorEX** v1.1.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
 
 </div>

@@ -33,8 +33,8 @@ PowerShell's `.Length` doesn't understand Unicode character widths:
 ```powershell
 "Hello".Length      # Returns 5 ✓ Correct
 "世界".Length        # Returns 2 ✗ WRONG! Displays as 4 cells
-"😀👍".Length       # Returns 2 ✗ WRONG! Displays as 4 cells
-"Server ●".Length   # Returns 8 ✗ WRONG! Displays as 9 cells (● = 2 cells)
+"✅❌".Length       # Returns 2 ✗ WRONG! Displays as 4 cells
+"Server ✅".Length  # Returns 8 ✗ WRONG! Displays as 9 cells (✅ = 2 cells)
 ```
 
 ### The Solution
@@ -43,8 +43,8 @@ PowerShell's `.Length` doesn't understand Unicode character widths:
 ```powershell
 Measure-DisplayWidth "Hello"      # Returns 5 ✓
 Measure-DisplayWidth "世界"        # Returns 4 ✓
-Measure-DisplayWidth "😀👍"       # Returns 4 ✓
-Measure-DisplayWidth "Server ●"   # Returns 9 ✓
+Measure-DisplayWidth "✅❌"       # Returns 4 ✓
+Measure-DisplayWidth "Server ✅"  # Returns 9 ✓
 ```
 
 ### ✨ Key Features
@@ -53,7 +53,7 @@ Measure-DisplayWidth "Server ●"   # Returns 9 ✓
 - **🌏 Unicode Support** - Handles wide characters (CJK, emoji) that occupy 2 cells
 - **🔤 Combining Marks** - Recognizes zero-width characters (combining diacritics)
 - **📦 Box-Drawing** - Configurable treatment of East Asian Ambiguous Width characters
-- **⚡ Fast Performance** - Single pass through string, no external dependencies
+- **⚡ Single Pass** - One pass through the string, no external dependencies
 - **🌍 Cross-Platform** - Works on Windows, Linux, macOS with PowerShell 5.1+
 - **🔄 Pipeline Support** - Accepts pipeline input
 
@@ -62,7 +62,7 @@ Measure-DisplayWidth "Server ●"   # Returns 9 ✓
 ## Parameters
 
 <details open>
-<parameter name="summary"><b>🎛️ Command Parameters</b></summary>
+<summary><b>🎛️ Command Parameters</b></summary>
 
 ### `-Text`
 > **Type:** `String`
@@ -113,7 +113,7 @@ Returns `[int]` - The number of terminal cells the string will occupy.
 | **ASCII/Latin** | 1 | `a-z A-Z 0-9 !@#$%` |
 | **Wide (CJK)** | 2 | `世界 日本語 中文 한글` |
 | **Wide (Emoji)** | 2 | `😀👍🎨🌟` |
-| **Wide (Symbols)** | 2 | `●` (filled circle U+25CF) |
+| **Wide (Symbols)** | 2 | `✅` (check mark button U+2705) |
 | **Zero-width** | 0 | Combining marks (accents) |
 | **Ambiguous** | 1 (default) or 2 (with `-AmbiguousAsWide`) | `╔═╗║●★` |
 
@@ -166,16 +166,16 @@ Measure-DisplayWidth "Status: ✓"
 <summary><b>Example 4: Mixed ASCII and Unicode</b></summary>
 
 ```powershell
-Measure-DisplayWidth "Server ●"
+Measure-DisplayWidth "Server ✅"
 # Returns: 9
-# "Server " (7 ASCII) + "●" (2 cells) = 9 cells
+# "Server " (7 ASCII) + "✅" (2 cells) = 9 cells
 
 # This is why .PadRight() breaks alignment:
-"Server ●".PadRight(21)  # Adds 13 spaces (21 - 8 .Length)
+"Server ✅".PadRight(21)  # Adds 13 spaces (21 - 8 .Length)
                           # But displays as 22 cells! ❌ MISALIGNED
 
 # Use AutoPad instead:
-Write-ColorEX "Server ●" -AutoPad 21  # ✅ Perfectly aligned
+Write-ColorEX "Server ✅" -AutoPad 21  # ✅ Perfectly aligned
 ```
 
 </details>
@@ -206,7 +206,7 @@ Measure-DisplayWidth "╔═══╗" -AmbiguousAsWide
 # Returns: 5, 4, 2
 
 # Calculate padding needed for alignment
-$text = "Server ●"
+$text = "Server ✅"
 $targetWidth = 21
 $currentWidth = Measure-DisplayWidth $text
 $paddingNeeded = $targetWidth - $currentWidth
@@ -222,7 +222,7 @@ Write-Host "Need $paddingNeeded spaces for perfect alignment"
 ```powershell
 # é can be represented two ways:
 $composed = "é"     # Single precomposed character (U+00E9)
-$decomposed = "é"   # 'e' (U+0065) + combining acute (U+0301)
+$decomposed = "e$([char]0x0301)"   # 'e' (U+0065) + combining acute (U+0301)
 
 Measure-DisplayWidth $composed
 # Returns: 1 (single character)
@@ -239,9 +239,9 @@ Measure-DisplayWidth $decomposed
 ```powershell
 # Build a perfectly aligned table with Unicode
 $services = @(
-    @{Name="Web Server"; Status="●"}    # ● = 2 cells
-    @{Name="Database";   Status="●"}
-    @{Name="Cache";      Status="○"}    # ○ = 2 cells
+    @{Name="Web Server"; Status="✅"}    # ✅ = 2 cells
+    @{Name="Database";   Status="✅"}
+    @{Name="Cache";      Status="❌"}    # ❌ = 2 cells
 )
 
 foreach ($svc in $services) {
@@ -252,9 +252,9 @@ foreach ($svc in $services) {
 }
 
 # Output (perfectly aligned):
-# Web Server ●          [OK]
-# Database ●            [OK]
-# Cache ○               [OK]
+# Web Server ✅            [OK]
+# Database ✅              [OK]
+# Cache ❌                 [OK]
 ```
 
 </details>
@@ -269,12 +269,15 @@ foreach ($svc in $services) {
 ```mermaid
 graph TD
     Start([Measure-DisplayWidth Called]) --> InitWidth[Initialize Total Width = 0]
-    InitWidth --> ForEach{For Each Character<br/>in String}
+    InitWidth --> ForEach{For Each Code Point<br/>in String}
 
     ForEach -->|Has More| GetCodePoint[Get Unicode Code Point]
     ForEach -->|Done| ReturnTotal[Return Total Width]
 
-    GetCodePoint --> CheckZero{Zero-Width<br/>Character?}
+    GetCodePoint --> CheckSeq{Emoji Sequence?<br/>FE0F/FE0E/Skin Tone/ZWJ}
+
+    CheckSeq -->|Yes| AddSeq[Apply Sequence Rule<br/>0, +1 or -1 Cell]
+    CheckSeq -->|No| CheckZero{Zero-Width or<br/>Control Character?}
 
     CheckZero -->|Yes| AddZero[Add 0 Cells]
     CheckZero -->|No| CheckWide{Wide Character?<br/>CJK/Emoji/Fullwidth}
@@ -288,6 +291,7 @@ graph TD
     CheckMode -->|True| AddTwoAmb[Add 2 Cells<br/>East Asian Mode]
     CheckMode -->|False| AddOneAmb[Add 1 Cell<br/>Default Mode]
 
+    AddSeq --> ForEach
     AddZero --> ForEach
     AddTwo --> ForEach
     AddOne --> ForEach
@@ -296,6 +300,7 @@ graph TD
 
     style Start fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style ReturnTotal fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#000
+    style AddSeq fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#000
     style AddZero fill:#fff9c4,stroke:#f9a825,stroke-width:2px,color:#000
     style AddOne fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000
     style AddTwo fill:#b3e5fc,stroke:#0277bd,stroke-width:2px,color:#000
@@ -369,10 +374,16 @@ graph LR
 - Smileys: `😀😃😄😁😆`
 - Symbols: `❤️🔥✨🎉👍`
 - Flags: `🇺🇸🇬🇧🇯🇵`
-- Ranges: U+1F300-1F9FF (and others)
+- Ranges: most of U+1F300-1F64F, U+1F680-1F6FF and U+1F900-1FAFF (and others)
+
+**Emoji Sequences:**
+- A character with an emoji form, followed by U+FE0F: 2 cells (`⚠️`, `❤️`)
+- A wide emoji with a text form, followed by U+FE0E: 1 cell, or 2 with `-AmbiguousAsWide`
+- A skin tone after an emoji adds nothing: `👍🏽` is 2 cells
+- Emoji joined by U+200D add nothing: `👨‍👩‍👧` is 2 cells
 
 **Other Wide Characters:**
-- Filled symbols: `●` (U+25CF), `■` (U+25A0)
+- Filled symbols: `⚫` (U+26AB), `⬛` (U+2B1B)
 - Fullwidth Latin: `Ａ` (U+FF21) vs `A` (U+0041)
 - Hangul Syllables: U+AC00-D7A3
 
@@ -386,12 +397,12 @@ graph LR
 
 **Latin Extended:**
 - Accented characters: `àáâãäå èéêë`
-- Ranges: U+0080-024F
+- Ranges: U+00C0-024F (except `×` and `÷`, which are ambiguous)
 
 **Common Symbols:**
 - Checkmark: `✓` (U+2713)
-- Multiplication: `×` (U+00D7)
-- Degree: `°` (U+00B0)
+- Copyright: `©` (U+00A9)
+- Pound: `£` (U+00A3)
 
 ### Zero-Width Characters (0 cells)
 
@@ -410,14 +421,14 @@ graph LR
 
 **Default: 1 cell | With `-AmbiguousAsWide`: 2 cells**
 
-**Box-Drawing (U+2500-257F):**
+**Box-Drawing (U+2500-254B, U+2550-2574):**
 - `╔═╗║╚╝╠╣╦╩╬`
 - `─│┌┐└┘├┤┬┴┼`
 - `━┃┏┓┗┛┣┫┳┻╋`
 
 **Symbols:**
 - `●○◆◇★☆`
-- `®©™§¶†‡`
+- `®™§¶†‡`
 - `±×÷≠≤≥`
 
 > [!TIP]
@@ -439,16 +450,16 @@ graph LR
 
 ```powershell
 # Problem: .PadRight() breaks with Unicode
-"Server ●".PadRight(20)  # Misaligned! ❌
+"Server ✅".PadRight(20)  # Misaligned! ❌
 
 # Solution: Use Measure-DisplayWidth + manual padding
-$text = "Server ●"
+$text = "Server ✅"
 $width = Measure-DisplayWidth $text
 $padding = " " * (20 - $width)
 "$text$padding"  # ✅ Perfect alignment!
 
 # Better: Use AutoPad (does this automatically)
-Write-ColorEX "Server ●" -AutoPad 20  # ✅ Best solution!
+Write-ColorEX "Server ✅" -AutoPad 20  # ✅ Best solution!
 ```
 
 ### 2. Table Column Alignment
@@ -479,7 +490,7 @@ function Show-Progress {
     Write-Host "[$bar] $Percent%"
 }
 
-Show-Progress 75  # [███████████████████████████████████████░░░░░░░░░░░░░░] 75%
+Show-Progress 75  # [█████████████████████████████████████░░░░░░░░░░░░░] 75%
 ```
 
 ### 4. Center Text
@@ -535,11 +546,8 @@ Truncate-Text "Hello 世界 World" 10  # Returns "Hello 世界"
 ## 💡 Performance Notes
 
 - **Single pass algorithm** - O(n) time complexity where n = string length
-- **No external dependencies** - Uses built-in .NET `Char.ConvertToUtf32()`
-- **Typical performance:**
-  - Short strings (< 100 chars): < 0.1ms
-  - Long strings (1000+ chars): 0.1-0.5ms
-- **Cached by AutoPad** - When used with `-AutoPad`, result is used immediately
+- **No external dependencies** - Reads widths from a table that ships with the module
+- **Used by AutoPad** - Write-ColorEX `-AutoPad` and `-HorizontalCenter` measure the text with it, without `-AmbiguousAsWide`
 
 ---
 
@@ -547,7 +555,7 @@ Truncate-Text "Hello 世界 World" 10  # Returns "Hello 世界"
 
 1. **Terminal Font Matters:** This function calculates the *standard* Unicode width. Some terminals may render characters differently based on font configuration.
 
-2. **Emoji Sequences:** Complex emoji (ZWJ sequences, skin tone modifiers) may not always report correct width. The function uses wcwidth() standard rules.
+2. **Emoji Sequences:** Emoji joined by U+200D (👨‍👩‍👧) and emoji with a skin tone (👍🏽) count as 2 cells, as terminals that support the sequence draw them. A terminal that draws the parts side by side shows them wider.
 
 3. **Terminal Configuration:** Ambiguous width behavior depends on terminal locale settings. Default (narrow) works for 90% of cases.
 
@@ -557,17 +565,17 @@ Truncate-Text "Hello 世界 World" 10  # Returns "Hello 世界"
 
 ## 📖 Technical Background
 
-This function implements the **East Asian Width** property from Unicode Standard Annex #11 (UAX#11). It categorizes characters into:
+This function takes the width of each code point from the table of the Rust crate unicode-width 0.2.2, the same table PWRSWriteColorEX uses. The table is built from the **East Asian Width** property of Unicode Standard Annex #11 (UAX#11) and other parts of the Unicode standard. UAX#11 categorizes characters into:
 
 - **F** (Fullwidth) - 2 cells
 - **W** (Wide) - 2 cells
-- **A** (Ambiguous) - 1 or 2 cells (configurable via `-AmbiguousAsWide`)
-- **N** (Neutral/Narrow) - 1 cell
+- **A** (Ambiguous) - 1 or 2 cells (configurable via `-AmbiguousAsWide`); letters in this class, such as `é`, are 1 cell
+- **N** (Neutral) - 1 cell
 - **H** (Halfwidth) - 1 cell
-- **Na** (Not applicable) - 1 cell
+- **Na** (Narrow) - 1 cell
 
-Zero-width characters (combining marks, ZWJ, ZWNJ) are explicitly handled as 0 cells.
+Zero-width characters (combining marks, ZWJ, ZWNJ) and control characters are 0 cells. The string is walked by code point, so Windows PowerShell 5.1 and PowerShell 7 give the same answer.
 
 **References:**
 - [UAX #11: East Asian Width](https://www.unicode.org/reports/tr11/)
-- [wcwidth() specification](https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c)
+- [unicode-width 0.2.2](https://docs.rs/unicode-width/0.2.2/unicode_width/)

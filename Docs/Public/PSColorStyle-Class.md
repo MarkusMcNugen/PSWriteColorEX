@@ -6,7 +6,7 @@
 
 ## 📑 Table of Contents
 
-[Overview](#overview) • [Class Structure](#class-structure) • [Properties](#properties) • [Constructors](#constructors) • [Instance Methods](#instance-methods) • [Static Methods](#static-methods) • [Static Properties](#static-properties) • [Examples](#-examples) • [Singleton Pattern](#-singleton-pattern) • [Caching System](#-caching-system) • [Best Practices](#-best-practices) • [Related](#-related-commands)
+[Overview](#overview) • [Class Structure](#class-structure) • [Properties](#properties) • [Constructors](#constructors) • [Instance Methods](#instance-methods) • [Static Methods](#static-methods) • [Static Properties](#static-properties) • [Examples](#-examples) • [Singleton Pattern](#-singleton-pattern) • [Best Practices](#-best-practices) • [Related](#-related-commands)
 
 ---
 
@@ -18,7 +18,7 @@
 
 - **🎯 Object-Oriented Design** - Encapsulates all style properties in a single object
 - **💾 Singleton Pattern** - Static Default property and Profiles collection
-- **⚡ Performance Optimized** - Parameter caching with 36x speed improvement
+- **⚡ Changes Apply on Next Use** - `ToWriteColorParams()` reads the current properties on each call
 - **🔄 Cloneable** - Create style variations with `.Clone()` method
 - **🔧 Wrapper Functions** - `New-ColorStyle`, `Set-ColorDefault`, `Get-ColorProfiles`
 - **🌍 Session Scope** - Styles persist for entire PowerShell session
@@ -50,13 +50,13 @@ class PSColorStyle {
     [bool]$ShowTime
     [bool]$NoNewLine
     [bool]$HorizontalCenter
+    [int]$AutoPad
+    [bool]$PadLeft
+    [char]$PadChar
 
     # Static Properties
     static [PSColorStyle]$Default
     static [hashtable]$Profiles
-
-    # Hidden Properties
-    hidden [hashtable]$_cachedParams
 }
 ```
 
@@ -241,21 +241,6 @@ $style.HorizontalCenter = $true
 
 </details>
 
-<details>
-<summary><b>🔒 Hidden Properties</b></summary>
-
-### `_cachedParams`
-> **Type:** `Hashtable`
-> **Access:** Hidden (internal use)
-> **Default:** `$null`
-
-Internal cache for parameter hashtable. Populated by `ToWriteColorParams()` method for performance optimization (36x faster on subsequent calls).
-
-> [!WARNING]
-> This is a hidden property. Modifying it directly can cause unexpected behavior. Use `InvalidateCache()` method instead.
-
-</details>
-
 ---
 
 ## Constructors
@@ -432,18 +417,13 @@ Write-ColorEX "Error occurred!" -StyleProfile $style
 ```
 
 ### Description
-Converts the style properties into a hashtable compatible with `Write-ColorEX` splatting. Uses internal caching for performance optimization (36x faster on subsequent calls).
+Converts the style properties into a hashtable compatible with `Write-ColorEX` splatting. Each call builds a new hashtable from the current properties, so a change to a property shows in the next call.
 
 ### Parameters
 None
 
 ### Return Value
 `Hashtable` - Parameter dictionary ready for splatting to `Write-ColorEX`
-
-### Caching Behavior
-1. **First call:** Builds hashtable, caches it in `_cachedParams`, returns clone
-2. **Subsequent calls:** Returns clone of cached hashtable (36x faster)
-3. **After modifications:** Cache remains valid until `InvalidateCache()` is called
 
 ### Example
 ```powershell
@@ -465,14 +445,8 @@ $params = $style.ToWriteColorParams()
 Write-ColorEX @params -Text "Styled output"
 ```
 
-### Performance
-| Operation | First Call | Cached Calls | Improvement |
-|-----------|-----------|--------------|-------------|
-| ToWriteColorParams | ~0.4ms | ~0.011ms | **36x faster** |
-
 ### Related
-- [`InvalidateCache()`](#invalidatecache) - Clear cache after modifications
-- [Caching System](#-caching-system) - Detailed caching explanation
+- [`InvalidateCache()`](#invalidatecache) - Does nothing; not needed after changes
 
 </details>
 
@@ -485,7 +459,7 @@ hidden [void]InvalidateCache()
 ```
 
 ### Description
-Clears the internal parameter cache (`_cachedParams`). **Must be called after modifying any properties** to ensure `ToWriteColorParams()` returns updated values.
+Does nothing, and calling it is never needed. `ToWriteColorParams()` reads the current properties on each call, so a change to a style applies to its next use. The method exists, hidden, so scripts that call it keep working.
 
 ### Parameters
 None
@@ -493,37 +467,24 @@ None
 ### Return Value
 `void` (no return value)
 
-### When to Use
-Call this method after:
-- Changing color properties (`ForegroundColor`, `BackgroundColor`, `Gradient`)
-- Modifying style flags (`Bold`, `Italic`, `Underline`, etc.)
-- Updating formatting properties (`StartTab`, `LinesBefore`, etc.)
-- Changing behavior properties (`ShowTime`, `NoNewLine`, etc.)
-
 ### Example
 ```powershell
 # Create style
 $style = [PSColorStyle]::new("Dynamic", "Cyan", $null)
 
-# First use - builds cache
+# First use
 Write-ColorEX "Cyan text" -StyleProfile $style
 
 # Modify properties
 $style.ForegroundColor = "Magenta"
 $style.Bold = $true
 
-# MUST invalidate cache
-$style.InvalidateCache()
-
-# Now uses updated properties
+# The next use has the changes, without InvalidateCache()
 Write-ColorEX "Magenta bold text" -StyleProfile $style
 ```
 
-> [!WARNING]
-> **Forgetting to call `InvalidateCache()` after property changes will result in the old cached values being used.**
-
 ### Related
-- [`ToWriteColorParams()`](#towritecolorparams) - Method that uses the cache
+- [`ToWriteColorParams()`](#towritecolorparams) - Reads the properties on each call
 
 </details>
 
@@ -536,7 +497,7 @@ Write-ColorEX "Magenta bold text" -StyleProfile $style
 ```
 
 ### Description
-Creates a deep copy of the current style instance with a modified name (`Name + "_Copy"`). The clone does not share the parameter cache with the original.
+Creates a copy of the current style instance with a modified name (`Name + "_Copy"`).
 
 ### Parameters
 None
@@ -547,8 +508,8 @@ None
 ### Behavior
 - Copies all property values
 - Appends `"_Copy"` to the original name
-- Cache is **not** copied (`_cachedParams = $null`)
-- Clone is independent - changes don't affect original
+- Array values (`Gradient`, `Style`, RGB colors) are copied too, so changing an element of the clone leaves the original alone
+- Clone is a separate object - setting a property on the clone doesn't affect the original
 
 ### Example
 ```powershell
@@ -647,7 +608,7 @@ static [void]InitializeDefaultProfiles()
 ```
 
 ### Description
-Initializes the built-in style profiles (Default, Error, Warning, Info, Success, Critical, Debug) and pre-warms their parameter caches. Called automatically during module initialization.
+Initializes the built-in style profiles (Default, Error, Warning, Info, Success, Critical, Debug). Called automatically during module initialization.
 
 ### Parameters
 None
@@ -659,7 +620,6 @@ None
 - Creates 7 built-in style profiles
 - Sets `[PSColorStyle]::Default` to the Default profile
 - Adds all profiles to `[PSColorStyle]::Profiles`
-- Pre-warms caches by calling `ToWriteColorParams()` on each
 
 ### Initialization Details
 ```powershell
@@ -697,11 +657,6 @@ $criticalProfile.AddToProfiles()
 $debugProfile = [PSColorStyle]::new("Debug", "DarkGray", $null)
 $debugProfile.Italic = $true
 $debugProfile.AddToProfiles()
-
-# 8. Pre-warm caches (performance optimization)
-$null = $defaultProfile.ToWriteColorParams()
-$null = $errorProfile.ToWriteColorParams()
-# ... (all profiles)
 ```
 
 ### When It's Called
@@ -746,7 +701,6 @@ $currentDefault.Bold             # $false (initially)
 
 # Modify current default
 $currentDefault.Bold = $true
-$currentDefault.InvalidateCache()
 
 # Or replace entirely
 $newDefault = [PSColorStyle]::new("MyDefault", "Cyan", $null)
@@ -905,9 +859,6 @@ $errorStyle.BackgroundColor = "DarkRed"
 $errorStyle.Gradient = @('Red', 'DarkRed')
 $errorStyle.Blink = $true
 
-# CRITICAL: Invalidate cache after modifications
-$errorStyle.InvalidateCache()
-
 # Now all Write-ColorError calls use the modified style
 Write-ColorError "Critical system failure!"
 ```
@@ -1025,7 +976,6 @@ Write-Host "Current default is bold: $($currentDefault.Bold)"
 
 # Modify default in place
 $currentDefault.Italic = $true
-$currentDefault.InvalidateCache()
 
 # List all registered profiles
 Write-Host "Registered profiles:"
@@ -1125,8 +1075,7 @@ graph TD
 
     G --> E
     H --> E
-    I --> J[Call InvalidateCache]
-    J --> E
+    I --> E
 
     E --> K[PowerShell Exit]
     K --> L[Default Lost]
@@ -1197,148 +1146,10 @@ graph LR
 
 ---
 
-## ⚡ Caching System
-
-<details open>
-<summary><b>How Caching Works</b></summary>
-
-### Parameter Conversion Caching
-
-The `ToWriteColorParams()` method implements an intelligent caching system:
-
-```mermaid
-graph TD
-    Start([ToWriteColorParams Called]) --> CheckCache{_cachedParams<br/>Not Null?}
-
-    CheckCache -->|Yes| ReturnCached[Return Clone of Cache<br/>36x Faster]
-    CheckCache -->|No| BuildParams[Build Params Hashtable]
-
-    BuildParams --> AddColor{ForegroundColor?}
-    AddColor -->|Yes| SetColor[Add 'Color' Key]
-    AddColor -->|No| CheckBG
-    SetColor --> CheckBG{BackgroundColor?}
-
-    CheckBG -->|Yes| SetBG[Add 'BackGroundColor' Key]
-    CheckBG -->|No| CheckGrad
-    SetBG --> CheckGrad{Gradient?}
-
-    CheckGrad -->|Yes| SetGrad[Add 'Gradient' Key]
-    CheckGrad -->|No| CheckBold
-    SetGrad --> CheckBold{Bold = True?}
-
-    CheckBold -->|Yes| SetBold[Add 'Bold' = True]
-    CheckBold -->|No| MoreProps
-    SetBold --> MoreProps[Process All Other Props:<br/>Italic, Underline, etc.]
-
-    MoreProps --> StoreCache[Store in _cachedParams]
-    StoreCache --> ReturnClone[Return Clone]
-
-    ReturnCached --> End([Return Hashtable])
-    ReturnClone --> End
-
-    style Start fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
-    style End fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#000
-    style ReturnCached fill:#fff3e0,stroke:#ef6c00,stroke-width:3px,color:#000
-    style StoreCache fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000
-```
-
-### Cache Lifecycle
-
-```mermaid
-graph LR
-    A[Style Created] --> B[_cachedParams = null]
-    B --> C[First ToWriteColorParams]
-    C --> D[Build Hashtable]
-    D --> E[Cache Result]
-    E --> F[Return Clone]
-
-    F --> G{Property Modified?}
-    G -->|No| H[Next ToWriteColorParams]
-    H --> I[Return Cached Clone<br/>36x Faster]
-    I --> G
-
-    G -->|Yes| J[InvalidateCache Called]
-    J --> K[_cachedParams = null]
-    K --> L[Next ToWriteColorParams]
-    L --> M[Rebuild Cache]
-    M --> F
-
-    style E fill:#fff3e0,stroke:#ef6c00,stroke-width:3px,color:#000
-    style I fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#000
-    style K fill:#ffcdd2,stroke:#c62828,stroke-width:2px,color:#000
-```
-
-### Performance Impact
-
-| Scenario | Performance |
-|----------|-------------|
-| **First call** to ToWriteColorParams | ~0.4ms |
-| **Cached call** to ToWriteColorParams | ~0.011ms **(36x faster)** |
-| 100 Write-ColorEX calls with same style | ~10ms total |
-| 100 Write-ColorEX calls without caching | ~40ms total |
-| **Overall improvement** | **4x faster** for repeated use |
-
-</details>
-
-<details>
-<summary><b>Cache Invalidation</b></summary>
-
-### When to Invalidate
-
-You **must** call `InvalidateCache()` after modifying:
-
-✅ **Color Properties**
-```powershell
-$style.ForegroundColor = "Magenta"
-$style.BackgroundColor = "DarkBlue"
-$style.Gradient = @('Red', 'Blue')
-$style.InvalidateCache()  # REQUIRED
-```
-
-✅ **Style Flags**
-```powershell
-$style.Bold = $true
-$style.Italic = $true
-$style.Underline = $true
-$style.InvalidateCache()  # REQUIRED
-```
-
-✅ **Formatting Properties**
-```powershell
-$style.StartTab = 2
-$style.LinesBefore = 1
-$style.HorizontalCenter = $true
-$style.InvalidateCache()  # REQUIRED
-```
-
-✅ **Behavior Properties**
-```powershell
-$style.ShowTime = $true
-$style.NoNewLine = $true
-$style.InvalidateCache()  # REQUIRED
-```
-
-❌ **Do NOT Invalidate After**
-```powershell
-$style.Name = "NewName"  # Name change doesn't affect params
-# No need to invalidate
-```
-
-### Automatic Invalidation
-
-The `New-ColorStyle` wrapper function handles caching automatically - you only need to manually invalidate when modifying an existing instance.
-
-</details>
-
----
-
 ## 💡 Best Practices
 
 > [!TIP]
 > **Use wrapper functions** (`New-ColorStyle`, `Set-ColorDefault`, `Get-ColorProfiles`) for most scenarios. Direct class access is for advanced use cases.
-
-> [!IMPORTANT]
-> **Always call `InvalidateCache()`** after modifying style properties to ensure changes take effect.
 
 > [!NOTE]
 > **Pre-register common styles** at script start and add them to Profiles for easy retrieval.
@@ -1384,20 +1195,7 @@ $variant2.Name = "Variant2"
 $variant2.ForegroundColor = "Yellow"
 ```
 
-### 4. Always Invalidate After Modifications
-```powershell
-# ✅ CORRECT
-$style.ForegroundColor = "Magenta"
-$style.Bold = $true
-$style.InvalidateCache()  # CRITICAL
-
-# ❌ WRONG - Cache not invalidated
-$style.ForegroundColor = "Magenta"
-$style.Bold = $true
-# Changes won't take effect on next use!
-```
-
-### 5. Check Profile Existence
+### 4. Check Profile Existence
 ```powershell
 # ✅ GOOD - Check before use
 $customStyle = [PSColorStyle]::GetProfile("Custom")
@@ -1408,7 +1206,7 @@ if ($null -ne $customStyle) {
 }
 ```
 
-### 6. Use Profiles for Session-Wide Styles
+### 5. Use Profiles for Session-Wide Styles
 ```powershell
 # ✅ GOOD - Add to profiles for reuse
 New-ColorStyle -Name "AppDefault" -ForegroundColor Cyan -Bold -AddToProfiles
@@ -1418,7 +1216,7 @@ $style = Get-ColorProfiles -Name "AppDefault"
 Write-ColorEX "Message" -StyleProfile $style
 ```
 
-### 7. Preserve Built-in Profiles
+### 6. Preserve Built-in Profiles
 ```powershell
 # ✅ GOOD - Clone before modifying
 $customError = [PSColorStyle]::GetProfile("Error").Clone()
@@ -1446,7 +1244,6 @@ $headerStyle.Bold = $true
 for ($i = 0; $i -lt 1000; $i++) {
     Write-ColorEX "Header $i" -StyleProfile $headerStyle
 }
-# Cache hit on every iteration (36x faster)
 
 # ❌ SLOW - Creating style in loop
 for ($i = 0; $i -lt 1000; $i++) {
@@ -1454,36 +1251,7 @@ for ($i = 0; $i -lt 1000; $i++) {
     $style.Bold = $true
     Write-ColorEX "Header $i" -StyleProfile $style
 }
-# No cache benefit, creates 1000 instances
-```
-
-### 2. Pre-warm Caches
-```powershell
-# ✅ GOOD - Pre-warm at initialization
-function Initialize-Styles {
-    $script:HeaderStyle = New-ColorStyle -Name "Header" -ForegroundColor Cyan -Bold
-    $script:ErrorStyle = New-ColorStyle -Name "Error" -ForegroundColor Red -Bold
-
-    # Pre-warm caches
-    $null = $script:HeaderStyle.ToWriteColorParams()
-    $null = $script:ErrorStyle.ToWriteColorParams()
-}
-
-Initialize-Styles
-```
-
-### 3. Use Profiles Collection
-```powershell
-# ✅ FASTER - Single hashtable lookup
-New-ColorStyle -Name "SQL" -ForegroundColor Blue -Italic -AddToProfiles
-
-# Later - fast retrieval
-$style = [PSColorStyle]::GetProfile("SQL")
-
-# ❌ SLOWER - Multiple variable lookups
-$script:SQLStyle = New-ColorStyle -Name "SQL" -ForegroundColor Blue -Italic
-$script:JSONStyle = New-ColorStyle -Name "JSON" -ForegroundColor Magenta -Italic
-$script:XMLStyle = New-ColorStyle -Name "XML" -ForegroundColor Yellow -Italic
+# Creates 1000 instances
 ```
 
 </details>
@@ -1499,17 +1267,18 @@ $script:XMLStyle = New-ColorStyle -Name "XML" -ForegroundColor Yellow -Italic
 
 **Symptom:** Modified style properties don't take effect
 
-**Cause:** Cache not invalidated after property changes
+**Cause:** A parameter given on the command line takes precedence over the same setting in the style
 
 **Solution:**
 ```powershell
 $style.ForegroundColor = "Magenta"
 $style.Bold = $true
 
-# MUST invalidate cache
-$style.InvalidateCache()
+# ❌ -Color on the command line wins over the style's ForegroundColor
+Write-ColorEX "Test" -StyleProfile $style -Color Cyan
 
-Write-ColorEX "Test" -StyleProfile $style  # Now uses updated properties
+# ✅ Leave it off: the next use has the changes, with no other call needed
+Write-ColorEX "Test" -StyleProfile $style
 ```
 
 ---
@@ -1556,30 +1325,7 @@ New-ColorStyle -Name "MyDefault" -ForegroundColor Green -SetAsDefault
 
 ---
 
-### Issue 4: Cloned Style Shares Cache
-
-**Symptom:** Modifying clone affects original
-
-**Cause:** Misunderstanding of clone behavior
-
-**Solution:**
-```powershell
-# Clone() creates independent instances
-$original = [PSColorStyle]::new("Original", "Cyan", $null)
-$clone = $original.Clone()
-
-# These are independent - no sharing
-$clone.ForegroundColor = "Magenta"
-$clone.InvalidateCache()
-
-# Original is unchanged
-Write-ColorEX "Original is still Cyan" -StyleProfile $original
-Write-ColorEX "Clone is Magenta" -StyleProfile $clone
-```
-
----
-
-### Issue 5: Gradient Not Displaying
+### Issue 4: Gradient Not Displaying
 
 **Symptom:** Gradient appears as solid color
 
@@ -1590,7 +1336,7 @@ Write-ColorEX "Clone is Magenta" -StyleProfile $clone
 # Check terminal support
 $support = Test-AnsiSupport -Silent
 
-if ($support -eq 'TrueColor' -or $support -eq 'ANSI8') {
+if ($support.ColorSupport -eq 'TrueColor' -or $support.ColorSupport -eq 'ANSI8') {
     $style = [PSColorStyle]::new("Gradient", $null, $null)
     $style.Gradient = @('Red', 'Blue')
 } else {
@@ -1622,7 +1368,7 @@ if ($support -eq 'TrueColor' -or $support -eq 'ANSI8') {
 
 ### Documentation
 - [Module Overview](../README.md) - Complete documentation
-- [Terminal Compatibility](../README.md#terminal-compatibility-matrix) - ANSI support details
+- [Terminal Compatibility](../../README.md#terminal-compatibility-matrix) - ANSI support details
 
 ---
 
@@ -1662,9 +1408,9 @@ if ($support -eq 'TrueColor' -or $support -eq 'ANSI8') {
 |--------|---------|-------------|
 | `SetAsDefault()` | void | Set as global default |
 | `AddToProfiles()` | void | Add to Profiles collection |
-| `ToWriteColorParams()` | Hashtable | Convert to parameters (cached) |
-| `InvalidateCache()` | void | Clear parameter cache |
-| `Clone()` | PSColorStyle | Create deep copy |
+| `ToWriteColorParams()` | Hashtable | Convert to parameters |
+| `InvalidateCache()` | void | Does nothing (hidden, not needed) |
+| `Clone()` | PSColorStyle | Create copy |
 | `GetProfile($name)` | PSColorStyle | Get profile by name (static) |
 | `InitializeDefaultProfiles()` | void | Initialize built-ins (static) |
 
@@ -1694,9 +1440,6 @@ $variant = $style.Clone()
 
 # Convert to params
 $params = $style.ToWriteColorParams()
-
-# Invalidate after changes
-$style.InvalidateCache()
 ```
 
 </details>
@@ -1705,6 +1448,6 @@ $style.InvalidateCache()
 
 <div align="center">
 
-**PSWriteColorEX** v1.0.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
+**PSWriteColorEX** v1.1.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
 
 </div>

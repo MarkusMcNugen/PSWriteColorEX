@@ -31,7 +31,7 @@ New-GradientColorArray
 ### ✨ Key Features
 
 - **🎨 Multi-Stop Gradients** - Support for 2+ color waypoints
-- **⚡ Highly Optimized** - Uses cached lookup tables and List<T> for performance
+- **⚡ Optimized** - Uses the module's color table, built on first use, and a pre-allocated List<T>
 - **🔄 Linear Interpolation** - Smooth RGB color transitions
 - **🌈 Flexible Input** - Accepts color names, hex codes, or RGB arrays
 - **📊 Two Output Modes** - TrueColor RGB or ANSI8 256-color codes
@@ -51,8 +51,10 @@ New-GradientColorArray
 
 Array of gradient waypoints. Accepts:
 - **Color names** - `'Red'`, `'Blue'`, `'Cyan'`, etc.
-- **Hex codes** - `'#FF0000'`, `'0x00FF00'`, `'RRGGBB'`
+- **Hex codes** - `'#FF0000'`, `'0x00FF00'` (starting with `#` or `0x`)
 - **RGB arrays** - `@(255, 0, 0)`, `@(0, 255, 0)`
+
+A name not in the color table, a hex code without `#` or `0x`, and an invalid hex code give gray `@(128, 128, 128)`; an invalid hex code also writes a warning.
 
 ```powershell
 # Two-color gradient
@@ -127,14 +129,14 @@ $gradient = New-GradientColorArray -Colors @('Red', 'Blue') -Steps 10 -Mode True
 
 # Returns:
 # @(255,0,0)    # Pure red
-# @(226,0,28)
-# @(198,0,56)
+# @(227,0,28)
+# @(198,0,57)
 # @(170,0,85)
-# @(141,0,113)
-# @(113,0,141)
+# @(142,0,113)
+# @(113,0,142)
 # @(85,0,170)
-# @(56,0,198)
-# @(28,0,226)
+# @(57,0,198)
+# @(28,0,227)
 # @(0,0,255)    # Pure blue
 ```
 
@@ -148,7 +150,7 @@ $gradient = New-GradientColorArray -Colors @('Red', 'Blue') -Steps 10 -Mode True
 $gradient = New-GradientColorArray -Colors @('#FF8000', '#8000FF') -Steps 8 -Mode ANSI8
 
 # Returns ANSI8 codes:
-# 208, 214, 177, 171, 135, 99, 93, 93
+# 208, 202, 167, 167, 132, 127, 92, 93
 ```
 
 </details>
@@ -262,14 +264,16 @@ ratio = i / (steps - 1)
 value = start + (end - start) × ratio
 ```
 
+The `[int]` conversion rounds each value to the nearest whole number (a half goes to the even number).
+
 **Example:** Red (255,0,0) to Blue (0,0,255) with 5 steps
 
 | Step | Ratio | R | G | B | Result |
 |------|-------|---|---|---|--------|
 | 0 | 0.00 | 255 | 0 | 0 | `@(255,0,0)` Pure Red |
-| 1 | 0.25 | 191 | 0 | 63 | `@(191,0,63)` |
-| 2 | 0.50 | 127 | 0 | 127 | `@(127,0,127)` Purple |
-| 3 | 0.75 | 63 | 0 | 191 | `@(63,0,191)` |
+| 1 | 0.25 | 191 | 0 | 64 | `@(191,0,64)` |
+| 2 | 0.50 | 128 | 0 | 128 | `@(128,0,128)` Purple |
+| 3 | 0.75 | 64 | 0 | 191 | `@(64,0,191)` |
 | 4 | 1.00 | 0 | 0 | 255 | `@(0,0,255)` Pure Blue |
 
 </details>
@@ -331,7 +335,7 @@ Steps are **evenly distributed** across color segments automatically.
 ### 1. **List<T> Instead of Array +=**
 
 ```powershell
-# ❌ BAD - Creates new array each iteration (18,000x slower)
+# ❌ BAD - Creates new array each iteration
 $colors = @()
 for ($i = 0; $i -lt 1000; $i++) {
     $colors += $rgb
@@ -344,29 +348,14 @@ for ($i = 0; $i -lt 1000; $i++) {
 }
 ```
 
-### 2. **Cached Command Availability**
-
-```powershell
-# Check once, use many times
-$hasConvertHex = $null -ne (Get-Command Convert-HexToRGB -ErrorAction SilentlyContinue)
-$hasConvertANSI8 = $null -ne (Get-Command Convert-RGBToANSI8 -ErrorAction SilentlyContinue)
-
-# Use cached checks in loop
-foreach ($color in $Colors) {
-    if ($hasConvertHex) {
-        $rgb = Convert-HexToRGB $color
-    }
-}
-```
-
-### 3. **Pre-Allocated List Capacity**
+### 2. **Pre-Allocated List Capacity**
 
 ```powershell
 # Pre-allocate exact size (avoids array resizing)
 $gradientColors = [System.Collections.Generic.List[object]]::new($Steps)
 ```
 
-### 4. **Cached Color Table Access**
+### 3. **Cached Color Table Access**
 
 ```powershell
 # Use module's cached color table (built once, reused)
@@ -376,16 +365,6 @@ if ($null -eq $script:CachedColorTable) {
 $colorEntry = $script:CachedColorTable[$colorName]
 ```
 
-### Performance Metrics
-
-| Operation | Array Count | Time (ms) | Notes |
-|-----------|-------------|-----------|-------|
-| Generate 10-color gradient | 10 | <1 | Instant |
-| Generate 100-color gradient | 100 | ~2 | Very fast |
-| Generate 1000-color gradient | 1000 | ~15 | Optimized with List<T> |
-
-**Memory efficient**: No intermediate arrays created during interpolation.
-
 </details>
 
 <details>
@@ -394,12 +373,10 @@ $colorEntry = $script:CachedColorTable[$colorName]
 ```mermaid
 graph LR
     subgraph "Performance Optimizations"
-        A[Color Conversion<br/>Cached Commands] --> B[List.Add<br/>18,000x faster]
-        B --> C[Direct Hashtable<br/>2x faster lookup]
+        B[List.Add<br/>Instead of Array +=] --> C[Direct Hashtable<br/>Color table lookup]
         C --> D[Pre-allocated Lists<br/>Avoids resizing]
     end
 
-    style A fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
     style B fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
     style C fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000
     style D fill:#bbdefb,stroke:#1976d2,stroke-width:2px,color:#000
@@ -486,7 +463,7 @@ Write-ColorEX -Text 'GRAD','OVERRIDE','GRAD' `
 3. Segment 1: Uses Yellow (entire segment, skips gradient)
 4. Segment 2: Uses gradient colors (continues from where segment 1 left off)
 
-**Result:** Seamless gradient with selective overrides.
+**Result:** One gradient across the whole line, with selective overrides.
 
 </details>
 
@@ -685,7 +662,7 @@ New-GradientColorArray -Colors @('Red','Blue') -Steps 100 -Mode TrueColor
 
 ```powershell
 # Check terminal support first
-$support = Test-AnsiSupport -Silent
+$support = (Test-AnsiSupport -Silent).ColorSupport
 if ($support -eq 'TrueColor' -or $support -eq 'ANSI8') {
     # Safe to use gradients
 }
@@ -706,12 +683,12 @@ New-GradientColorArray -Colors @('Red','Blue') -Steps 10 -Mode TrueColor
 
 ### Issue 4: Performance Slow with Large Gradients
 
-**Cause:** Very high step count (1000+)
-**Solution:** Use smaller step count or ensure ANSI8 mode
+**Cause:** Very high step count (1000+), above all in ANSI8 mode, which converts each step with Convert-RGBToANSI8
+**Solution:** Use smaller step count, or TrueColor mode where the terminal supports it
 
 ```powershell
-# For very long text, ANSI8 is faster
-New-GradientColorArray -Colors @('Red','Blue') -Steps 5000 -Mode ANSI8  # Faster
+# For very long text, TrueColor is faster: it skips the ANSI8 conversion
+New-GradientColorArray -Colors @('Red','Blue') -Steps 5000 -Mode TrueColor  # Faster
 ```
 
 </details>
@@ -720,11 +697,11 @@ New-GradientColorArray -Colors @('Red','Blue') -Steps 5000 -Mode ANSI8  # Faster
 
 ## 🔗 Related Commands
 
-- [`Write-ColorEX`](Write-ColorEX.md) - Main colored output function (uses gradients)
-- [`Convert-HexToRGB`](Color-Conversions.md#convert-hextorgb) - Hex to RGB conversion
-- [`Convert-RGBToANSI8`](Color-Conversions.md#convert-rgbtoansi8) - RGB to ANSI8 conversion
-- [`Test-AnsiSupport`](Test-AnsiSupport.md) - Terminal capability detection
-- [Color Conversions](Color-Conversions.md) - Complete color conversion documentation
+- [`Write-ColorEX`](../Public/Write-ColorEX.md) - Main colored output function (uses gradients)
+- [`Convert-HexToRGB`](../Public/Color-Conversions.md#convert-hextorgb) - Hex to RGB conversion
+- [`Convert-RGBToANSI8`](../Public/Color-Conversions.md#convert-rgbtoansi8) - RGB to ANSI8 conversion
+- [`Test-AnsiSupport`](../Public/Test-AnsiSupport.md) - Terminal capability detection
+- [Color Conversions](../Public/Color-Conversions.md) - Complete color conversion documentation
 - [Module Overview](../README.md) - Full documentation
 
 ---
@@ -765,6 +742,6 @@ New-GradientColorArray -Colors @(@(255,0,0),@(0,0,255)) -Steps 10 -Mode TrueColo
 
 <div align="center">
 
-**PSWriteColorEX** v2.0.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
+**PSWriteColorEX** v1.1.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
 
 </div>

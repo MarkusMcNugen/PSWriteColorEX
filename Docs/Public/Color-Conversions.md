@@ -6,7 +6,7 @@
 
 ## 📑 Table of Contents
 
-[Overview](#overview) • [Convert-HexToRGB](#convert-hextorgb) • [Convert-RGBToANSI8](#convert-rgbtoansi8) • [Convert-RGBToANSI4](#convert-rgbtoansi4) • [Get-ColorTableWithRGB](#get-colortablewithrgb) • [Lighten-RGBColor](#lighten-rgbcolor) • [Lighten-ColorName](#lighten-colorname) • [Lighten-ANSI8Color](#lighten-ansi8color) • [Conversion Flow](#-automatic-conversion-chain) • [Performance](#-performance-optimizations) • [Best Practices](#-best-practices)
+[Overview](#overview) • [Convert-HexToRGB](#convert-hextorgb) • [Convert-RGBToANSI8](#convert-rgbtoansi8) • [Convert-RGBToANSI4](#convert-rgbtoansi4) • [Get-ColorTableWithRGB](#get-colortablewithrgb) • [Get-LighterRGBColor](#get-lighterrgbcolor) • [Get-LighterColorName](#get-lightercolorname) • [Get-LighterANSI8Color](#get-lighteransi8color) • [Conversion Flow](#-automatic-conversion-chain) • [Performance](#-performance-optimizations) • [Best Practices](#-best-practices)
 
 ---
 
@@ -16,10 +16,10 @@ PSWriteColorEX includes optimized color conversion functions for translating bet
 
 ### ✨ Key Features
 
-- **⚡ Highly Optimized** - Cached lookup tables for 5-10x faster conversions
+- **⚡ Lookup Table** - `Convert-RGBToANSI8` reads each channel's step in the 6x6x6 color cube from a 256-entry table
 - **🔄 Automatic Degradation** - TrueColor → ANSI8 → ANSI4 → Native
 - **✅ Input Validation** - Range checking with helpful warnings
-- **🎨 70+ Color Families** - Extended color names with Dark/Normal/Light variants
+- **🎨 44 Color Families** - 129 color names, most with Dark/Normal/Light variants
 - **🌍 Cross-Platform** - Consistent colors across Windows, Linux, macOS
 - **🔧 Environment Control** - FORCE_COLOR and NO_COLOR support
 
@@ -133,13 +133,14 @@ Convert-RGBToANSI8 [-RGB] <Int32[]> [<CommonParameters>]
 ```
 
 ### Description
-Maps RGB color values to the closest match in the ANSI 256-color palette (8-bit) using intelligent color matching:
+Maps RGB color values to the closest match in the ANSI 256-color palette (8-bit), from:
 - **6x6x6 color cube** (colors 16-231) - 216 colors
 - **24 grayscale ramp** (colors 232-255) - 24 shades
-- **16 base colors** (colors 0-15) - Standard ANSI colors
+
+A color whose channels are within 10 of each other maps to the grays, or to 16 (black) and 231 (white) at the ends. It never returns the 16 base colors (0-15).
 
 ### Performance
-**⚡ Optimized with lookup table** - RGB to 6-level conversion cached for 5-10x faster performance.
+**⚡ Optimized with lookup table** - Each channel's step in the 6-level cube comes from a 256-entry table built when the module is imported.
 
 ### Parameters
 
@@ -149,7 +150,7 @@ Maps RGB color values to the closest match in the ANSI 256-color palette (8-bit)
 - Out-of-range values are clamped
 
 ### Return Value
-Returns ANSI 256-color code (0-255). Uses optimized lookup table for 6-level conversions.
+Returns ANSI 256-color code (16-255). Uses the lookup table for 6-level conversions.
 
 ### Examples
 
@@ -184,13 +185,10 @@ graph TD
     Validate --> CheckGray{Grayscale?<br/>R≈G≈B<br/>within 10}
 
     CheckGray -->|Yes| CalcGray[Calculate Gray Level]
-    CheckGray -->|No| CheckBase{Close to<br/>Base Color?}
+    CheckGray -->|No| UseCube[Use 6x6x6 Cube<br/>16-231]
 
-    CalcGray --> MapGray[Map to Grayscale<br/>232-255]
+    CalcGray --> MapGray[Map to Grayscale<br/>232-255, or 16 / 231 at the ends]
     MapGray --> Return([Return ANSI8 Code])
-
-    CheckBase -->|Yes| UseBase[Use Base Color<br/>0-15]
-    CheckBase -->|No| UseCube[Use 6x6x6 Cube<br/>16-231]
 
     UseCube --> LookupR[Lookup R Level<br/>Using Cache Table]
     UseCube --> LookupG[Lookup G Level<br/>Using Cache Table]
@@ -201,7 +199,6 @@ graph TD
     LookupB --> CalcCode
 
     CalcCode --> Return
-    UseBase --> Return
 
     style Start fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style Return fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
@@ -244,12 +241,12 @@ Convert-RGBToANSI4 [-RGB] <Int32[]> [<CommonParameters>]
 ```
 
 ### Description
-Maps RGB values to the closest match in the ANSI 16-color palette (4-bit). Intelligently determines whether to use normal (30-37) or bright (90-97) color variants based on perceived brightness.
+Maps RGB values to the closest match in the ANSI 16-color palette (4-bit). Uses the bright (90-97) variant when the strongest channel is 200 or more, and the normal (30-37) variant otherwise.
 
 ### Algorithm
-1. Calculate brightness: `(R + G + B) / 3`
+1. Calculate brightness: `(R + G + B) / 3`; a color whose channels are within 30 of each other maps by brightness to black (30, below 64), dark gray (90, below 128), gray (37, below 192) or white (97)
 2. Determine dominant color channel(s)
-3. Select normal (brightness < 128) or bright (≥128) variant
+3. Select normal (strongest channel < 200) or bright (≥200) variant
 4. Return appropriate ANSI code
 
 ### Parameters
@@ -290,7 +287,7 @@ Convert-RGBToANSI4 @(128, 128, 128)
 graph TD
     Start([RGB Input<br/>@R,G,B]) --> CalcBright[Calculate Brightness<br/>R+G+B÷3]
 
-    CalcBright --> CheckBright{Brightness<br/>≥128?}
+    CalcBright --> CheckBright{Strongest Channel<br/>≥200?}
 
     CheckBright -->|Yes| UseBright[Use Bright Colors<br/>90-97]
     CheckBright -->|No| UseNormal[Use Normal Colors<br/>30-37]
@@ -307,7 +304,7 @@ graph TD
     CheckChannels1 -->|R≈G>B| BrightYellow[93 - Bright Yellow]
     CheckChannels1 -->|R≈B>G| BrightMagenta[95 - Bright Magenta]
     CheckChannels1 -->|G≈B>R| BrightCyan[96 - Bright Cyan]
-    CheckChannels1 -->|R≈G≈B| BrightWhite[97 - White]
+    CheckChannels1 -->|R≈G≈B| BrightWhite[37 or 97<br/>by Brightness]
 
     CheckChannels2 -->|R>G,B| Red[31 - Red]
     CheckChannels2 -->|G>R,B| Green[32 - Green]
@@ -315,7 +312,7 @@ graph TD
     CheckChannels2 -->|R≈G>B| Yellow[33 - Yellow]
     CheckChannels2 -->|R≈B>G| Magenta[35 - Magenta]
     CheckChannels2 -->|G≈B>R| Cyan[36 - Cyan]
-    CheckChannels2 -->|R≈G≈B| Gray[37 - Gray]
+    CheckChannels2 -->|R≈G≈B| Gray[30, 90, 37 or 97<br/>by Brightness]
 
     BrightRed --> Return([Return ANSI4 Code])
     BrightGreen --> Return
@@ -386,10 +383,10 @@ Returns a hashtable containing all predefined color mappings. Each entry contain
 ```
 
 ### Performance
-**⚡ Cached at module load** - Color table built once and reused for ~1000x faster lookups.
+**⚡ Cached on first use** - Write-ColorEX builds the color table on first use and keeps it for the session. Each call to `Get-ColorTableWithRGB` returns a new table.
 
 ### Return Value
-Hashtable with 70+ color names as keys, each containing 5-element array:
+Hashtable with 129 color names as keys, each containing 5-element array:
 - `[0]` - Native PowerShell color name
 - `[1]` - ANSI 4-bit foreground code
 - `[2]` - ANSI 4-bit background code
@@ -422,13 +419,13 @@ if ($colors.ContainsKey('Orange')) {
 </details>
 
 <details>
-<summary><b>🎨 Available Color Families (70+)</b></summary>
+<summary><b>🎨 Available Color Families (44)</b></summary>
 
 ### Basic Colors (PowerShell Native)
 | Family | Dark | Normal | Light |
 |--------|------|--------|-------|
 | **Neutral** | DarkGray | Gray | LightGray/White |
-| **Black** | Black | LightBlack | - |
+| **Black** | - | Black | LightBlack |
 | **Red** | DarkRed | Red | LightRed |
 | **Green** | DarkGreen | Green | LightGreen |
 | **Blue** | DarkBlue | Blue | LightBlue |
@@ -455,19 +452,19 @@ Each color family maintains perceptual consistency across all color modes:
 
 ---
 
-## Lighten-RGBColor
+## Get-LighterRGBColor
 
 <details open>
 <summary><b>Lightens RGB colors for terminals without bold font support</b></summary>
 
 ### Purpose
 
-Multiplies RGB values by a lightening factor to simulate color brightening when Bold style is applied in terminals that don't render true bold fonts.
+Multiplies RGB values by a lightening factor to simulate color brightening when Bold style is applied in terminals that don't render true bold fonts. Each channel is at least 255 × (Factor − 1), which is 102 with the default factor, so black becomes dark gray. `Lighten-RGBColor` is an alias of this function.
 
 ### Syntax
 
 ```powershell
-Lighten-RGBColor
+Get-LighterRGBColor
     -RGB <int[]>
     [-Factor <double>]
 ```
@@ -485,15 +482,15 @@ Returns lightened RGB array `@(R, G, B)` with values clamped to 0-255 range.
 
 ```powershell
 # Lighten dark red (default 40%)
-Lighten-RGBColor -RGB @(139, 0, 0)
-# Returns: @(195, 0, 0)
+Get-LighterRGBColor -RGB @(139, 0, 0)
+# Returns: @(195, 102, 102)
 
 # Lighten with custom factor (60% lighter)
-Lighten-RGBColor -RGB @(100, 100, 100) -Factor 1.6
+Get-LighterRGBColor -RGB @(100, 100, 100) -Factor 1.6
 # Returns: @(160, 160, 160)
 
 # Clamping at 255 maximum
-Lighten-RGBColor -RGB @(200, 200, 200)
+Get-LighterRGBColor -RGB @(200, 200, 200)
 # Returns: @(255, 255, 255)  # Clamped to max
 ```
 
@@ -502,25 +499,25 @@ Lighten-RGBColor -RGB @(200, 200, 200)
 This function is called automatically by `Write-ColorEX` when:
 - `-Bold` parameter is used
 - `$script:SupportsBoldFonts` is `$false` (terminal doesn't support bold fonts)
-- Color mode is TrueColor (24-bit RGB)
+- The color is an RGB array or hex code, or, in TrueColor mode, a color name with no lighter name (such as `LightRed` or `White`)
 
 </details>
 
 ---
 
-## Lighten-ColorName
+## Get-LighterColorName
 
 <details open>
-<parameter name="summary"><b>Lightens color names for ANSI4/ANSI8 modes</b></summary>
+<summary><b>Lightens color names for terminals without bold font support</b></summary>
 
 ### Purpose
 
-Shifts color family names from Dark → Normal → Light variants for ANSI4/ANSI8 color modes when Bold style is applied in terminals that don't render true bold fonts.
+Shifts color family names from Dark → Normal → Light variants, in every color mode, when Bold style is applied in terminals that don't render true bold fonts. The lighter name is used only when the color table has it. `Lighten-ColorName` is an alias of this function.
 
 ### Syntax
 
 ```powershell
-Lighten-ColorName
+Get-LighterColorName
     -ColorName <string>
 ```
 
@@ -530,7 +527,7 @@ Lighten-ColorName
 
 ### Return Value
 
-Returns lightened color name (string).
+Returns lightened color name (string), or the name unchanged when the color table has no lighter name for it.
 
 ### Lightening Rules
 
@@ -539,25 +536,30 @@ Returns lightened color name (string).
 | `Dark*` | Remove "Dark" prefix | `DarkRed` → `Red` |
 | Normal color | Add "Light" prefix | `Red` → `LightRed` |
 | `Light*` | Unchanged (already lightest) | `LightRed` → `LightRed` |
+| No lighter name in the table, or not a table name | Unchanged | `White` → `White` |
 
 ### Examples
 
 ```powershell
 # Lighten dark color (Dark → Normal)
-Lighten-ColorName -ColorName "DarkRed"
+Get-LighterColorName -ColorName "DarkRed"
 # Returns: "Red"
 
 # Lighten normal color (Normal → Light)
-Lighten-ColorName -ColorName "Blue"
+Get-LighterColorName -ColorName "Blue"
 # Returns: "LightBlue"
 
 # Already at lightest (no change)
-Lighten-ColorName -ColorName "LightGreen"
+Get-LighterColorName -ColorName "LightGreen"
 # Returns: "LightGreen"
 
 # Works with all color families
-Lighten-ColorName -ColorName "DarkSlateGray"
-# Returns: "SlateGray"
+Get-LighterColorName -ColorName "DarkSapphire"
+# Returns: "Sapphire"
+
+# No LightWhite in the table (no change)
+Get-LighterColorName -ColorName "White"
+# Returns: "White"
 ```
 
 ### Usage
@@ -565,39 +567,38 @@ Lighten-ColorName -ColorName "DarkSlateGray"
 This function is called automatically by `Write-ColorEX` when:
 - `-Bold` parameter is used
 - `$script:SupportsBoldFonts` is `$false` (terminal doesn't support bold fonts)
-- Color mode is ANSI8 (256-color) with named colors
-- Color mode is ANSI4 with named colors (though ANSI4 terminals handle this natively with SGR 1)
+- The color is a color name, in any color mode (console colors, ANSI4, ANSI8 or TrueColor)
 
 ### Color Family Examples
 
 ```powershell
 # Orange family
-Lighten-ColorName "DarkOrange"  # → "Orange"
-Lighten-ColorName "Orange"      # → "LightOrange"
+Get-LighterColorName "DarkOrange"  # → "Orange"
+Get-LighterColorName "Orange"      # → "LightOrange"
 
 # Slate family
-Lighten-ColorName "DarkSlate"   # → "Slate"
-Lighten-ColorName "Slate"       # → "LightSlate"
+Get-LighterColorName "DarkSlate"   # → "Slate"
+Get-LighterColorName "Slate"       # → "LightSlate"
 
 # Cyan family
-Lighten-ColorName "DarkCyan"    # → "Cyan"
-Lighten-ColorName "Cyan"        # → "LightCyan"
+Get-LighterColorName "DarkCyan"    # → "Cyan"
+Get-LighterColorName "Cyan"        # → "LightCyan"
 ```
 
 </details>
 
 ---
 
-## Lighten-ANSI8Color
+## Get-LighterANSI8Color
 
 <details open>
-<parameter name="summary"><b>Algorithmically lightens ANSI8 (256-color) codes</b></summary>
+<summary><b>Algorithmically lightens ANSI8 (256-color) codes</b></summary>
 
 ### Purpose
 
 Algorithmically lightens ANSI 256-color codes when Bold style is applied in terminals that don't render true bold fonts. Works across all ANSI8 color ranges: standard colors (0-15), RGB cube (16-231), and grayscale ramp (232-255).
 
-This provides a **robust alternative** to color-name-based lightening, enabling:
+This provides an **alternative** to color-name-based lightening, enabling:
 - Direct ANSI8 code lightening (e.g., `Write-ColorEX -Text "Test" -Color 196 -Bold -ANSI8`)
 - Super-lightening beyond predefined color families (e.g., `LightRed` can be lightened further)
 - Consistent 1.4x factor matching TrueColor behavior
@@ -605,7 +606,7 @@ This provides a **robust alternative** to color-name-based lightening, enabling:
 ### Syntax
 
 ```powershell
-Lighten-ANSI8Color
+Get-LighterANSI8Color
     -ANSI8Code <int>
     [-Factor <double>]
 ```
@@ -620,38 +621,38 @@ Lighten-ANSI8Color
 Returns lightened ANSI 256-color code (int, 0-255). Processing varies by input range:
 - **Standard colors (0-15)**: Maps dark (0-7) to bright (8-15), or converts to RGB for further lightening
 - **RGB cube (16-231)**: Converts to RGB, lightens mathematically, converts back to nearest ANSI8 code
-- **Grayscale ramp (232-255)**: Increments by ~25% brightness steps
+- **Grayscale ramp (232-255)**: Moves up (Factor − 1) × 10 steps of the 24-step ramp, 4 steps with the default factor
 
 ### Examples
 
 ```powershell
 # Lighten standard dark color (0-7 → 8-15)
-Lighten-ANSI8Color -ANSI8Code 4
+Get-LighterANSI8Color -ANSI8Code 4
 # Returns: 12 (Dark Blue → Bright Blue)
 
 # Lighten already-bright standard color via RGB conversion
-Lighten-ANSI8Color -ANSI8Code 9
-# Returns: ~9 or nearby (Red lightened via RGB math)
+Get-LighterANSI8Color -ANSI8Code 9
+# Returns: 203 (Red lightened via RGB math)
 
 # Lighten RGB cube color (e.g., bright red)
-Lighten-ANSI8Color -ANSI8Code 196
-# Returns: lightened red code (via RGB interpolation)
+Get-LighterANSI8Color -ANSI8Code 196
+# Returns: 203 (lightened red, via RGB)
 
 # Lighten grayscale ramp
-Lighten-ANSI8Color -ANSI8Code 240
-# Returns: ~246 (gray level incremented by ~6 steps)
+Get-LighterANSI8Color -ANSI8Code 240
+# Returns: 244 (gray level incremented by 4 steps)
 
 # Lighten with custom factor (60% lighter)
-Lighten-ANSI8Color -ANSI8Code 100 -Factor 1.6
-# Returns: significantly lighter color
+Get-LighterANSI8Color -ANSI8Code 100 -Factor 1.6
+# Returns: 186
 
 # Direct ANSI8 code with Bold (automatically lightened)
 Write-ColorEX -Text "Direct Code" -Color 196 -Bold -ANSI8
-# Module automatically calls Lighten-ANSI8Color internally
+# Module automatically calls Get-LighterANSI8Color internally
 
 # Super-lighten LightRed beyond family (ANSI8 mode)
 Write-ColorEX -Text "Super Light!" -Color LightRed -Bold -ANSI8
-# LightRed → ANSI8 code 9 → Lighten-ANSI8Color → even lighter
+# LightRed → ANSI8 code 9 → Get-LighterANSI8Color → 203
 ```
 
 ### Usage
@@ -659,7 +660,7 @@ Write-ColorEX -Text "Super Light!" -Color LightRed -Bold -ANSI8
 This function is called automatically by `Write-ColorEX` when:
 - `-Bold` parameter is used
 - `$script:SupportsBoldFonts` is `$false` (terminal doesn't support bold fonts)
-- Color mode is ANSI8 (256-color) with **integer codes** or **named colors that can't be lightened further via Lighten-ColorName**
+- Color mode is ANSI8 (256-color) with **integer codes** or **named colors that can't be lightened further via Get-LighterColorName**
 
 ### Algorithm Details
 
@@ -677,7 +678,7 @@ This function is called automatically by `Write-ColorEX` when:
 7 (Light Gray)  → 15 (White)
 
 # Bright colors (8-15) convert to RGB, lighten, convert back
-8-15 → RGB array → Lighten-RGBColor → Convert-RGBToANSI8
+8-15 → RGB array → Get-LighterRGBColor → Convert-RGBToANSI8
 ```
 
 #### RGB Cube (16-231)
@@ -689,7 +690,7 @@ This function is called automatically by `Write-ColorEX` when:
 # Algorithm:
 1. Decode ANSI8 code to r6, g6, b6 (0-5)
 2. Map to RGB using: rgbLevels[r6], rgbLevels[g6], rgbLevels[b6]
-3. Apply Lighten-RGBColor with Factor (default 1.4)
+3. Apply Get-LighterRGBColor with Factor (default 1.4)
 4. Convert back using Convert-RGBToANSI8
 5. Return nearest ANSI8 code
 ```
@@ -716,10 +717,10 @@ This function is called automatically by `Write-ColorEX` when:
 Write-ColorEX -Text "Test" -Color LightRed -Bold -ANSI8
 
 # Processing flow (when terminal doesn't support bold fonts):
-1. Try Lighten-ColorName("LightRed") → "LightRed" (no change, already Light*)
+1. Try Get-LighterColorName("LightRed") → "LightRed" (no change, already Light*)
 2. Detect no change occurred
 3. Convert "LightRed" to ANSI8 code: 9
-4. Call Lighten-ANSI8Color(9) → lightened code (via RGB conversion)
+4. Call Get-LighterANSI8Color(9) → 203 (via RGB conversion)
 5. Output with lightened ANSI8 code
 ```
 
@@ -731,29 +732,28 @@ Write-ColorEX -Text "Test" -Color 196 -Bold -ANSI8
 
 # Processing flow (when terminal doesn't support bold fonts):
 1. Detect integer input in ANSI8 mode
-2. Call Lighten-ANSI8Color(196) → lightened code
+2. Call Get-LighterANSI8Color(196) → 203
 3. Output with lightened ANSI8 code
 ```
 
-### Advantages Over Lighten-ColorName
+### Advantages Over Get-LighterColorName
 
-| Feature | Lighten-ColorName | Lighten-ANSI8Color |
+| Feature | Get-LighterColorName | Get-LighterANSI8Color |
 |---------|------------------|-------------------|
 | **Input** | Color name (string) | ANSI8 code (int) |
 | **Works with direct codes** | ❌ No | ✅ Yes |
 | **Super-lighten Light\*** | ❌ No (returns unchanged) | ✅ Yes (algorithmic) |
-| **Requires color table** | ✅ Yes | ⚠️ Optional (only for RGB cube) |
+| **Requires color table** | ✅ Yes | ❌ No |
 | **Consistency** | Family-based | Mathematical (1.4x factor) |
-| **Use case** | Named colors in ANSI4/ANSI8 | Integer codes, super-lightening |
+| **Use case** | Named colors in every mode | Integer codes, super-lightening |
 
 ### Performance
 
-- **Single call**: < 10ms (fast RGB conversions)
-- **100 calls**: < 50ms (optimized with Lighten-RGBColor and Convert-RGBToANSI8)
-- **No lookup table needed**: Algorithmic approach, minimal overhead
+- **No color table needed**: Algorithmic approach, using `Get-LighterRGBColor` and `Convert-RGBToANSI8`
 
 ### Aliases
 
+- `Lighten-ANSI8Color` - Long-form alias
 - `LA8` - Ultra-short alias
 - `Lighten-ANSI8` - Alternative name
 
@@ -875,10 +875,9 @@ $env:FORCE_COLOR = $null
 ### Example 3: RGB → Native PowerShell
 ```powershell
 # No ANSI support (PowerShell ISE)
-$env:FORCE_COLOR = '0'
 Write-ColorEX "Orange" -Color @(255,128,0) -TrueColor
 # Conversion: RGB(255,128,0) → ANSI4 code 93 → "Yellow"
-$env:FORCE_COLOR = $null
+# (FORCE_COLOR=0 is not the same: it writes plain text with no colors)
 ```
 
 ### Example 4: Mixed Input Formats
@@ -902,9 +901,9 @@ Write-ColorEX -Text "RGB ","Hex ","Named " `
 ```mermaid
 graph LR
     subgraph "Performance Optimizations"
-        A[Color Table Cache<br/>~1000x faster<br/>Built once at load] --> B[ANSI Detection Cache<br/>One-time detection<br/>Reused per session]
-        B --> C[RGB6Level Lookup<br/>5-10x faster ANSI8<br/>256-entry table]
-        C --> D[Hashtable Lookups<br/>2x faster<br/>Direct access pattern]
+        A[Color Table Cache<br/>Built on first use<br/>Kept for the session] --> B[ANSI Detection Cache<br/>One-time detection<br/>Reused per session]
+        B --> C[RGB6Level Lookup<br/>Built at import<br/>256-entry table]
+        C --> D[Hashtable Lookups<br/>Direct access pattern]
     end
 
     style A fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
@@ -921,9 +920,8 @@ graph LR
 ### Optimization Techniques
 
 1. **Color Table Caching**
-   - Built once at module load
-   - ~1000x faster than building on demand
-   - 70+ color families with all modes pre-calculated
+   - Built by Write-ColorEX on first use and kept for the session
+   - 129 color names in 44 families with all modes pre-calculated
 
 2. **ANSI Detection Caching**
    - Terminal capabilities detected once
@@ -933,25 +931,14 @@ graph LR
 3. **RGB6Level Lookup Table**
    - 256-entry table for RGB→6-level conversion
    - Used by `Convert-RGBToANSI8`
-   - 5-10x faster than calculation
+   - Built when the module is imported
 
 4. **Direct Hashtable Access**
-   - `$table[$key]` instead of `ContainsKey` + access
-   - 2x faster per lookup
-   - Applied to 40+ lookup locations
+   - `$table[$key]` instead of `ContainsKey` + access for color name lookups
 
 5. **Fast Path for Native Colors**
-   - Simple colored output skips ANSI processing
+   - Output with console colors only skips color mode detection and conversion
    - No conversion overhead when not needed
-
-### Benchmark Results
-
-| Operation | Count | Time | Performance |
-|-----------|-------|------|-------------|
-| Color table lookup | 1000 | 0.5ms | Cached, instant |
-| RGB→ANSI8 with lookup | 100 | 29ms | 5-10x optimized |
-| Hashtable direct access | 100 | ~0.1ms | 2x vs ContainsKey |
-| 100 Write-ColorEX calls | 100 | 97ms | Highly optimized |
 
 </details>
 
@@ -965,7 +952,7 @@ graph LR
 Override automatic terminal detection:
 
 ```powershell
-$env:FORCE_COLOR = '0'  # Disable ANSI (Native colors only)
+$env:FORCE_COLOR = '0'  # No colors or styles (plain text)
 $env:FORCE_COLOR = '1'  # Force ANSI4 (16 colors)
 $env:FORCE_COLOR = '2'  # Force ANSI8 (256 colors)
 $env:FORCE_COLOR = '3'  # Force TrueColor (16.7M colors)
@@ -989,8 +976,8 @@ $env:FORCE_COLOR = $null
 Disable all ANSI colors (follows [NO_COLOR standard](https://no-color.org/)):
 
 ```powershell
-$env:NO_COLOR = '1'  # Disable ANSI, use native colors
-Test-AnsiSupport    # Returns 'None'
+$env:NO_COLOR = '1'  # No colors or styles (plain text); TERM=dumb does the same
+(Test-AnsiSupport).ColorSupport    # Returns 'None'
 
 # Reset
 $env:NO_COLOR = $null
@@ -1021,15 +1008,15 @@ $env:NO_COLOR = $null
    # Good - Let module handle it
    Write-ColorEX "Text" -Color "#FF8000"
 
-   # Unnecessary - Manual conversion
+   # Unnecessary - Manual conversion (one @(R,G,B) array needs -TrueColor)
    $rgb = Convert-HexToRGB "#FF8000"
-   Write-ColorEX "Text" -Color $rgb
+   Write-ColorEX "Text" -Color $rgb -TrueColor
    ```
 
 2. **Use `-Silent` in production**
    ```powershell
    # Suppress warnings where fallback is expected
-   Write-ColorEX "Text" -Color @(300,400,500) -Silent
+   Write-ColorEX "Text" -Color @(300,400,500) -TrueColor -Silent
    ```
 
 3. **Test across color modes**
@@ -1057,9 +1044,9 @@ $env:NO_COLOR = $null
    function Get-ValidRGB {
        param($r, $g, $b)
        @(
-           [Math]::Clamp($r, 0, 255),
-           [Math]::Clamp($g, 0, 255),
-           [Math]::Clamp($b, 0, 255)
+           [Math]::Max(0, [Math]::Min(255, $r)),
+           [Math]::Max(0, [Math]::Min(255, $g)),
+           [Math]::Max(0, [Math]::Min(255, $b))
        )
    }
    ```
@@ -1079,6 +1066,6 @@ $env:NO_COLOR = $null
 
 <div align="center">
 
-**PSWriteColorEX** v2.0.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
+**PSWriteColorEX** v1.1.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
 
 </div>

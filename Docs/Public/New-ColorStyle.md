@@ -37,6 +37,9 @@ New-ColorStyle
     [-StartSpaces <Int32>]
     [-LinesBefore <Int32>]
     [-LinesAfter <Int32>]
+    [-AutoPad <Int32>]
+    [-PadLeft]
+    [-PadChar <Char>]
     [-AddToProfiles]
     [-SetAsDefault]
     [<CommonParameters>]
@@ -54,8 +57,8 @@ New-ColorStyle
 - **🎯 Reusable Profiles** - Create once, use many times
 - **🌈 Gradient Support** - Include smooth color transitions
 - **💾 Profile Storage** - Save to session-wide collection
-- **🔧 Flexible Configuration** - All Write-ColorEX parameters supported
-- **⚡ Performance Optimized** - Cached parameter conversion (36x faster)
+- **🔧 Flexible Configuration** - Colors, gradients, text styles, layout and padding in one object
+- **⚡ Changes Apply on Next Use** - A change to a property applies to the style's next use
 - **🔄 Cloneable** - Create variations from existing styles
 
 ---
@@ -216,7 +219,6 @@ Returns a `PSColorStyle` object with the following capabilities:
 | **Use with Write-ColorEX** | Pass to `-StyleProfile` parameter |
 | **Modification** | Change properties after creation |
 | **Cloning** | Create variations with `.Clone()` method |
-| **Caching** | Parameter conversion cached for performance |
 | **Profile Access** | Retrieved via `Get-ColorProfiles` if added |
 
 ---
@@ -329,9 +331,6 @@ $style = New-ColorStyle -Name "Dynamic" -ForegroundColor Cyan
 $style.Bold = $true
 $style.Underline = $true
 $style.Gradient = @('Cyan', 'Magenta')
-
-# Invalidate cache after modifications
-$style.InvalidateCache()
 
 Write-ColorEX "Modified style" -StyleProfile $style
 ```
@@ -466,19 +465,12 @@ graph TD
     Available3 --> Use
 
     Use --> Apply[Write-ColorEX -StyleProfile]
-    Apply --> Cache{Cached Params<br/>Exist?}
+    Apply --> BuildParams[Build Params Hashtable]
 
-    Cache -->|Yes| UseCached[Use Cached<br/>36x Faster]
-    Cache -->|No| BuildParams[Build Params Hashtable]
-
-    BuildParams --> CacheResult[Cache for Future]
-    CacheResult --> UseCached
-
-    UseCached --> Output[Styled Output]
+    BuildParams --> Output[Styled Output]
 
     style Create fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
     style Output fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#000
-    style UseCached fill:#c8e6c9,stroke:#388e3c,stroke-width:2px,color:#000
     style AddProf fill:#e1bee7,stroke:#8e24aa,stroke-width:2px,color:#000
     style SetDef fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
 ```
@@ -568,50 +560,6 @@ graph TD
 
 ---
 
-## ⚡ Performance Considerations
-
-<details>
-<summary><b>Caching System</b></summary>
-
-PSColorStyle objects cache their parameter conversion for optimal performance:
-
-```mermaid
-graph LR
-    A[First Use] --> B[ToWriteColorParams Called]
-    B --> C[Build Hashtable]
-    C --> D[Cache Result]
-    D --> E[Return Params]
-    E --> F[Second Use]
-    F --> G[Return Cached<br/>36x Faster]
-
-    style A fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#000
-    style G fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#000
-    style D fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
-```
-
-### Performance Metrics
-
-| Operation | First Call | Cached Calls | Improvement |
-|-----------|------------|--------------|-------------|
-| ToWriteColorParams | ~0.4ms | ~0.011ms | **36x faster** |
-| Write-ColorEX with profile | Normal | Optimized | Cached params |
-| 100 calls with same profile | ~40ms | ~10ms | **4x faster** |
-
-### Cache Invalidation
-
-```powershell
-# Modify style properties
-$style.Bold = $true
-$style.Gradient = @('Red', 'Blue')
-
-# Must invalidate cache after modifications
-$style.InvalidateCache()
-```
-
-</details>
-
----
-
 ## 💡 Best Practices
 
 > [!TIP]
@@ -619,9 +567,6 @@ $style.InvalidateCache()
 
 > [!NOTE]
 > **Use descriptive names** - "ErrorCritical" is better than "Style1".
-
-> [!IMPORTANT]
-> **Invalidate cache after modifications** - Always call `.InvalidateCache()` if you modify a style after creation.
 
 <details>
 <summary><b>Development Best Practices</b></summary>
@@ -673,7 +618,7 @@ New-ColorStyle -Name "Rainbow" -Gradient @('Red','Orange','Yellow','Green','Blue
 # Check support before using advanced features
 $ansiSupport = Test-AnsiSupport -Silent
 
-if ($ansiSupport -eq 'TrueColor') {
+if ($ansiSupport.ColorSupport -eq 'TrueColor') {
     $style = New-ColorStyle -Name "Gradient" -Gradient @('#FF0000','#0000FF')
 } else {
     $style = New-ColorStyle -Name "Basic" -ForegroundColor Red
@@ -750,8 +695,14 @@ $style = New-ColorStyle -Name "Fallback" -ForegroundColor Cyan
 
 **Solution:**
 ```powershell
+$style.ForegroundColor = "Magenta"
 $style.Bold = $true
-$style.InvalidateCache()  # MUST call after modifications
+
+# A change applies to the next use; no other call is needed
+Write-ColorEX "Test" -StyleProfile $style
+
+# A parameter given on the command line takes precedence over the style
+Write-ColorEX "Test" -StyleProfile $style -Color Cyan   # Cyan, bold
 ```
 
 ### Issue 3: Style Not Found in Profiles
@@ -785,7 +736,7 @@ New-ColorStyle -Name "Custom" -ForegroundColor Green -SetAsDefault
 - [`Write-ColorEX`](Write-ColorEX.md) - Use styles with main output function
 - [`Get-ColorProfiles`](Get-ColorProfiles.md) - Retrieve saved style profiles
 - [`Set-ColorDefault`](Set-ColorDefault.md) - Set default style
-- [PSColorStyle Class](../README.md#pscolorstyle-class) - Class documentation
+- [PSColorStyle Class](PSColorStyle-Class.md) - Class documentation
 - [Module Overview](../README.md) - Complete documentation
 
 ---
@@ -845,6 +796,6 @@ New-ColorStyle -Name "Default" -ForegroundColor Green -SetAsDefault
 
 <div align="center">
 
-**PSWriteColorEX** v2.0.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
+**PSWriteColorEX** v1.1.0 | MIT License | [GitHub](https://github.com/MarkusMcNugen/PSWriteColorEX)
 
 </div>
