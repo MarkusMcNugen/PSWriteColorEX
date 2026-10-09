@@ -58,7 +58,7 @@
         Returns: 10
 
     .NOTES
-        Author: MarkusMcNugen
+        Author: Mark Newton
         License: MIT
         Requires: PowerShell 5.1 or later
 

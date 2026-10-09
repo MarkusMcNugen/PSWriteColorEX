@@ -14,21 +14,26 @@
         DETECTION:
         - Color support levels: TrueColor (24-bit), ANSI8 (256-color), ANSI4 (16-color), None
         - Bold font rendering vs color brightening detection
-        - Style support: Italic, Underline, Blink, Faint, CrossedOut, DoubleUnderline, Overline
+        - Style support: Italic, Underline, Blink, Faint, CrossedOut, DoubleUnderline, Overline, Reverse
         - Terminal-specific detection (Windows Terminal, iTerm2, GNOME Terminal, VS Code, etc.)
         - Platform detection: Windows, Linux, macOS with specific terminal identification
-        - Environment variables: FORCE_COLOR, NO_COLOR, COLORTERM, TERM (TERM=dumb means none)
+        - Environment variables, in this order: FORCE_COLOR, NO_COLOR, CLICOLOR_FORCE, CLICOLOR,
+          TERM (TERM=dumb means none), then COLORTERM and the variables each terminal sets
         - On PowerShell 7.2 and later, a host without virtual terminal support means none, since
           PowerShell removes escape codes from its output
 
         TERMINAL-SPECIFIC DETECTION:
-        Windows: Windows Terminal, PowerShell Console (conhost), ConEmu, VS Code, PowerShell ISE, Git Bash
-        macOS: iTerm2, Terminal.app, VS Code
-        Linux: GNOME Terminal, Konsole, xterm, rxvt-unicode, Kitty, and Windows Terminal under WSL
+        Windows: Windows Terminal, PowerShell Console (conhost), ConEmu, VS Code, WezTerm, JetBrains IDEs, PowerShell ISE, Git Bash
+        macOS: iTerm2, Terminal.app, VS Code, Ghostty, WezTerm, Kitty, Alacritty, Warp, JetBrains IDEs
+        Linux: GNOME Terminal and other VTE terminals, Konsole, xterm, rxvt-unicode, Ghostty, WezTerm,
+        Kitty, Alacritty, foot, Warp, JetBrains IDEs, and Windows Terminal under WSL
+        tmux: the colors its TERM and COLORTERM name, with bold as a bold font
 
         WINDOWS CONSOLE:
         On Windows 10 build 10586 or later, Windows PowerShell 5.1 switches on virtual terminal
         processing in conhost.exe for the session when it is off, so ANSI escape codes work.
+        The console host draws bold as brighter colors rather than a bold font, so
+        SupportsBoldFonts is $false in its windows, in any PowerShell version.
 
     .PARAMETER Silent
         Suppresses all warning messages and terminal limitation notices.
@@ -97,17 +102,22 @@
         Check if terminal renders true bold fonts or just brightens colors.
 
     .NOTES
-        Author: MarkusMcNugen
+        Author: Mark Newton
         License: MIT
         Requires: PowerShell 5.1 or later
 
         ENVIRONMENT VARIABLES:
-        - FORCE_COLOR : Override detection (0=None, 1=ANSI4, 2=ANSI8, 3=TrueColor)
-        - NO_COLOR    : Disable all colors (any value)
-        - TERM        : Terminal type identifier
-        - COLORTERM   : Color capability ('truecolor', '24bit')
-        - WT_SESSION  : Windows Terminal session ID
-        - VTE_VERSION : GNOME Terminal (VTE) version
+        - FORCE_COLOR    : Override detection (0=None, 1=ANSI4, 2=ANSI8, 3=TrueColor)
+        - NO_COLOR       : Disable all colors (any value)
+        - CLICOLOR_FORCE : Keep colors on whatever the terminal (any value but 0): the support
+                           detected, or ANSI4 where none is
+        - CLICOLOR       : 0 disables all colors
+        - TERM           : Terminal type identifier
+        - COLORTERM      : Color capability ('truecolor', '24bit')
+        - WT_SESSION     : Windows Terminal session ID
+        - VTE_VERSION    : GNOME Terminal (VTE) version
+        - TERM_PROGRAM   : iTerm2, Terminal.app, VS Code, Ghostty, WezTerm, Warp, tmux
+        - TMUX, KITTY_WINDOW_ID, ALACRITTY_WINDOW_ID, TERMINAL_EMULATOR : tmux, Kitty, Alacritty, JetBrains IDEs
 
         PLATFORM NOTES:
         Windows - Uses P/Invoke to check/enable Virtual Terminal Processing
@@ -154,6 +164,7 @@
                 CrossedOut = $False
                 DoubleUnderline = $False
                 Overline = $False
+                Reverse = $True
             }
             Warnings = @()
         }
@@ -175,11 +186,23 @@
         Return $results
     }
 
-    # TERM=dumb names a terminal that interprets no escape codes
-    If ([Environment]::GetEnvironmentVariable('TERM') -eq 'dumb') {
-        $results.ColorSupport = 'None'
-        $results.Details.TerminalType = 'dumb'
-        Return $results
+    # CLICOLOR_FORCE, set to anything but 0, keeps colors on whatever the terminal, and comes
+    # before CLICOLOR=0 and TERM=dumb
+    $cliColorForce = [Environment]::GetEnvironmentVariable('CLICOLOR_FORCE')
+    $cliColorForced = -not [string]::IsNullOrEmpty($cliColorForce) -and $cliColorForce -ne '0'
+
+    If (-not $cliColorForced) {
+        If ([Environment]::GetEnvironmentVariable('CLICOLOR') -eq '0') {
+            $results.ColorSupport = 'None'
+            Return $results
+        }
+
+        # TERM=dumb names a terminal that interprets no escape codes
+        If ([Environment]::GetEnvironmentVariable('TERM') -eq 'dumb') {
+            $results.ColorSupport = 'None'
+            $results.Details.TerminalType = 'dumb'
+            Return $results
+        }
     }
 
     # Check environment variables for color support level
@@ -189,6 +212,30 @@
     $wtSession = [Environment]::GetEnvironmentVariable('WT_SESSION')
     $termProgram = [Environment]::GetEnvironmentVariable('TERM_PROGRAM')
     $vte_version = [Environment]::GetEnvironmentVariable('VTE_VERSION')
+    $terminalEmulator = [Environment]::GetEnvironmentVariable('TERMINAL_EMULATOR')
+
+    # Terminals that show TrueColor, draw bold as a bold font, and show italic, underline and
+    # strikethrough, by the variables each sets; the value names the styles each shows beyond those
+    $modernTerminal = $null
+    $modernStyles = @()
+    If ($termProgram -eq 'ghostty' -or $termEnv -eq 'xterm-ghostty') {
+        $modernTerminal = 'Ghostty'
+        $modernStyles = @('DoubleUnderline', 'Overline')
+    } ElseIf ($termProgram -eq 'WezTerm') {
+        $modernTerminal = 'WezTerm'
+        $modernStyles = @('DoubleUnderline', 'Overline', 'Blink')
+    } ElseIf ($termProgram -eq 'WarpTerminal') {
+        $modernTerminal = 'Warp'
+    } ElseIf ($termEnv -eq 'xterm-kitty' -or -not [string]::IsNullOrEmpty([Environment]::GetEnvironmentVariable('KITTY_WINDOW_ID'))) {
+        $modernTerminal = 'Kitty'
+        $modernStyles = @('DoubleUnderline')
+    } ElseIf ($termEnv -eq 'alacritty' -or -not [string]::IsNullOrEmpty([Environment]::GetEnvironmentVariable('ALACRITTY_WINDOW_ID'))) {
+        $modernTerminal = 'Alacritty'
+    } ElseIf ($termEnv -like 'foot*') {
+        $modernTerminal = 'foot'
+    } ElseIf ($terminalEmulator -eq 'JetBrains-JediTerm') {
+        $modernTerminal = 'JetBrains IDE Terminal'
+    }
     
     # Determine terminal type and color support level
     If ($colorTerm -eq 'truecolor' -or $colorTerm -eq '24bit') {
@@ -207,8 +254,20 @@
         # Unix/Linux/macOS generally support ANSI
         $results.Details.HasVirtualTerminalProcessing = $True
 
+        # tmux, which sets TERM_PROGRAM and TMUX in its panes, shows the colors its TERM and
+        # COLORTERM name, 256 at least, and passes bold to the terminal it runs in
+        If ($termProgram -eq 'tmux' -or -not [string]::IsNullOrEmpty([Environment]::GetEnvironmentVariable('TMUX'))) {
+            $results.Details.TerminalType = 'tmux'
+            If ($results.ColorSupport -eq 'None' -or $results.ColorSupport -eq 'ANSI4') {
+                $results.ColorSupport = 'ANSI8'
+            }
+            $results.SupportsBoldFonts = $True
+            $results.Details.StyleSupport.Italic = $True
+            $results.Details.StyleSupport.Underline = $True
+            $results.Details.StyleSupport.CrossedOut = $True
+        }
         # Detect specific terminal - macOS
-        If ($termProgram -eq 'Apple_Terminal') {
+        ElseIf ($termProgram -eq 'Apple_Terminal') {
             $results.Details.TerminalType = 'macOS Terminal.app'
             $results.ColorSupport = 'ANSI8'  # Terminal.app max is 256 colors
             $results.SupportsBoldFonts = $False  # Terminal.app uses color brightening for bold
@@ -236,6 +295,17 @@
             $results.SupportsBoldFonts = $True  # VS Code terminal (xterm.js) supports bold fonts
             $results.Details.StyleSupport.Italic = $True
             $results.Details.StyleSupport.Underline = $True
+        }
+        ElseIf ($modernTerminal) {
+            $results.Details.TerminalType = $modernTerminal
+            $results.ColorSupport = 'TrueColor'
+            $results.SupportsBoldFonts = $True
+            $results.Details.StyleSupport.Italic = $True
+            $results.Details.StyleSupport.Underline = $True
+            $results.Details.StyleSupport.CrossedOut = $True
+            ForEach ($style in $modernStyles) {
+                $results.Details.StyleSupport[$style] = $True
+            }
         }
         # Windows Terminal running a WSL shell, which passes WT_SESSION through
         ElseIf (-not [string]::IsNullOrEmpty($wtSession)) {
@@ -393,6 +463,19 @@
             $results.Details.StyleSupport.Italic = $True
             $results.Details.StyleSupport.Underline = $True
         }
+        # WezTerm and the JetBrains IDEs' terminal on Windows
+        ElseIf ($modernTerminal -eq 'WezTerm' -or $modernTerminal -eq 'JetBrains IDE Terminal') {
+            $results.Details.TerminalType = $modernTerminal
+            $results.Details.HasVirtualTerminalProcessing = $True
+            $results.ColorSupport = 'TrueColor'
+            $results.SupportsBoldFonts = $True
+            $results.Details.StyleSupport.Italic = $True
+            $results.Details.StyleSupport.Underline = $True
+            $results.Details.StyleSupport.CrossedOut = $True
+            ForEach ($style in $modernStyles) {
+                $results.Details.StyleSupport[$style] = $True
+            }
+        }
         # PowerShell ISE detection (no ANSI support)
         ElseIf ($Host.Name -eq 'Windows PowerShell ISE Host') {
             $results.Details.TerminalType = 'PowerShell ISE'
@@ -406,7 +489,13 @@
             $results.Details.HasVirtualTerminalProcessing = $True
             $results.ColorSupport = If ($supportsTrueColor) { 'TrueColor' } ElseIf ($isWin10Plus) { 'ANSI8' } Else { 'ANSI4' }
             $results.Details.TerminalType = 'PowerShell Core Console'
-            $results.SupportsBoldFonts = $True  # PowerShell 7+ supports true bold fonts
+            If (Test-ColorConsoleHostWindow) {
+                # The console host draws bold as brighter colors, which only the 16 colors have
+                $results.SupportsBoldFonts = $False
+                $results.Details.Warnings += 'The Windows console host (conhost) draws bold as brighter colors rather than a bold font, so Bold makes colors lighter. Windows Terminal draws a bold font.'
+            } Else {
+                $results.SupportsBoldFonts = $True
+            }
             If ($supportsTrueColor) {
                 $results.Details.StyleSupport.Italic = $True
                 $results.Details.StyleSupport.Underline = $True
@@ -469,14 +558,8 @@ public class ConsoleHelper {
                             $results.ColorSupport = If ($supportsTrueColor) { 'TrueColor' } ElseIf ($isWin10Plus) { 'ANSI8' } Else { 'ANSI4' }
                             $results.Details.StyleSupport.Underline = $True
                             # PowerShell 5.1 conhost doesn't support true bold - it just makes colors lighter
-                            If (-not $results.Details.IsPSCore) {
-                                $results.SupportsBoldFonts = $False
-                                $results.Details.Warnings += 'PowerShell 5.1 conhost does NOT support true bold font rendering. Bold style will make colors lighter instead of actually bolding the text. Use PowerShell 7+ or Windows Terminal for proper bold support.'
-                            } Else {
-                                # PowerShell 7+ in conhost still doesn't render bold fonts
-                                $results.SupportsBoldFonts = $False
-                                $results.Details.Warnings += 'Windows Console (conhost) does NOT support true bold font rendering regardless of PowerShell version. Bold will lighten colors. Use Windows Terminal for proper bold support.'
-                            }
+                            $results.SupportsBoldFonts = $False
+                            $results.Details.Warnings += 'PowerShell 5.1 conhost does NOT support true bold font rendering. Bold style will make colors lighter instead of actually bolding the text. Use PowerShell 7+ or Windows Terminal for proper bold support.'
                         }
                     }
                 }
@@ -505,6 +588,11 @@ public class ConsoleHelper {
         $results.ColorSupport = 'None'
         $results.Details.HasVirtualTerminalProcessing = $False
         $results.Details.Warnings += "Host '$($Host.Name)' has no virtual terminal support, so PowerShell removes ANSI escape codes from its output. Only console colors are available."
+    }
+
+    # CLICOLOR_FORCE keeps colors on: the 16 colors where nothing more was found
+    If ($cliColorForced -and $results.ColorSupport -eq 'None') {
+        $results.ColorSupport = 'ANSI4'
     }
 
     # Return warnings if not silent

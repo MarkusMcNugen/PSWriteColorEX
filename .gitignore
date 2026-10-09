@@ -1,0 +1,4 @@
+# Pester results and coverage written by Tests/Tests-All.ps1. They record the
+# machine, user and path of the run.
+TestResults.xml
+Coverage.xml

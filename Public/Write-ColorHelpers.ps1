@@ -48,7 +48,7 @@ function Write-ColorError {
         # $result contains "Warning" for further processing
 
     .NOTES
-        Author: MarkusMcNugen
+        Author: Mark Newton
         License: MIT
         Requires: PowerShell 5.1 or later
 
@@ -139,7 +139,7 @@ function Write-ColorWarning {
         Write-ColorWarning "Deprecated function used" -LogFile "warnings.log"
 
     .NOTES
-        Author: MarkusMcNugen
+        Author: Mark Newton
         License: MIT
 
         Uses the Warning profile, [PSColorStyle]::Profiles['Warning'].
@@ -224,7 +224,7 @@ function Write-ColorInfo {
         Write-ColorInfo "User logged in" -LogFile "activity.log"
 
     .NOTES
-        Author: MarkusMcNugen
+        Author: Mark Newton
         License: MIT
 
         Uses the Info profile, [PSColorStyle]::Profiles['Info'].
@@ -309,7 +309,7 @@ function Write-ColorSuccess {
         Write-ColorSuccess "Backup created" -LogFile "backup.log"
 
     .NOTES
-        Author: MarkusMcNugen
+        Author: Mark Newton
         License: MIT
 
         Uses the Success profile, [PSColorStyle]::Profiles['Success'].
@@ -394,7 +394,7 @@ function Write-ColorCritical {
         Write-ColorCritical "Security breach detected" -LogFile "security.log"
 
     .NOTES
-        Author: MarkusMcNugen
+        Author: Mark Newton
         License: MIT
 
         Uses the Critical profile, [PSColorStyle]::Profiles['Critical'].
@@ -479,7 +479,7 @@ function Write-ColorDebug {
         Write-ColorDebug "Function entered: ProcessData" -LogFile "debug.log"
 
     .NOTES
-        Author: MarkusMcNugen
+        Author: Mark Newton
         License: MIT
 
         Uses the Debug profile, [PSColorStyle]::Profiles['Debug'].
@@ -528,33 +528,54 @@ function Set-ColorDefault {
     <#
     .SYNOPSIS
     Sets the default color style for Write-ColorEX
-    
+
     .DESCRIPTION
-    Configures the default style that will be used when Write-ColorEX is called with the -Default switch
-    
+    Sets the style Write-ColorEX -Default applies. With -Style, the style given becomes
+    [PSColorStyle]::Default. With the other parameters, or with none, a new style named Default
+    is made from them, becomes the default and replaces the Default profile; with none it is
+    plain Gray text.
+
     .PARAMETER Style
-    A PSColorStyle object to set as default
-    
+    A PSColorStyle to make the default.
+
     .PARAMETER ForegroundColor
-    The default foreground color
-    
+    The text color of the new default style: a color name, a hex code, an RGB array or an ANSI
+    color number. Gray when left out.
+
     .PARAMETER BackgroundColor
-    The default background color
-    
+    The background color of the new default style.
+
     .PARAMETER Bold
-    Make default text bold
-    
+    Makes the default style bold.
+
     .PARAMETER Italic
-    Make default text italic
-    
+    Makes the default style italic.
+
+    .PARAMETER Underline
+    Underlines the default style.
+
+    .PARAMETER ShowTime
+    Writes the time before the text with the default style.
+
+    .PARAMETER StartTab
+    The number of tabs before the text with the default style.
+
+    .PARAMETER StartSpaces
+    The number of spaces before the text with the default style.
+
     .EXAMPLE
     Set-ColorDefault -ForegroundColor Cyan -Bold
     
     .EXAMPLE
     $style = [PSColorStyle]::new("MyDefault", "Green", $null)
     Set-ColorDefault -Style $style
+
+    .EXAMPLE
+    Set-ColorDefault
+
+    Makes the default style plain Gray text again.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'Properties')]
     [Alias('SCD', 'Set-ColourDefault', 'Set-DefaultColor', 'Set-DefaultColour')]
     param(
         [Parameter(ParameterSetName = 'Object')]
@@ -634,42 +655,107 @@ function New-ColorStyle {
     <#
     .SYNOPSIS
     Creates a new color style
-    
+
     .DESCRIPTION
-    Creates a new PSColorStyle object with specified properties
-    
+    Creates a PSColorStyle from its parameters. Write-ColorEX -StyleProfile writes text in a
+    style, and -AddToProfiles keeps the style in [PSColorStyle]::Profiles under its name.
+
     .PARAMETER Name
-    The name of the style
-    
+    The name of the style, its key in [PSColorStyle]::Profiles.
+
     .PARAMETER ForegroundColor
-    The foreground color
-    
+    The text color: a color name, a hex code, an RGB array or an ANSI color number. Gray when
+    left out.
+
     .PARAMETER BackgroundColor
-    The background color
-    
+    The background color, in the same forms as -ForegroundColor.
+
+    .PARAMETER Gradient
+    Two or more colors to blend across the text, in place of -ForegroundColor.
+
     .PARAMETER Bold
-    Make text bold
-    
+    Bold text.
+
     .PARAMETER Italic
-    Make text italic
-    
+    Italic text.
+
     .PARAMETER Underline
-    Underline text
+    Underlined text.
+
+    .PARAMETER Blink
+    Blinking text, where the terminal supports it.
+
+    .PARAMETER Faint
+    Faint (dimmed) text.
+
+    .PARAMETER CrossedOut
+    Text struck through.
+
+    .PARAMETER DoubleUnderline
+    Text underlined twice, where the terminal supports it.
+
+    .PARAMETER Overline
+    A line above the text, where the terminal supports it.
+
+    .PARAMETER ShowTime
+    The time before the text.
+
+    .PARAMETER NoNewLine
+    The line left open, so the next output continues it.
+
+    .PARAMETER HorizontalCenter
+    The text centered in the console window.
+
+    .PARAMETER StartTab
+    The number of tabs before the text.
+
+    .PARAMETER StartSpaces
+    The number of spaces before the text.
+
+    .PARAMETER LinesBefore
+    The number of blank lines before the text.
+
+    .PARAMETER LinesAfter
+    The number of blank lines after the text.
 
     .PARAMETER AutoPad
-    Target display width for Unicode-aware text padding (0 = disabled)
+    The display width to pad the text to, counting wide characters as two cells. 0 pads nothing.
 
     .PARAMETER PadLeft
-    Pad on left side (right-align) instead of right side (left-align)
+    Pads on the left, right-aligning the text.
 
     .PARAMETER PadChar
-    Character to use for padding (default: space)
+    The character to pad with. A space when left out.
+
+    .PARAMETER BackgroundGradient
+    Two or more colors to blend across the background. It replaces -BackgroundColor.
+
+    .PARAMETER GradientSpace
+    How the gradients blend their colors: OKLab or RGB. Without it, Write-ColorEX's default, OKLab.
+
+    .PARAMETER Reverse
+    Swaps the text and background colors.
+
+    .PARAMETER UnderlineColor
+    The color of the underline.
+
+    .PARAMETER UnderlineStyle
+    The kind of underline: Single, Double, Curly, Dotted or Dashed.
+
+    .PARAMETER PadCenter
+    With -AutoPad, centers the text.
+
+    .PARAMETER Truncate
+    With -AutoPad, cuts text wider than -AutoPad, ending it with an ellipsis.
+
+    .PARAMETER Wrap
+    Breaks text wider than the line into lines.
 
     .PARAMETER AddToProfiles
-    Add this style to the profiles collection
+    Adds the style to [PSColorStyle]::Profiles under its name.
 
     .PARAMETER SetAsDefault
-    Set this style as the default
+    Makes the style the one -Default applies.
 
     .EXAMPLE
     $style = New-ColorStyle -Name "Custom" -ForegroundColor Magenta -Bold -AddToProfiles
@@ -713,6 +799,15 @@ function New-ColorStyle {
         [switch]$PadLeft,
         [char]$PadChar = ' ',
 
+        [object[]]$BackgroundGradient = $null,
+        [ValidateSet('OKLab', 'RGB')][string]$GradientSpace,
+        [switch]$Reverse,
+        [object]$UnderlineColor = $null,
+        [ValidateSet('Single', 'Double', 'Curly', 'Dotted', 'Dashed')][string]$UnderlineStyle,
+        [switch]$PadCenter,
+        [switch]$Truncate,
+        [switch]$Wrap,
+
         [switch]$AddToProfiles,
         [switch]$SetAsDefault
     )
@@ -737,6 +832,14 @@ function New-ColorStyle {
     $style.AutoPad = $AutoPad
     $style.PadLeft = $PadLeft
     $style.PadChar = $PadChar
+    $style.BackgroundGradient = $BackgroundGradient
+    $style.GradientSpace = $GradientSpace
+    $style.Reverse = $Reverse
+    $style.UnderlineColor = $UnderlineColor
+    $style.UnderlineStyle = $UnderlineStyle
+    $style.PadCenter = $PadCenter
+    $style.Truncate = $Truncate
+    $style.Wrap = $Wrap
 
     if ($AddToProfiles) {
         $style.AddToProfiles()

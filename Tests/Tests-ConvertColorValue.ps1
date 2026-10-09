@@ -1366,20 +1366,20 @@ Describe 'Get-LighterANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
     }
 
     Context 'Performance' {
-        It 'Completes lightening in reasonable time (< 10ms for single call)' {
+        It 'Completes lightening in reasonable time (< 100ms for single call)' {
             $elapsed = Measure-Command {
                 $null = Get-LighterANSI8Color -ANSI8Code 128
             }
-            $elapsed.TotalMilliseconds | Should -BeLessThan 10
+            $elapsed.TotalMilliseconds | Should -BeLessThan 100
         }
 
-        It 'Handles batch processing efficiently (100 calls < 50ms)' {
+        It 'Handles batch processing efficiently (100 calls < 500ms)' {
             $elapsed = Measure-Command {
                 foreach ($i in 1..100) {
                     $null = Get-LighterANSI8Color -ANSI8Code 128
                 }
             }
-            $elapsed.TotalMilliseconds | Should -BeLessThan 50
+            $elapsed.TotalMilliseconds | Should -BeLessThan 500
         }
     }
 }

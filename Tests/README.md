@@ -114,7 +114,7 @@ Invoke-Pester -Path $files.FullName -TagFilter 'Function', 'Class'
 $result = .\Tests-All.ps1 -PassThru
 
 # Exclude paths from code coverage
-.\Tests-All.ps1 -CodeCoverage -ExcludePath @('Examples', 'Docs')
+.\Tests-All.ps1 -CodeCoverage -ExcludePath @('Examples', 'wiki')
 ```
 
 ## GitHub Actions CI/CD

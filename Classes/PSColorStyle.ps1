@@ -20,7 +20,7 @@
     - Register profiles: $style.AddToProfiles()
 
 .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 
@@ -80,6 +80,14 @@ class PSColorStyle {
     [int]$AutoPad = 0
     [bool]$PadLeft = $false
     [char]$PadChar = ' '
+    [object[]]$BackgroundGradient
+    [string]$GradientSpace
+    [bool]$Reverse
+    [object]$UnderlineColor
+    [string]$UnderlineStyle
+    [bool]$PadCenter
+    [bool]$Truncate
+    [bool]$Wrap
 
     # The style -Default applies
     static [PSColorStyle]$Default
@@ -123,6 +131,14 @@ class PSColorStyle {
         $this.AutoPad = 0
         $this.PadLeft = $false
         $this.PadChar = ' '
+        $this.BackgroundGradient = $null
+        $this.GradientSpace = ''
+        $this.Reverse = $false
+        $this.UnderlineColor = $null
+        $this.UnderlineStyle = ''
+        $this.PadCenter = $false
+        $this.Truncate = $false
+        $this.Wrap = $false
     }
     
     [void]SetAsDefault() {
@@ -180,7 +196,13 @@ class PSColorStyle {
         } elseif ($this.ForegroundColor) {
             $params['Color'] = $this.ForegroundColor
         }
-        if ($this.BackgroundColor) { $params['BackGroundColor'] = $this.BackgroundColor }
+        # A background gradient replaces the background color
+        if ($this.BackgroundGradient -and $this.BackgroundGradient.Count -ge 2) {
+            $params['BackGroundGradient'] = $this.BackgroundGradient
+        } elseif ($this.BackgroundColor) {
+            $params['BackGroundColor'] = $this.BackgroundColor
+        }
+        if ($this.GradientSpace) { $params['GradientSpace'] = $this.GradientSpace }
         if ($this.Style.Count -gt 0) { $params['Style'] = $this.Style }
         if ($this.StartTab -gt 0) { $params['StartTab'] = $this.StartTab }
         if ($this.StartSpaces -gt 0) { $params['StartSpaces'] = $this.StartSpaces }
@@ -200,6 +222,12 @@ class PSColorStyle {
         if ($this.AutoPad -gt 0) { $params['AutoPad'] = $this.AutoPad }
         if ($this.PadLeft) { $params['PadLeft'] = $true }
         if ($this.PadChar -ne ' ') { $params['PadChar'] = $this.PadChar }
+        if ($this.Reverse) { $params['Reverse'] = $true }
+        if ($null -ne $this.UnderlineColor) { $params['UnderlineColor'] = $this.UnderlineColor }
+        if ($this.UnderlineStyle) { $params['UnderlineStyle'] = $this.UnderlineStyle }
+        if ($this.PadCenter) { $params['PadCenter'] = $true }
+        if ($this.Truncate) { $params['Truncate'] = $true }
+        if ($this.Wrap) { $params['Wrap'] = $true }
 
         return $params
     }
@@ -233,6 +261,14 @@ class PSColorStyle {
         $newStyle.AutoPad = $this.AutoPad
         $newStyle.PadLeft = $this.PadLeft
         $newStyle.PadChar = $this.PadChar
+        $newStyle.BackgroundGradient = [PSColorStyle]::CopyValue($this.BackgroundGradient)
+        $newStyle.GradientSpace = $this.GradientSpace
+        $newStyle.Reverse = $this.Reverse
+        $newStyle.UnderlineColor = [PSColorStyle]::CopyValue($this.UnderlineColor)
+        $newStyle.UnderlineStyle = $this.UnderlineStyle
+        $newStyle.PadCenter = $this.PadCenter
+        $newStyle.Truncate = $this.Truncate
+        $newStyle.Wrap = $this.Wrap
         return $newStyle
     }
 

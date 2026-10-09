@@ -1,0 +1,101 @@
+/* A session drawn by the codeblock partial: a terminal in Windows Terminal's Campbell scheme, the
+   same in the light and dark themes, since a terminal does not follow the page's theme. */
+.hextra-code-block .wcx-terminal {
+  position: relative;
+  border-radius: 0.5rem;
+  background: #0c0c0c;
+  color: #cccccc;
+  overflow: hidden;
+}
+
+.hextra-code-block .wcx-terminal pre {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: transparent;
+  color: inherit;
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.4;
+  tab-size: 8;
+}
+
+.hextra-code-block .wcx-terminal code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.hextra-code-block .wcx-terminal span,
+.hextra-code-block .wcx-terminal a {
+  text-underline-offset: 0.2em;
+}
+
+.hextra-code-block .wcx-terminal a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+.hextra-code-block .wcx-terminal a:hover {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+}
+
+/* The color mode a session ran in, when it is not TrueColor */
+.wcx-terminal-mode {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.7rem;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #767676;
+}
+
+@keyframes wcx-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.wcx-blink {
+  animation: wcx-blink 1s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wcx-blink {
+    animation: none;
+  }
+}
+
+/* Inline code holds parameter names such as -BackGroundColor, which a line must not break after
+   their leading hyphen */
+.content :not(pre) > code {
+  white-space: nowrap;
+}
+
+/* Color samples in the reference tables */
+.wcx-swatch {
+  display: inline-block;
+  width: 2.2em;
+  height: 1.1em;
+  border-radius: 0.2em;
+  vertical-align: middle;
+  box-shadow: inset 0 0 0 1px rgb(127 127 127 / 0.35);
+}
+
+.wcx-colors td,
+.wcx-colors th {
+  white-space: nowrap;
+}
+
+.wcx-parameter-meta {
+  font-size: 0.85em;
+  opacity: 0.8;
+}

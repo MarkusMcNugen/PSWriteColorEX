@@ -16,7 +16,7 @@
     - Logging to a file, with timestamps and levels
 
 .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
     Compatible: PowerShell Desktop and Core editions
@@ -44,14 +44,8 @@ $script:CachedANSISupport = $null   # The terminal's color support, detected at 
 $script:SupportsBoldFonts = $false  # Whether the terminal draws bold as a bold font
 $script:CachedColorTable = $null    # The color table, built on first use
 $script:RGB6LevelLookup = $null     # Each 0-255 channel value's step in the 6-step RGB cube
-
-# The ANSI4 foreground code of each console color; a background code is 10 more
-$script:ConsoleColorSgr = @{
-    Black = 30; DarkRed = 31; DarkGreen = 32; DarkYellow = 33
-    DarkBlue = 34; DarkMagenta = 35; DarkCyan = 36; Gray = 37
-    DarkGray = 90; Red = 91; Green = 92; Yellow = 93
-    Blue = 94; Magenta = 95; Cyan = 96; White = 97
-}
+$script:CustomColors = [ordered]@{}  # The color names Register-ColorName added, by name
+$script:CaptureLines = $null        # The list Format-ColorEX collects Write-ColorEX's lines in
 
 if ($script:DebugMode) {
     Write-Verbose "PSWriteColorEX Debug Mode Enabled" -Verbose
@@ -75,6 +69,8 @@ Initialize-RGB6LevelLookup
 
 # Classes load before the functions that use them
 $ClassFiles = @(
+    [System.IO.Path]::Combine($PSScriptRoot, 'Classes', 'ColorMath.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Classes', 'ColorCode.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Classes', 'PSColorStyle.ps1')
 )
 
@@ -96,6 +92,9 @@ $PrivateFunctions = @(
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'ColorHost.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'Get-ColorHelperParams.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'New-GradientColorArray.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'WriteColorCore.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'ColorNames.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'ArgumentCompleters.ps1')
 )
 
 foreach ($file in $PrivateFunctions) {
@@ -117,6 +116,9 @@ $PublicFunctions = @(
     [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Test-AnsiSupport.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Convert-ColorValue.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Write-ColorEX.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Format-ColorEX.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'ColorNames.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'ColorProfiles.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Write-ColorHelpers.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Measure-DisplayWidth.ps1')
 )
@@ -202,7 +204,14 @@ $ExportParams = @{
         'Measure-DisplayWidth',
         'Get-LighterRGBColor',
         'Get-LighterColorName',
-        'Get-LighterANSI8Color'
+        'Get-LighterANSI8Color',
+        'Format-ColorEX',
+        'Show-ColorTable',
+        'Register-ColorName',
+        'Unregister-ColorName',
+        'Export-ColorProfile',
+        'Import-ColorProfile',
+        'Remove-ColorProfile'
     )
 
     Alias = @(
@@ -243,7 +252,15 @@ $ExportParams = @{
         # Get-LighterColorName aliases
         'Lighten-ColorName',
         # Get-LighterANSI8Color aliases
-        'Lighten-ANSI8Color', 'LA8', 'Lighten-ANSI8'
+        'Lighten-ANSI8Color', 'LA8', 'Lighten-ANSI8',
+        # Format-ColorEX aliases
+        'Format-ColourEX', 'FCEX',
+        # Show-ColorTable aliases
+        'Show-ColourTable',
+        # Register-ColorName and Unregister-ColorName aliases
+        'Register-ColourName', 'Unregister-ColourName',
+        # Export-ColorProfile, Import-ColorProfile and Remove-ColorProfile aliases
+        'Export-ColourProfile', 'Import-ColourProfile', 'Remove-ColourProfile'
     )
 
     Variable = @()

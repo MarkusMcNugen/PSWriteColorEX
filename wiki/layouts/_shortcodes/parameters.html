@@ -1,0 +1,38 @@
+{{- /*
+Every parameter of a command, from data/commands.json, which generate.ps1 writes from the
+command's metadata and help. Call it as a Markdown shortcode, {{% parameters "Write-ColorEX" %}},
+so each parameter is a heading the page's table of contents lists, with an anchor of the
+parameter's name in lower case: #color, #backgroundcolor. A page with several commands passes a
+prefix for the anchors as the second argument: {{% parameters "New-ColorStyle" "new-colorstyle-" %}}
+gives #new-colorstyle-name.
+*/ -}}
+{{- $name := .Get 0 -}}
+{{- $prefix := .Get 1 | default "" -}}
+{{- $commands := hugo.Data.commands | default dict -}}
+{{- if not (isset $commands $name) -}}
+  {{- errorf "data/commands.json has no command %q: run pwsh ./generate.ps1 in wiki/ (%s)" $name .Position -}}
+{{- end -}}
+{{- $command := index $commands $name -}}
+{{- range $command.parameters }}
+
+### -{{ .name }} {#{{ $prefix }}{{ lower .name }}}
+
+{{ $meta := slice (printf "<code>%s</code>" (htmlEscape .type)) -}}
+{{- with .position }}{{ $meta = $meta | append (printf "position %s" .) }}{{ end -}}
+{{- if .mandatory }}{{ $meta = $meta | append "mandatory" }}{{ end -}}
+{{- if .pipeline }}{{ $meta = $meta | append "takes pipeline input" }}{{ end -}}
+{{- with .default }}{{ $meta = $meta | append (printf "default <code>%s</code>" (htmlEscape .)) }}{{ end -}}
+{{- with .aliases }}{{ $aliases := slice }}{{ range . }}{{ $aliases = $aliases | append (printf "<code>-%s</code>" (htmlEscape .)) }}{{ end }}{{ $meta = $meta | append (printf "aliases %s" (delimit $aliases ", ")) }}{{ end -}}
+{{- with .values }}{{ $values := slice }}{{ range . }}{{ $values = $values | append (printf "<code>%s</code>" (htmlEscape .)) }}{{ end }}{{ $meta = $meta | append (printf "one of %s" (delimit $values ", ")) }}{{ end -}}
+{{- with .sets }}{{ $meta = $meta | append (printf "parameter set %s" (delimit . ", ")) }}{{ end -}}
+<p class="wcx-parameter-meta">{{ delimit $meta " · " | safeHTML }}</p>
+{{ range .description }}
+{{- if .p }}
+<p>{{ .p }}</p>
+{{ else if .ex }}
+<p>Example: <code>{{ .ex }}</code></p>
+{{ else if .ul }}
+<ul>{{ range .ul }}<li>{{ . }}</li>{{ end }}</ul>
+{{ end -}}
+{{ end -}}
+{{ end -}}

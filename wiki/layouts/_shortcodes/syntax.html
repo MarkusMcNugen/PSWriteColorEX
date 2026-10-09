@@ -1,0 +1,15 @@
+{{- /*
+A command's syntax and aliases, from data/commands.json: {{< syntax "Write-ColorEX" >}}.
+*/ -}}
+{{- $name := .Get 0 -}}
+{{- $commands := hugo.Data.commands | default dict -}}
+{{- if not (isset $commands $name) -}}
+  {{- errorf "data/commands.json has no command %q: run pwsh ./generate.ps1 in wiki/ (%s)" $name .Position -}}
+{{- end -}}
+{{- $command := index $commands $name -}}
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+  {{- partial "components/codeblock" (dict "lang" "text" "content" (delimit $command.syntax "\n\n")) -}}
+</div>
+{{- with $command.aliases }}
+<p>Aliases: {{ range $i, $alias := . }}{{ if $i }}, {{ end }}<code>{{ $alias }}</code>{{ end }}</p>
+{{- end }}

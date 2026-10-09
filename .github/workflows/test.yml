@@ -47,6 +47,19 @@ jobs:
           path: TestResults.xml
           if-no-files-found: ignore
 
+  # Every example in the wiki runs through the module, and a page whose written output differs
+  # from what the module writes fails the job, so a change that alters output shows on its push
+  wiki-examples:
+    name: Wiki examples
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the wiki's examples through the module
+        shell: pwsh
+        run: ./wiki/generate.ps1
+
   windows-powershell:
     name: Windows PowerShell 5.1
     runs-on: windows-latest

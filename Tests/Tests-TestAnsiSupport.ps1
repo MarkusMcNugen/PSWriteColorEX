@@ -6,9 +6,14 @@ BeforeDiscovery {
 }
 
 BeforeAll {
-    # Import the module
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
+    . (Join-Path $PSScriptRoot 'StartupColorEnvironment.ps1')
+    Clear-StartupColorEnvironment
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
+}
+
+AfterAll {
+    Restore-StartupColorEnvironment
 }
 
 Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
@@ -1051,6 +1056,137 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result = Test-AnsiSupport -Silent
 
             $result.ColorSupport | Should -Be 'TrueColor'
+        }
+    }
+
+    Context 'CLICOLOR, CLICOLOR_FORCE and the terminals that set their own variables' {
+        BeforeAll {
+            $script:terminalVariables = @(
+                'FORCE_COLOR', 'NO_COLOR', 'CLICOLOR', 'CLICOLOR_FORCE', 'TERM', 'COLORTERM', 'TERM_PROGRAM',
+                'WT_SESSION', 'VTE_VERSION', 'KONSOLE_VERSION', 'ConEmuANSI', 'TMUX', 'KITTY_WINDOW_ID',
+                'ALACRITTY_WINDOW_ID', 'TERMINAL_EMULATOR'
+            )
+        }
+
+        BeforeEach {
+            $script:savedTerminal = @{}
+            foreach ($variableName in $script:terminalVariables) {
+                $script:savedTerminal[$variableName] = [System.Environment]::GetEnvironmentVariable($variableName)
+                [System.Environment]::SetEnvironmentVariable($variableName, $null)
+            }
+        }
+
+        AfterEach {
+            foreach ($variableName in $script:terminalVariables) {
+                [System.Environment]::SetEnvironmentVariable($variableName, $script:savedTerminal[$variableName])
+            }
+        }
+
+        It 'Returns None with CLICOLOR=0' {
+            $env:TERM = 'xterm-256color'
+            $env:CLICOLOR = '0'
+
+            (Test-AnsiSupport -Silent).ColorSupport | Should -Be 'None'
+        }
+
+        It 'Keeps the support detected with CLICOLOR_FORCE, over CLICOLOR=0' {
+            $env:COLORTERM = 'truecolor'
+            $env:CLICOLOR = '0'
+            $env:CLICOLOR_FORCE = '1'
+
+            (Test-AnsiSupport -Silent).ColorSupport | Should -Be 'TrueColor'
+        }
+
+        It 'Keeps colors on with CLICOLOR_FORCE and TERM=dumb' {
+            $env:TERM = 'dumb'
+            $env:CLICOLOR_FORCE = '1'
+
+            (Test-AnsiSupport -Silent).ColorSupport | Should -Not -Be 'None'
+        }
+
+        It 'Takes CLICOLOR_FORCE=0 as not set' {
+            $env:TERM = 'dumb'
+            $env:CLICOLOR_FORCE = '0'
+
+            (Test-AnsiSupport -Silent).ColorSupport | Should -Be 'None'
+        }
+
+        It 'Puts NO_COLOR before CLICOLOR_FORCE' {
+            $env:COLORTERM = 'truecolor'
+            $env:NO_COLOR = '1'
+            $env:CLICOLOR_FORCE = '1'
+
+            (Test-AnsiSupport -Silent).ColorSupport | Should -Be 'None'
+        }
+
+        It 'Detects <Name> with TrueColor and bold fonts' -Skip:$onWindows -TestCases @(
+            @{ Name = 'Ghostty'; Variables = @{ TERM = 'xterm-ghostty'; TERM_PROGRAM = 'ghostty' }; Styles = @('DoubleUnderline', 'Overline') }
+            @{ Name = 'WezTerm'; Variables = @{ TERM = 'xterm-256color'; TERM_PROGRAM = 'WezTerm' }; Styles = @('DoubleUnderline', 'Overline', 'Blink') }
+            @{ Name = 'Warp'; Variables = @{ TERM = 'xterm-256color'; TERM_PROGRAM = 'WarpTerminal' }; Styles = @() }
+            @{ Name = 'Kitty'; Variables = @{ TERM = 'xterm-kitty' }; Styles = @('DoubleUnderline') }
+            @{ Name = 'Alacritty'; Variables = @{ TERM = 'alacritty' }; Styles = @() }
+            @{ Name = 'foot'; Variables = @{ TERM = 'foot' }; Styles = @() }
+            @{ Name = 'JetBrains IDE Terminal'; Variables = @{ TERM = 'xterm-256color'; TERMINAL_EMULATOR = 'JetBrains-JediTerm' }; Styles = @() }
+        ) {
+            foreach ($variable in $Variables.Keys) {
+                [System.Environment]::SetEnvironmentVariable($variable, $Variables[$variable])
+            }
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.Details.TerminalType | Should -Be $Name
+            $result.ColorSupport | Should -Be 'TrueColor'
+            $result.SupportsBoldFonts | Should -Be $true
+            $result.Details.StyleSupport.Italic | Should -Be $true
+            $result.Details.StyleSupport.CrossedOut | Should -Be $true
+            foreach ($style in $Styles) {
+                $result.Details.StyleSupport[$style] | Should -Be $true
+            }
+        }
+
+        It 'Detects tmux, with the colors its TERM names and bold fonts' -Skip:$onWindows {
+            $env:TERM = 'tmux-256color'
+            $env:TMUX = '/tmp/tmux-1000/default,1234,0'
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.Details.TerminalType | Should -Be 'tmux'
+            $result.ColorSupport | Should -Be 'ANSI8'
+            $result.SupportsBoldFonts | Should -Be $true
+        }
+
+        It 'Takes TrueColor from COLORTERM inside tmux' -Skip:$onWindows {
+            $env:TERM = 'tmux-256color'
+            $env:TERM_PROGRAM = 'tmux'
+            $env:COLORTERM = 'truecolor'
+
+            (Test-AnsiSupport -Silent).ColorSupport | Should -Be 'TrueColor'
+        }
+
+        It 'Shows Reverse in every terminal' {
+            $env:TERM = 'xterm-256color'
+
+            (Test-AnsiSupport -Silent).Details.StyleSupport.Reverse | Should -Be $true
+        }
+
+        It 'Reports brighter colors for bold in PowerShell 7 in a window of the Windows console host' -Skip:(-not $onWindows -or $PSVersionTable.PSVersion.Major -lt 7) {
+            Mock -ModuleName PSWriteColorEX Test-ColorConsoleHostWindow { $true }
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.Details.TerminalType | Should -Be 'PowerShell Core Console'
+            $result.SupportsBoldFonts | Should -Be $false
+            $result.Details.Warnings | Should -Contain 'The Windows console host (conhost) draws bold as brighter colors rather than a bold font, so Bold makes colors lighter. Windows Terminal draws a bold font.'
+        }
+
+        It 'Reports a bold font in PowerShell 7 outside a window of the Windows console host' -Skip:(-not $onWindows -or $PSVersionTable.PSVersion.Major -lt 7) {
+            Mock -ModuleName PSWriteColorEX Test-ColorConsoleHostWindow { $false }
+
+            $result = Test-AnsiSupport -Silent
+
+            $result.Details.TerminalType | Should -Be 'PowerShell Core Console'
+            $result.SupportsBoldFonts | Should -Be $true
+            $result.Details.Warnings | Should -BeNullOrEmpty
         }
     }
 }

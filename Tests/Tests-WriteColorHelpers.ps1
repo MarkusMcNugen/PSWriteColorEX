@@ -290,6 +290,16 @@ Describe 'Set-ColorDefault' -Tag 'Unit', 'Function', 'StyleManagement' {
             [PSColorStyle]::Default.ForegroundColor | Should -Be 'Magenta'
         }
 
+        It 'Makes the default plain Gray when called without parameters' {
+            Set-ColorDefault -ForegroundColor Cyan -Bold
+            Set-ColorDefault
+
+            [PSColorStyle]::Default.ForegroundColor | Should -Be 'Gray'
+            [PSColorStyle]::Default.BackgroundColor | Should -BeNullOrEmpty
+            [PSColorStyle]::Default.Bold | Should -Be $false
+            [PSColorStyle]::Profiles['Default'] | Should -Be ([PSColorStyle]::Default)
+        }
+
         It 'Has SCD alias' {
             $command = Get-Command SCD -ErrorAction SilentlyContinue
             $command | Should -Not -BeNullOrEmpty

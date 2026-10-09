@@ -1,0 +1,69 @@
+# Hugo config for the PSWriteColorEX documentation site, built with the Hextra
+# theme (consumed as a Hugo Module - no submodule, no vendored theme tree;
+# `hugo mod get -u` updates it).
+#
+# The examples' output comes from running them: generate.ps1 writes data/ first.
+# Build: `pwsh ./generate.ps1`, then `hugo --gc --minify --baseURL <pages-base-url>/`
+# Local: `pwsh ./generate.ps1`, then `hugo serve` and open the printed http://localhost:1313/.
+
+baseURL: https://markusmcnugen.github.io/PSWriteColorEX/
+title: PSWriteColorEX
+locale: en-us
+
+module:
+  imports:
+    - path: github.com/imfing/hextra
+
+markup:
+  goldmark:
+    renderer:
+      # Required for Hextra shortcodes that emit raw HTML (cards,
+      # callouts, tabs).
+      unsafe: true
+  highlight:
+    noClasses: false
+
+menu:
+  main:
+    - name: Docs
+      pageRef: /docs
+      weight: 1
+    - name: Search
+      weight: 8
+      params:
+        type: search
+    - name: GitHub
+      weight: 9
+      url: https://github.com/MarkusMcNugen/PSWriteColorEX
+      params:
+        icon: github
+
+params:
+  description: >-
+    Colored and styled console output for PowerShell: TrueColor, 256 and 16
+    colors, gradients, markup, highlighting, links, text styles, style
+    profiles, padding and wrapping that count wide characters, and logging
+    to a file.
+
+  navbar:
+    displayTitle: true
+    displayLogo: false
+
+  footer:
+    displayCopyright: true
+    displayPoweredBy: false
+
+  editURL:
+    enable: true
+    base: https://github.com/MarkusMcNugen/PSWriteColorEX/edit/main/wiki/content
+
+  theme:
+    default: system
+    displayToggle: true
+
+  search:
+    enable: true
+    type: flexsearch
+    flexsearch:
+      index: content
+      tokenize: forward

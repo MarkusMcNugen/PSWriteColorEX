@@ -3,7 +3,7 @@
     RootModule = 'PSWriteColorEX.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.1.0'
+    ModuleVersion = '1.2.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Desktop', 'Core')
@@ -12,16 +12,16 @@
     GUID = 'a7b8f4e5-9c2d-4f16-8e3a-1b9d2c5e7f3a'
 
     # Author of this module
-    Author = 'MarkusMcNugen'
+    Author = 'Mark Newton'
 
     # Company or vendor of this module
-    CompanyName = ''
+    CompanyName = 'Variably Constant'
 
     # Copyright statement for this module
-    Copyright = '(c) 2024 MarkusMcNugen. All rights reserved.'
+    Copyright = '(c) 2026 Mark Newton'
 
     # Description of the functionality provided by this module
-    Description = 'Colored and styled console output for PowerShell: TrueColor (24-bit RGB), ANSI 256 and 16 colors, gradients, text styles, style profiles, padding that counts wide characters, and logging to a file. Pure PowerShell, for Windows PowerShell 5.1 and PowerShell 7 on Windows, Linux and macOS.'
+    Description = 'Colored and styled console output for PowerShell: TrueColor (24-bit RGB), ANSI 256 and 16 colors, gradients, markup, highlighting, links, text styles, style profiles, padding and wrapping that count wide characters, and logging to a file. Pure PowerShell, for Windows PowerShell 5.1 and PowerShell 7 on Windows, Linux and macOS.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = '5.1'
@@ -79,7 +79,14 @@
         'Measure-DisplayWidth',
         'Get-LighterRGBColor',
         'Get-LighterColorName',
-        'Get-LighterANSI8Color'
+        'Get-LighterANSI8Color',
+        'Format-ColorEX',
+        'Show-ColorTable',
+        'Register-ColorName',
+        'Unregister-ColorName',
+        'Export-ColorProfile',
+        'Import-ColorProfile',
+        'Remove-ColorProfile'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -127,7 +134,15 @@
         # Get-LighterColorName aliases
         'Lighten-ColorName',
         # Get-LighterANSI8Color aliases
-        'Lighten-ANSI8Color', 'LA8', 'Lighten-ANSI8'
+        'Lighten-ANSI8Color', 'LA8', 'Lighten-ANSI8',
+        # Format-ColorEX aliases
+        'Format-ColourEX', 'FCEX',
+        # Show-ColorTable aliases
+        'Show-ColourTable',
+        # Register-ColorName and Unregister-ColorName aliases
+        'Register-ColourName', 'Unregister-ColourName',
+        # Export-ColorProfile, Import-ColorProfile and Remove-ColorProfile aliases
+        'Export-ColourProfile', 'Import-ColourProfile', 'Remove-ColourProfile'
     )
 
     # DSC resources to export from this module
@@ -170,32 +185,36 @@
             # A URL to the main website for this project.
             ProjectUri = 'https://github.com/MarkusMcNugen/PSWriteColorEX'
 
-            # A URL to an icon representing this module.
-            IconUri = 'https://raw.githubusercontent.com/MarkusMcNugen/PSWriteColorEX/main/icon.png'
-
             # ReleaseNotes of this module
             ReleaseNotes = @'
-1.1.0
-
-Fixed:
-- A transcript (Start-Transcript) records each line as one line, with no blank line after it, and as many blank lines as -LinesBefore and -LinesAfter ask for (issue #2). In Windows PowerShell 5.1 a line of several console colors is still one transcript line per color, as PowerShell records each Write-Host call.
-- Every string piped to Write-ColorEX or a Write-Color* helper is written; only the last one was before.
-- -LogFile given as a file name alone goes in the calling script's folder, or the current location at the prompt; it went in the module's own folder before. A missing log folder is created.
-- -BlankLine works with output redirected, -BackGroundColor 'None' works, -Gradient alone draws the gradient, -Color 0 is black, -Style 'Bold' alone styles the first segment, and text without -Color takes the terminal's default color.
-- A gradient keeps emoji whole: each character a terminal draws takes one color.
-- Hex colors work without -TrueColor, color names such as Orange keep working after a call without a color mode, and -Bold keeps White text white.
-- -ANSI8 color numbers take the nearest of the 16 colors on a 16-color terminal, and -ANSI4 and -ANSI8 numbers the nearest console color where the terminal has no ANSI support.
-- [PSColorStyle] can be used after Import-Module, and a change to a style profile applies to its next use.
-
-Changed:
-- On PowerShell 7.2 and later, where escape codes reach the screen, each line goes to the host in one Write-Host call.
-- Log files are UTF-8 without a byte order mark by default, and each -Encoding name writes the same bytes in Windows PowerShell 5.1 and PowerShell 7.
-- Measure-DisplayWidth uses the table of the Rust crate unicode-width 0.2.2 and the emoji sequence rules terminals follow, with the same widths in 5.1 and 7. Characters such as a filled circle and box drawing are 1 cell, 2 with -AmbiguousAsWide.
-- Importing the module prints nothing.
-- Lighten-RGBColor, Lighten-ColorName and Lighten-ANSI8Color are Get-LighterRGBColor, Get-LighterColorName and Get-LighterANSI8Color, with the old names as aliases.
+1.2.0
 
 Added:
-- TERM=dumb turns colors off, Windows Terminal under WSL is detected as TrueColor, and -Encoding takes utf8BOM, utf8NoBOM, bigendianutf32 and ansi.
+- Write-ColorEX -Markup: tags that color and style part of a string, such as '[bold red]Error:[/] file not found'.
+- -Split, -SplitAround and -SplitEvenly color parts of a string without giving it in pieces.
+- -Highlight colors and styles the text regular expressions match.
+- -Link writes links that terminals open when clicked.
+- -Reverse, -UnderlineStyle (single, double, curly, dotted, dashed) and -UnderlineColor.
+- -BackGroundGradient, and -GradientSpace OKLab or RGB.
+- -Truncate, -PadCenter and -Wrap.
+- Colors in the forms #RGB, rgb(r, g, b) and hsl(h, s%, l%).
+- Format-ColorEX answers colored text as strings; Show-ColorTable shows every color name.
+- Register-ColorName and Unregister-ColorName; Export-ColorProfile, Import-ColorProfile and Remove-ColorProfile.
+- Tab completion of color and profile names.
+- Detection of Ghostty, WezTerm, Warp, Kitty, Alacritty, foot, JetBrains IDEs and tmux; CLICOLOR_FORCE and CLICOLOR.
+
+Changed:
+- Gradients blend in OKLab; -GradientSpace RGB gives the 1.1.0 colors.
+- An unknown color name gives a warning and no color.
+- -Gradient writes -BackGroundColor under the gradient.
+- Write-ColorEX takes 38% to 60% less time per call than 1.1.0.
+- FORCE_COLOR and CLICOLOR_FORCE write a line of color names as escape codes in every host, so the colors reach a CI log.
+
+Fixed:
+- -Color and -BackGroundColor take $null entries.
+- Set-ColorDefault with no parameters makes the default style plain Gray.
+- With -ANSI8 or -ANSI4, a hex, rgb() or hsl() color is written as the nearest color of that mode.
+- PowerShell 7 in the Windows console host lightens -Bold colors, as Windows PowerShell 5.1 does there.
 
 The full list is in CHANGELOG.md: https://github.com/MarkusMcNugen/PSWriteColorEX/blob/main/CHANGELOG.md
 '@

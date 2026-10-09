@@ -21,7 +21,7 @@ function Convert-HexToRGB {
     Invalid input returns gray @(128, 128, 128).
 
     .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 
@@ -78,7 +78,7 @@ function Convert-RGBToANSI8 {
     (232-255).
 
     .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 
@@ -157,7 +157,7 @@ function Convert-RGBToANSI4 {
     - Bright colors: 90-97 (Bright versions of above)
 
     .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 
@@ -255,7 +255,8 @@ function Get-ColorTableWithRGB {
 
     .DESCRIPTION
     Returns a hashtable of 129 color names in 44 families, most with Dark, normal and Light
-    variants. Each entry holds the color in every color mode.
+    variants, and the names Register-ColorName added. Each entry holds the color in every color
+    mode.
 
     ENTRY FORMAT:
     @(Native, ANSI4FG, ANSI4BG, ANSI8, @(R,G,B))
@@ -291,7 +292,7 @@ function Get-ColorTableWithRGB {
     - Values: 5-element arrays with Native, ANSI4FG, ANSI4BG, ANSI8, RGB data
 
     .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 
@@ -313,7 +314,7 @@ function Get-ColorTableWithRGB {
     [Alias('GCT', 'Get-ColorTable', 'Get-ColourTable')]
     param()
     
-    return @{
+    $table = @{
         # Neutral family
         Black = @('Black', 30, 40, 0, @(0, 0, 0))
         LightBlack = @('DarkGray', 90, 100, 238, @(118, 118, 118))
@@ -528,6 +529,12 @@ function Get-ColorTableWithRGB {
         Brick = @('DarkRed', 31, 41, 124, @(178, 34, 34))
         LightBrick = @('Red', 31, 41, 167, @(205, 92, 92))
     }
+
+    # The names Register-ColorName added, over a built-in name of the same spelling
+    foreach ($name in $script:CustomColors.Keys) {
+        $table[$name] = $script:CustomColors[$name]
+    }
+    return $table
 }
 
 function Get-LighterRGBColor {
@@ -559,7 +566,7 @@ function Get-LighterRGBColor {
     Returns a 3-element integer array @(R, G, B) with lightened values, clamped to 0-255 range.
 
     .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 
@@ -635,7 +642,7 @@ function Get-LighterANSI8Color {
     - Grayscale ramp (232-255): Increments by ~25% brightness steps
 
     .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 
@@ -763,7 +770,7 @@ function Get-LighterColorName {
     - The name unchanged otherwise
 
     .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 

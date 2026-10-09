@@ -20,6 +20,8 @@ BeforeDiscovery {
 
 BeforeAll {
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
+    . (Join-Path $PSScriptRoot 'StartupColorEnvironment.ps1')
+    Clear-StartupColorEnvironment
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
     $esc = [char]27
 
@@ -191,6 +193,58 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
         }
     }
 
+    Context '$null entries in -Color and -BackGroundColor' {
+        BeforeAll {
+            Mock -ModuleName PSWriteColorEX Test-ColorLineComposition { $true }
+            Mock -ModuleName PSWriteColorEX Test-ColorHostAnsi { $true }
+        }
+
+        It 'Leaves a segment with a $null color in the terminal color' {
+            Write-ColorEX -Text 'a', 'b' -Color $null, Green
+
+            $script:hostCalls[0].Object | Should -Be "a$esc[92mb$esc[0m"
+        }
+
+        It 'Repeats a $null entry over the segments as it repeats a color' {
+            Write-ColorEX -Text 'a', 'b', 'c' -Color $null, Red
+
+            $script:hostCalls[0].Object | Should -Be "a$esc[91mb$esc[0mc"
+        }
+
+        It 'Leaves a segment with a $null color to the gradient' {
+            Set-TestColorSupport -Support 'TrueColor'
+
+            Write-ColorEX -Text 'ab', 'CD', 'ef' -Gradient Red, Blue -Color $null, Yellow, $null
+
+            $line = $script:hostCalls[0].Object
+            $line | Should -Match ([regex]::Escape("$esc[38;2;255;255;0mCD$esc[0m"))
+            $line | Should -Match ([regex]::Escape("$esc[38;2;255;0;0ma"))
+            ([regex]::Matches($line, [regex]::Escape("$esc[38;2;"))).Count | Should -Be 5
+            Remove-EscapeCode $line | Should -Be 'abCDef'
+        }
+
+        It 'Takes $null for the whole of -Color as no color' {
+            Write-ColorEX -Text 'x' -Color $null
+
+            $script:hostCalls[0].Object | Should -Be 'x'
+        }
+
+        It 'Leaves the background alone for a $null entry, as for None' {
+            Write-ColorEX -Text 'a', 'b', 'c' -BackGroundColor $null, Red, 'None'
+
+            $script:hostCalls[0].Object | Should -Be "a$esc[101mb$esc[0mc"
+        }
+
+        It 'Refuses an entry that is not a color, naming the parameter and the value' {
+            { Write-ColorEX -Text 'x' -Color 1.5 } |
+                Should -Throw "Cannot validate argument on parameter 'Color'. The argument `"1.5`" is not a color*"
+            { Write-ColorEX -Text 'x' -BackGroundColor @{ Red = 1 } } |
+                Should -Throw "*parameter 'BackGroundColor'. The argument `"System.Collections.Hashtable`" is not a color*"
+            { Write-ColorEX -Text 'x' -Color @(, @(255, 1.5, 0)) -TrueColor } |
+                Should -Throw "*The argument `"System.Object``[``]`" is not a color*"
+        }
+    }
+
     Context 'ANSI color modes' {
         BeforeAll {
             Mock -ModuleName PSWriteColorEX Test-ColorHostAnsi { $true }
@@ -303,7 +357,7 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
         It 'Writes a color code for each character of an ANSI8 gradient through grays' {
             Set-TestColorSupport -Support 'ANSI8'
 
-            Write-ColorEX -Text 'abc' -Gradient '#202020', '#E0E0E0' -ANSI8
+            Write-ColorEX -Text 'abc' -Gradient '#202020', '#E0E0E0' -GradientSpace RGB -ANSI8
 
             $script:hostCalls[0].Object | Should -Be "$esc[38;5;234ma$esc[38;5;244mb$esc[38;5;254mc$esc[0m"
         }
@@ -668,4 +722,8 @@ Describe 'PSWriteColorEX import' -Tag 'Unit', 'Module' {
 
         { Write-ColorEX -Text 'x' -StyleProfile $style -NoConsoleOutput -ErrorAction Stop } | Should -Not -Throw
     }
+}
+
+AfterAll {
+    Restore-StartupColorEnvironment
 }

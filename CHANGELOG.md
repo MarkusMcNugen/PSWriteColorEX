@@ -1,7 +1,117 @@
 # Changelog
 
-All notable changes to PSWriteColorEX are recorded here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+All notable changes to PSWriteColorEX are recorded here. The module is
+published as `PSWriteColorEX` on the PowerShell Gallery, and a version heading
+links to that version's page there. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). From 1.2.0 on, each
+release is one commit, so this file, not the commit log, is the record of what
+changed in it.
+
+## [1.2.0] - 2026-10-09
+
+### Added
+
+- `Write-ColorEX -Markup` reads tags that color and style part of a string:
+  `'[bold red]Error:[/] file not found'`. A tag holds style names, a text
+  color, `on` and a background color, and `link=URL`; tags nest, `[/]` closes
+  the last one, and `[[` and `]]` write `[` and `]`. A tag that is not a style
+  is written as text, with a warning.
+- `-Split` cuts each segment after each separator given, and `-SplitAround`
+  before and after it, so `-Color` and the other parameters that take one
+  value per segment color the parts in turn: `-Text 'a,b,c' -Split ','
+  -Color Red, Green, Blue`. `-SplitEvenly` cuts each segment into as many
+  equal parts as `-Color` has colors.
+- `-Highlight` colors and styles the text regular expressions match, over the
+  whole line: `-Highlight @{ 'error' = 'bold red' }`.
+- `-Link` makes each segment a link that terminals with OSC 8 support open
+  when clicked.
+- `-Reverse` swaps the text and background colors. `-UnderlineStyle` draws a
+  single, double, curly, dotted or dashed underline, and `-UnderlineColor`
+  colors the underline of each segment.
+- `-BackGroundGradient` blends colors across the background, as `-Gradient`
+  does across the text.
+- `-Truncate` cuts text wider than `-AutoPad`, ending it with an ellipsis.
+  `-PadCenter` centers the text in `-AutoPad`. `-Wrap` breaks text into lines
+  no wider than `-AutoPad` or the console window, at spaces where it can.
+- Every color parameter takes `#RGB`, `0xRGB`, `rgb(r, g, b)` and
+  `hsl(h, s%, l%)` besides names, `#RRGGBB` codes and RGB arrays.
+- `Format-ColorEX` answers text with its colors and styles as escape codes,
+  one string per line, for use inside other strings, tables and files.
+- `Show-ColorTable` writes each color name with samples in TrueColor, 256
+  colors, 16 colors and console colors.
+- `Register-ColorName` and `Unregister-ColorName` add and remove color names,
+  which every command then takes.
+- `Export-ColorProfile` and `Import-ColorProfile` save style profiles and
+  registered color names to a JSON file and read them back, and
+  `Remove-ColorProfile` removes profiles.
+- Tab completion of color names for the color parameters, and of profile names
+  for `Get-ColorProfiles`, `Export-ColorProfile` and `Remove-ColorProfile`.
+- `PSColorStyle` and `New-ColorStyle` take `BackgroundGradient`,
+  `GradientSpace`, `Reverse`, `UnderlineColor`, `UnderlineStyle`, `PadCenter`,
+  `Truncate` and `Wrap`.
+- `Test-AnsiSupport` detects Ghostty, WezTerm, Warp, Kitty, Alacritty, foot,
+  the JetBrains IDEs' terminal and tmux, and reports `Reverse` in
+  `StyleSupport`. Kitty, Alacritty and foot were taken for 16-color terminals
+  that draw bold as brighter colors before.
+- `CLICOLOR_FORCE`, set to anything but `0`, keeps colors on, and `CLICOLOR=0`
+  turns them off. The first color variable set decides: `FORCE_COLOR`,
+  `NO_COLOR`, `CLICOLOR_FORCE`, `CLICOLOR`, then `TERM`.
+
+### Changed
+
+- Gradients blend in the OKLab color space, where equal steps look equally far
+  apart: red to green passes through a golden yellow rather than a dark olive.
+  `-GradientSpace RGB` blends each channel on its own, as 1.1.0 did.
+- A color name the color table lacks gives the warning "Unknown color 'Name'."
+  and leaves its segment in the terminal's color. It was gray, or no color with
+  `-ANSI4` or `-ANSI8`, without a warning before.
+- `-Gradient` writes `-BackGroundColor` under the gradient. The background
+  colors were left out of a gradient before.
+- `Write-ColorEX` takes 38% to 60% less time per call than 1.1.0: 158
+  microseconds rather than 254 for plain text, and 199 rather than 504 for a hex
+  color with `-Bold`, in PowerShell 7.6 on Linux. The work done for every
+  segment is in two classes, whose methods cost a fraction of a function call,
+  the color variables are read without the `Env:` drive, and colors that need
+  no conversion skip it.
+- With `FORCE_COLOR` or `CLICOLOR_FORCE` set, a line whose colors are all names
+  goes out as escape codes in one call in every host, so its colors reach a CI
+  log or a pipe. In Windows PowerShell 5.1, and in a host without virtual
+  terminal support, such a line went out as console colors, which a log does
+  not show, before.
+
+### Removed
+
+- The `Docs` folder. The [wiki](https://markusmcnugen.github.io/PSWriteColorEX/)
+  documents every command, parameter, color form and terminal, and shows each
+  example's output as the module wrote it; the README gives an overview and
+  points to it.
+
+### Fixed
+
+- `-Color` and `-BackGroundColor` take `$null` entries, as the help says: a
+  `$null` entry leaves its segment in the terminal's color, or with
+  `-Gradient` to the gradient, so `-Color $null, 'Yellow', $null` colors the
+  second of three segments yellow and the others with the gradient.
+  `-Color $null` is no color. An entry that is not a color is refused with
+  "The argument "1.5" is not a color: a string, an integer, or an array of
+  strings, integers and arrays." Any `$null` was refused with "The argument is
+  null" before, and the message for an entry that was not a color quoted the
+  parameter's validation script.
+- `Set-ColorDefault` with no parameters makes the default style plain Gray
+  text. It stopped with "Parameter set cannot be resolved using the specified
+  named parameters" before.
+- With `-ANSI8` or `-ANSI4`, a hex, `rgb()` or `hsl()` color in `-Color`,
+  `-BackGroundColor`, a markup tag or a `-Highlight` style is written as the
+  nearest color of that mode: `-Color '#FF8800' -ANSI8` writes 256-color 208.
+  Such a color was left out, with no warning, before.
+- `New-ColorStyle` and `Set-ColorDefault` describe every parameter in their
+  help.
+- `Test-AnsiSupport` reports no bold font for PowerShell 7 in a window of the
+  Windows console host, which draws bold as brighter colors, so `-Bold`
+  lightens colors there as it does in Windows PowerShell 5.1. It reported a
+  bold font before, and bold showed no change on hex, `rgb()` and 256-color
+  text. Windows Terminal and the other terminals that run PowerShell through a
+  pseudoconsole still report a bold font.
 
 ## [1.1.0] - 2026-10-05
 
@@ -125,3 +235,7 @@ All notable changes to PSWriteColorEX are recorded here. The format follows
 ## [1.0.0] - 2025-11-02
 
 The first release.
+
+[1.2.0]: https://www.powershellgallery.com/packages/PSWriteColorEX/1.2.0
+[1.1.0]: https://www.powershellgallery.com/packages/PSWriteColorEX/1.1.0
+[1.0.0]: https://www.powershellgallery.com/packages/PSWriteColorEX/1.0.0

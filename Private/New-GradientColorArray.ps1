@@ -17,6 +17,11 @@
     .PARAMETER Mode
     Color mode: 'TrueColor' returns RGB arrays, 'ANSI8' returns ANSI 256-color codes
 
+    .PARAMETER Space
+    The space colors are blended in: 'OKLab', where equal steps look equally far apart and the
+    brightness stays even, or 'RGB', each channel on its own. The first and last step of each
+    stretch between two waypoints are the waypoints themselves.
+
     .EXAMPLE
     New-GradientColorArray -Colors @("Red","Blue") -Steps 10 -Mode TrueColor
     Returns 10 RGB arrays interpolated from Red to Blue
@@ -32,13 +37,15 @@
     - ANSI8 mode: Array of ANSI 256-color codes (integers 0-255)
 
     .NOTES
-    Author: MarkusMcNugen
+    Author: Mark Newton
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    Write-ColorEX calls this private function for -Gradient. Each step's color is a linear
-    interpolation between the two waypoints around it. A color name not in the color table and
-    an invalid hex code are gray.
+    Write-ColorEX calls this private function for -Gradient and -BackGroundGradient. Each step's
+    color is a linear interpolation between the two waypoints around it, in OKLab or in RGB. A
+    color name not in the color table and an invalid hex code are gray. The result of each set of
+    waypoints, steps, mode and space is kept for the session, so a gradient written again costs a
+    lookup.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -57,15 +64,16 @@
 
         [Parameter(Mandatory)]
         [ValidateSet('TrueColor', 'ANSI8')]
-        [string]$Mode
+        [string]$Mode,
+
+        [ValidateSet('OKLab', 'RGB')]
+        [string]$Space = 'OKLab'
     )
 
     # Validate colors count
     if ($Colors.Count -lt 2) {
         throw "Gradient requires at least 2 colors (received $($Colors.Count))"
     }
-
-    $gradientColors = [System.Collections.Generic.List[object]]::new($Steps)
 
     # Every waypoint as RGB
     $rgbColors = [System.Collections.Generic.List[array]]::new($Colors.Count)
@@ -93,61 +101,21 @@
         }
     }
 
-    # One step is the first color
-    if ($Steps -eq 1) {
-        $rgb = $rgbColors[0]
-        if ($Mode -eq 'ANSI8') {
-            $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB $rgb))
-        } else {
-            $null = $gradientColors.Add($rgb)
-        }
-        return ,$gradientColors.ToArray()
+    $cacheKey = '{0}|{1}|{2}|{3}' -f $Mode, $Space, $Steps, (($rgbColors | ForEach-Object { $_ -join ',' }) -join ';')
+    $cached = $script:GradientCache[$cacheKey]
+    if ($null -ne $cached) {
+        return ,$cached
     }
 
-    if ($rgbColors.Count -eq 2) {
-        $startRGB = $rgbColors[0]
-        $endRGB = $rgbColors[1]
-
-        for ($i = 0; $i -lt $Steps; $i++) {
-            # Linear interpolation
-            $ratio = $i / ($Steps - 1)
-
-            $r = [int]($startRGB[0] + ($endRGB[0] - $startRGB[0]) * $ratio)
-            $g = [int]($startRGB[1] + ($endRGB[1] - $startRGB[1]) * $ratio)
-            $b = [int]($startRGB[2] + ($endRGB[2] - $startRGB[2]) * $ratio)
-
-            if ($Mode -eq 'ANSI8') {
-                $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB @($r, $g, $b)))
-            } else {
-                $null = $gradientColors.Add(@($r, $g, $b))
-            }
-        }
-    } else {
-        # Three or more waypoints: each step falls between the two waypoints around it
-        $segmentCount = $rgbColors.Count - 1
-
-        for ($step = 0; $step -lt $Steps; $step++) {
-            # Determine which color segment this step falls into
-            $position = $step / ($Steps - 1) * $segmentCount
-            $segmentIndex = [Math]::Min([int][Math]::Floor($position), $segmentCount - 1)
-            $segmentProgress = $position - $segmentIndex
-
-            $startRGB = $rgbColors[$segmentIndex]
-            $endRGB = $rgbColors[$segmentIndex + 1]
-
-            # Linear interpolation within segment
-            $r = [int]($startRGB[0] + ($endRGB[0] - $startRGB[0]) * $segmentProgress)
-            $g = [int]($startRGB[1] + ($endRGB[1] - $startRGB[1]) * $segmentProgress)
-            $b = [int]($startRGB[2] + ($endRGB[2] - $startRGB[2]) * $segmentProgress)
-
-            if ($Mode -eq 'ANSI8') {
-                $null = $gradientColors.Add((Convert-RGBToANSI8 -RGB @($r, $g, $b)))
-            } else {
-                $null = $gradientColors.Add(@($r, $g, $b))
-            }
-        }
+    $result = [ColorMath]::Blend($rgbColors.ToArray(), $Steps, $Mode -eq 'ANSI8', $Space -eq 'OKLab')
+    if ($script:GradientCache.Count -ge 256) {
+        $script:GradientCache.Clear()
     }
+    $script:GradientCache[$cacheKey] = $result
 
     # The comma keeps the array whole rather than unrolled into the pipeline
-    return ,$gradientColors.ToArray()
+    return ,$result
 }
+
+# The gradients built so far, by mode, space, steps and waypoints
+$script:GradientCache = @{}

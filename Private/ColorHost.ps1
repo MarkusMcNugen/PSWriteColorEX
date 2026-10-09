@@ -5,6 +5,9 @@ $script:RemovesEscapeCodes = $PSVersionTable.PSVersion -ge [version]'7.2'
 # Whether the host lets escape codes through, read on first use; it stays the same for the session
 $script:HostVirtualTerminal = $null
 
+# Whether the process's console is a window of the Windows console host, read on first use
+$script:ConsoleHostWindow = $null
+
 function Test-ColorHostVirtualTerminal {
     <#
     .SYNOPSIS
@@ -27,6 +30,53 @@ function Test-ColorHostVirtualTerminal {
     } catch {
         return $false
     }
+}
+
+function Test-ColorConsoleHostWindow {
+    <#
+    .SYNOPSIS
+    Answers whether the process's console is a window of the Windows console host itself.
+
+    .DESCRIPTION
+    The console host's own window has the class ConsoleWindowClass. A terminal that runs
+    PowerShell through a pseudoconsole, such as Windows Terminal or VS Code, gives the console a
+    hidden window of the class PseudoConsoleWindow, and a process with no console window, such as
+    a CI job, has none. Answers $false outside Windows.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
+    if ($null -ne $script:ConsoleHostWindow) {
+        return $script:ConsoleHostWindow
+    }
+    $script:ConsoleHostWindow = $false
+    if ([System.Environment]::OSVersion.Platform -ne 'Win32NT') {
+        return $false
+    }
+    try {
+        # Reflection.Emit declares the two calls in about 10 ms; Add-Type takes 170 to 290 ms in pwsh
+        $assembly = [System.Reflection.Emit.AssemblyBuilder]::DefineDynamicAssembly(
+            [System.Reflection.AssemblyName]::new('PSWriteColorEXConsoleWindow'), [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
+        $type = $assembly.DefineDynamicModule('PSWriteColorEXConsoleWindow').DefineType('PSWriteColorEXConsoleWindow', 'Public, Abstract, Sealed')
+        $attributes = [System.Reflection.MethodAttributes]'Public, Static, PinvokeImpl'
+        $getWindow = $type.DefinePInvokeMethod('GetConsoleWindow', 'kernel32.dll', $attributes, 'Standard', [IntPtr],
+            [Type[]]@(), 'Winapi', 'Unicode')
+        $getWindow.SetImplementationFlags('PreserveSig')
+        $getClass = $type.DefinePInvokeMethod('GetClassNameW', 'user32.dll', $attributes, 'Standard', [int],
+            [Type[]]@([IntPtr], [System.Text.StringBuilder], [int]), 'Winapi', 'Unicode')
+        $getClass.SetImplementationFlags('PreserveSig')
+        $native = $type.CreateType()
+        $window = $native::GetConsoleWindow()
+        if ($window -ne [IntPtr]::Zero) {
+            $name = [System.Text.StringBuilder]::new(64)
+            $length = $native::GetClassNameW($window, $name, $name.Capacity)
+            $script:ConsoleHostWindow = $length -gt 0 -and $name.ToString(0, $length) -eq 'ConsoleWindowClass'
+        }
+    } catch {
+        $script:ConsoleHostWindow = $false
+    }
+    return $script:ConsoleHostWindow
 }
 
 function Test-ColorHostAnsi {
@@ -78,7 +128,16 @@ function Test-ColorLineComposition {
     if ($script:CachedANSISupport -eq 'None') {
         return $false
     }
-    return (Test-ColorHostAnsi)
+    # Test-ColorHostAnsi's checks, made here rather than through a second call, since every line
+    # of console colors asks
+    if ($null -eq $script:HostVirtualTerminal) {
+        $script:HostVirtualTerminal = Test-ColorHostVirtualTerminal
+    }
+    if (-not $script:HostVirtualTerminal) {
+        return $false
+    }
+    $style = $ExecutionContext.SessionState.PSVariable.GetValue('PSStyle')
+    return -not ($null -ne $style -and "$($style.OutputRendering)" -eq 'PlainText')
 }
 
 function Get-ColorHostWidth {

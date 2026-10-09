@@ -1,0 +1,76 @@
+{{- /*
+Hextra's components/codeblock partial, with two changes.
+
+The language is the fence's info string up to its first comma, so a block fenced
+powershell,ansi8 highlights as powershell; the flags after the comma are generate.ps1's.
+
+A powershell block holding a session, a line that opens with "PS> ", is drawn as a terminal
+from data/examples.json, which generate.ps1 writes by running the session through the module:
+each command as PSReadLine colors it, and each line of output in the colors, styles and links
+the module wrote. Its entry is keyed by the MD5 of the fence's info string, a line end and the
+block's text. A session the file holds no entry for stops the build.
+*/ -}}
+{{ $filename := .filename | default "" -}}
+{{ $base_url := .base_url | default "" -}}
+{{ $lang := .lang | default "" }}
+{{ $content := .content }}
+{{ $options := .options | default (dict) }}
+
+{{- if $filename -}}
+  <div class="hextra-code-filename not-prose" dir="auto">
+    {{- if $base_url -}}
+
+      {{- $base_url = strings.TrimSuffix "/" $base_url -}}
+      {{- $filename = strings.TrimPrefix "/" $filename -}}
+      {{- $file_url := urls.JoinPath $base_url $filename -}}
+
+      <a class="hx:no-underline hx:inline-flex hx:items-center hx:gap-1" href="{{ $file_url }}" target="_blank" rel="noopener noreferrer">
+          <span>{{- $filename -}}</span>
+          {{- partial "utils/icon" (dict "name" "external-link" "attributes" "height=1em") -}}
+      </a>
+    {{- else -}}
+      {{- $filename -}}
+    {{- end -}}
+  </div>
+{{- end -}}
+
+{{- $info := $lang -}}
+{{- $lang = index (split $lang ",") 0 -}}
+{{- $content = replace $content "\r" "" -}}
+{{- $session := false -}}
+{{- if eq $lang "powershell" -}}
+  {{- range split $content "\n" -}}
+    {{- if hasPrefix . "PS> " -}}{{- $session = true -}}{{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- if $session -}}
+  {{- $key := md5 (printf "%s\n%s" $info (strings.TrimRight "\n" $content)) -}}
+  {{- $table := hugo.Data.examples | default dict -}}
+  {{- if not (isset $table $key) -}}
+    {{- errorf "data/examples.json has no entry for the session that opens %q: run pwsh ./generate.ps1 in wiki/" (index (split $content "\n") 0) -}}
+  {{- end -}}
+  {{- $entry := index $table $key -}}
+  {{- $modes := dict "ANSI8" "256 colors" "ANSI4" "16 colors" "None" "no color" -}}
+  <div class="wcx-terminal not-prose" data-mode="{{ $entry.mode }}">
+    {{- with index $modes $entry.mode -}}<div class="wcx-terminal-mode">{{ . }}</div>{{- end -}}
+    <pre tabindex="0"><code class="language-terminal" data-lang="terminal">
+      {{- range $i, $line := $entry.lines -}}
+        {{- if $i }}{{ "\n" }}{{ end -}}
+        <span class="line {{ if eq .k "c" }}wcx-command{{ else }}wcx-output{{ end }}">
+          {{- range .spans -}}
+            {{- if .h -}}
+              <a href="{{ .h }}"{{ with .s }} style="{{ . | safeCSS }}"{{ end }}{{ with .c }} class="{{ . }}"{{ end }} target="_blank" rel="noopener">{{ .t }}</a>
+            {{- else -}}
+              <span{{ with .s }} style="{{ . | safeCSS }}"{{ end }}{{ with .c }} class="{{ . }}"{{ end }}>{{ .t }}</span>
+            {{- end -}}
+          {{- end -}}
+        </span>
+      {{- end -}}
+    </code></pre>
+  </div>
+{{- else if transform.CanHighlight $lang -}}
+  <div>{{- highlight $content $lang $options -}}</div>
+{{- else -}}
+  <div><pre><code>{{ $content }}</code></pre></div>
+{{- end -}}

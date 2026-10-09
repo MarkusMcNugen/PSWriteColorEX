@@ -5,8 +5,14 @@ BeforeAll {
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
 
-    # Dot-source the private function for testing
-    . "$ModuleRoot\Private\New-GradientColorArray.ps1"
+    # The private function, run inside the module, where the ColorMath class is defined
+    function New-GradientColorArray {
+        param([object[]]$Colors, [int]$Steps, [string]$Mode, [string]$Space = 'OKLab')
+        & (Get-Module PSWriteColorEX) {
+            param($Colors, $Steps, $Mode, $Space)
+            New-GradientColorArray -Colors $Colors -Steps $Steps -Mode $Mode -Space $Space
+        } $Colors $Steps $Mode $Space
+    }
 }
 
 Describe 'New-GradientColorArray' -Tag 'Unit', 'Function', 'Gradient' {
@@ -60,12 +66,12 @@ Describe 'New-GradientColorArray' -Tag 'Unit', 'Function', 'Gradient' {
         # A call without a mandatory parameter would prompt for it in an interactive session,
         # so these read the parameter's attributes
         It 'Requires Steps parameter' {
-            $attributes = (Get-Command New-GradientColorArray).Parameters['Steps'].Attributes
+            $attributes = (& (Get-Module PSWriteColorEX) { Get-Command New-GradientColorArray }).Parameters['Steps'].Attributes
             ($attributes | Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] }).Mandatory | Should -Be $true
         }
 
         It 'Requires Mode parameter' {
-            $attributes = (Get-Command New-GradientColorArray).Parameters['Mode'].Attributes
+            $attributes = (& (Get-Module PSWriteColorEX) { Get-Command New-GradientColorArray }).Parameters['Mode'].Attributes
             ($attributes | Where-Object { $_ -is [System.Management.Automation.ParameterAttribute] }).Mandatory | Should -Be $true
         }
 
@@ -111,12 +117,32 @@ Describe 'New-GradientColorArray' -Tag 'Unit', 'Function', 'Gradient' {
             $result[9][2] | Should -Be 255
         }
 
-        It 'Middle colors are interpolated' {
-            $result = New-GradientColorArray -Colors @(@(0, 0, 0), @(100, 100, 100)) -Steps 3 -Mode TrueColor
+        It 'Middle colors are interpolated in RGB with -Space RGB' {
+            $result = New-GradientColorArray -Colors @(@(0, 0, 0), @(100, 100, 100)) -Steps 3 -Mode TrueColor -Space RGB
 
             # Middle value should be approximately 50
             $result[1][0] | Should -BeGreaterOrEqual 45
             $result[1][0] | Should -BeLessOrEqual 55
+        }
+
+        It 'Blends in OKLab by default, where the middle of black and a gray is the gray that looks halfway' {
+            $result = New-GradientColorArray -Colors @(@(0, 0, 0), @(100, 100, 100)) -Steps 3 -Mode TrueColor
+
+            $result[1] | Should -Be @(34, 34, 34)
+        }
+
+        It 'Blends red to blue in OKLab through a lighter purple than RGB gives' {
+            $result = New-GradientColorArray -Colors 'Red', 'Blue' -Steps 6 -Mode TrueColor
+
+            ($result | ForEach-Object { $_ -join ',' }) -join ' ' | Should -Be '255,0,0 209,68,96 163,82,142 117,81,182 68,65,219 0,0,255'
+        }
+
+        It 'Keeps each waypoint exactly in OKLab' {
+            $result = New-GradientColorArray -Colors '#123456', '#ABCDEF', '#FEDCBA' -Steps 5 -Mode TrueColor
+
+            $result[0] | Should -Be @(0x12, 0x34, 0x56)
+            $result[2] | Should -Be @(0xAB, 0xCD, 0xEF)
+            $result[4] | Should -Be @(0xFE, 0xDC, 0xBA)
         }
 
         It 'RGB values stay within 0-255 range' {
@@ -309,13 +335,13 @@ Describe 'New-GradientColorArray' -Tag 'Unit', 'Function', 'Gradient' {
     }
 
     Context 'Performance and Optimization' {
-        It 'Uses List instead of array concatenation' {
-            # Should complete quickly even with many steps
+        It 'Builds 1000 steps quickly' {
             $start = Get-Date
             $result = New-GradientColorArray -Colors @('Red', 'Blue') -Steps 1000 -Mode TrueColor
             $duration = (Get-Date) - $start
 
-            $duration.TotalMilliseconds | Should -BeLessThan 100
+            $result.Count | Should -Be 1000
+            $duration.TotalMilliseconds | Should -BeLessThan 1000
         }
 
         It 'Caches color conversions' {

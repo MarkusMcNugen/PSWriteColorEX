@@ -1,0 +1,34 @@
+{{- /*
+The color table from data/colors.json, which generate.ps1 reads from the module: each name with
+a sample of its color in TrueColor, as the nearest of the 256 colors, as the nearest of the 16,
+and as its console color, the last three drawn in Windows Terminal's Campbell scheme.
+{{< colors >}} shows every name; {{< colors family="Red" >}} one family's.
+*/ -}}
+{{- $family := .Get "family" | default "" -}}
+{{- $colors := hugo.Data.colors | default slice -}}
+{{- if not $colors -}}
+  {{- errorf "data/colors.json is missing or empty: run pwsh ./generate.ps1 in wiki/ (%s)" .Position -}}
+{{- end -}}
+<div class="hx:overflow-x-auto">
+<table class="wcx-colors">
+  <thead>
+    <tr><th>Name</th><th>TrueColor</th><th>256 colors</th><th>16 colors</th><th>Console</th><th>Hex</th><th>256</th><th>Console color</th></tr>
+  </thead>
+  <tbody>
+  {{- range $colors }}
+    {{- if or (eq $family "") (eq (replaceRE "^(Dark|Light)" "" .name) $family) }}
+    <tr>
+      <td><code>{{ .name }}</code></td>
+      <td><span class="wcx-swatch" style="background-color:{{ .hex | safeCSS }}"></span></td>
+      <td><span class="wcx-swatch" style="background-color:{{ .ansi8hex | safeCSS }}"></span></td>
+      <td><span class="wcx-swatch" style="background-color:{{ .ansi4hex | safeCSS }}"></span></td>
+      <td><span class="wcx-swatch" style="background-color:{{ .consolehex | safeCSS }}"></span></td>
+      <td><code>{{ .hex }}</code></td>
+      <td>{{ .ansi8 }}</td>
+      <td>{{ .console }}</td>
+    </tr>
+    {{- end }}
+  {{- end }}
+  </tbody>
+</table>
+</div>
