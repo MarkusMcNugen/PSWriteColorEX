@@ -19,7 +19,9 @@ colors.
 | `Name` | string |
 | `ForegroundColor`, `BackgroundColor`, `UnderlineColor` | a color, in any [color form](colors-and-names.md) |
 | `Gradient`, `BackgroundGradient` | colors |
-| `GradientSpace` | `OKLab` or `RGB` |
+| `GradientSpace` | `OKLab`, `RGB`, `LinearRGB`, `OKLCH`, `HSL`, `HSV`, `Lab` or `LCh` |
+| `GradientHue`, `GradientEasing`, `GradientRepeat`, `GradientDirection` | a name, as the `Write-ColorEX` parameter of the same name takes it |
+| `GradientSteps` | int, the bands of solid color; 0 blends smoothly |
 | `Bold`, `Faint`, `Italic`, `Underline`, `DoubleUnderline`, `Blink`, `CrossedOut`, `Overline`, `Reverse` | bool |
 | `Style` | string array, style names as `-Style` takes them |
 | `UnderlineStyle` | `Single`, `Double`, `Curly`, `Dotted` or `Dashed` |
@@ -29,8 +31,8 @@ colors.
 
 | Members | What it does |
 |---|---|
-| `ToWriteColorParams()` | Answers a hashtable of `Write-ColorEX` parameters from the current properties |
-| `Clone()` | Answers a copy with arrays of its own |
+| `ToWriteColorParams()` | Returns a hashtable of `Write-ColorEX` parameters from the current properties |
+| `Clone()` | Returns a copy with arrays of its own |
 | `AddToProfiles()` | Adds the style to `[PSColorStyle]::Profiles` under its name |
 | `SetAsDefault()` | Makes the style the one `-Default` applies |
 | `[PSColorStyle]::Profiles` | The profiles, a hashtable by name |
@@ -38,7 +40,8 @@ colors.
 | `[PSColorStyle]::GetProfile(name)` | The profile of that name, or `$null` |
 | `[PSColorStyle]::InitializeDefaultProfiles()` | Puts back the seven built-in profiles |
 
-The built-in profiles, which the message helpers and `-Default` use:
+The built-in profiles, which the message helpers and `-Default` use, and which
+`Import-ColorProfile -Theme` restyles:
 
 | Profile | Settings |
 |---|---|
@@ -73,7 +76,7 @@ PS> Write-ColorEX -Text ' v1.2.0 ' -StyleProfile $badge -BackGroundColor Magenta
 
 ## Get-ColorProfiles
 
-Answers every profile, or the one named, compared without regard to case.
+Returns every profile, or the one named, matched without regard to case.
 
 {{< syntax "Get-ColorProfiles" >}}
 
@@ -128,6 +131,36 @@ Registers the file's color names, adds its profiles, replacing profiles of the s
 the style the file names the default.
 
 {{< syntax "Import-ColorProfile" >}}
+
+### Themes
+
+`-Theme` reads one of the module's themes in place of a file. A color theme registers its colors
+under names that start with the theme's name, such as `DraculaPurple` or `Nord8`, and restyles
+the seven profiles in its colors, with Default the default style. Each theme is a file in
+`Export-ColorProfile`'s format in the module's `Themes` folder.
+
+{{< themes >}}
+
+`PowerShell` makes each profile it restyles exactly PowerShell's own setting: its text color, its
+background and the styles it turns on, from `$PSStyle.Formatting` on PowerShell 7.2 and later and
+from the host's `PrivateData` colors before that. Error, Warning and Debug take PowerShell's error,
+warning and debug settings, Info its verbose setting, and on 7.2 and later Critical takes
+`ErrorAccent` and Default `FormatAccent`. A console color in a setting is written as the
+terminal's own color, as PowerShell writes it. `CSS` adds the CSS color names the table lacks;
+[Colors and names](colors-and-names.md#css-color-names) has the details.
+
+```powershell
+PS> Import-ColorProfile -Theme Dracula
+PS> Write-ColorError 'Build failed'
+Build failed
+PS> Write-ColorSuccess 'Tests passed'
+Tests passed
+PS> Write-ColorEX -Text 'Dracula pink' -Color DraculaPink
+Dracula pink
+```
+
+[Use a theme](use-a-theme.md) shows the themes in a session, and the sources of their colors are
+credited in the module's THIRD-PARTY-NOTICES file.
 
 {{% parameters "Import-ColorProfile" "import-colorprofile-" %}}
 

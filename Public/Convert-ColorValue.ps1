@@ -4,13 +4,13 @@ function Convert-HexToRGB {
     <#
     .SYNOPSIS
     Converts hex color codes to RGB values
-    
+
     .DESCRIPTION
     Converts hex color codes (#RRGGBB or 0xRRGGBB) to RGB array
-    
+
     .PARAMETER Hex
     The hex color code to convert
-    
+
     .EXAMPLE
     Convert-HexToRGB "#FF8000"
     Returns: @(255, 128, 0)
@@ -35,42 +35,47 @@ function Convert-HexToRGB {
     #>
     [CmdletBinding()]
     [Alias('CHR', 'Hex2RGB')]
+    [OutputType([int])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'The array it returns reaches the pipeline as three Int32 values; the analyzer reads the array''s own type.')]
     param(
         [Parameter(Mandatory)]
         [string]$Hex
     )
-    
+
     # Remove # or 0x prefix
     $Hex = $Hex -replace '^#|^0x', ''
-    
+
     # Validate hex string
     if ($Hex -notmatch '^[0-9A-Fa-f]{6}$') {
         Write-Warning "Invalid hex color format: $Hex. Expected format: #RRGGBB or RRGGBB"
         return @(128, 128, 128)  # Default to gray
     }
-    
+
     # Convert to RGB
     $r = [Convert]::ToInt32($Hex.Substring(0, 2), 16)
     $g = [Convert]::ToInt32($Hex.Substring(2, 2), 16)
     $b = [Convert]::ToInt32($Hex.Substring(4, 2), 16)
-    
+
     return @($r, $g, $b)
 }
 
 function Convert-RGBToANSI8 {
     <#
     .SYNOPSIS
-    Converts RGB values to closest ANSI 8-bit color
-    
+    Converts RGB values to the nearest ANSI 256-color code
+
     .DESCRIPTION
-    Finds the closest ANSI 256-color palette match for RGB values
-    
+    Finds the 256-color code that looks nearest to an RGB color: the code at the least distance
+    in OKLab, a color space whose distances follow how different two colors look. The codes are
+    the 6x6x6 color cube (16-231) and the 24 grays (232-255); codes 0-15 are left out, since the
+    terminal's scheme sets their colors. Of two codes as near, it returns the lower.
+
     .PARAMETER RGB
     Array of RGB values [R, G, B]
-    
+
     .EXAMPLE
     Convert-RGBToANSI8 @(255, 128, 0)
-    Returns: 208 (closest orange in 256-color palette)
+    Returns: 208 (#FF8700, the nearest orange in the 256-color palette)
 
     .OUTPUTS
     System.Int32
@@ -82,9 +87,8 @@ function Convert-RGBToANSI8 {
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    A color whose channels are within 10 of each other maps to the grays, or to 16 (black) and
-    231 (white) at the ends. Any other color maps to the color cube. Values outside 0-255 are
-    clamped.
+    Values outside 0-255 are clamped. Windows PowerShell 5.1, PowerShell 7 and PWRSWriteColorEX
+    return the same code for every color.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -97,55 +101,30 @@ function Convert-RGBToANSI8 {
     #>
     [CmdletBinding()]
     [Alias('CRA8', 'RGB2ANSI8')]
+    [OutputType([int])]
     param(
         [Parameter(Mandatory)]
         [int[]]$RGB
     )
-    
+
     $r = [Math]::Max(0, [Math]::Min(255, $RGB[0]))
     $g = [Math]::Max(0, [Math]::Min(255, $RGB[1]))
     $b = [Math]::Max(0, [Math]::Min(255, $RGB[2]))
 
-    if ([Math]::Abs($r - $g) -lt 10 -and [Math]::Abs($g - $b) -lt 10) {
-        # The 24 grays, 232-255
-        $gray = [Math]::Round(($r + $g + $b) / 3)
-        if ($gray -lt 8) {
-            return 16  # Black
-        } elseif ($gray -gt 248) {
-            return 231  # White
-        } else {
-            # Map to 24 grayscale colors (232-255)
-            $grayIndex = [Math]::Round(($gray - 8) / 10)
-            return 232 + [Math]::Min(23, $grayIndex)
-        }
-    }
-    
-    # The 6x6x6 color cube, 16-231: each channel's step, 0 to 5
-    if ($null -eq $script:RGB6LevelLookup) {
-        # The module fills the lookup table at import; this runs without it
-        $r6 = if ($r -lt 48) { 0 } elseif ($r -lt 115) { 1 } elseif ($r -lt 155) { 2 } elseif ($r -lt 195) { 3 } elseif ($r -lt 235) { 4 } else { 5 }
-        $g6 = if ($g -lt 48) { 0 } elseif ($g -lt 115) { 1 } elseif ($g -lt 155) { 2 } elseif ($g -lt 195) { 3 } elseif ($g -lt 235) { 4 } else { 5 }
-        $b6 = if ($b -lt 48) { 0 } elseif ($b -lt 115) { 1 } elseif ($b -lt 155) { 2 } elseif ($b -lt 195) { 3 } elseif ($b -lt 235) { 4 } else { 5 }
-    } else {
-        $r6 = $script:RGB6LevelLookup[$r]
-        $g6 = $script:RGB6LevelLookup[$g]
-        $b6 = $script:RGB6LevelLookup[$b]
-    }
-
-    return 16 + (36 * $r6) + (6 * $g6) + $b6
+    return [ColorMath]::NearestAnsi8($r, $g, $b)
 }
 
 function Convert-RGBToANSI4 {
     <#
     .SYNOPSIS
     Converts RGB values to closest ANSI 4-bit color
-    
+
     .DESCRIPTION
     Finds the closest ANSI 16-color match for RGB values
-    
+
     .PARAMETER RGB
     Array of RGB values [R, G, B]
-    
+
     .EXAMPLE
     Convert-RGBToANSI4 @(255, 128, 0)
     Returns: 93 (bright yellow in the 16-color palette)
@@ -177,11 +156,12 @@ function Convert-RGBToANSI4 {
     #>
     [CmdletBinding()]
     [Alias('CRA4', 'RGB2ANSI4')]
+    [OutputType([int])]
     param(
         [Parameter(Mandatory)]
         [int[]]$RGB
     )
-    
+
     $r = $RGB[0]
     $g = $RGB[1]
     $b = $RGB[2]
@@ -196,7 +176,7 @@ function Convert-RGBToANSI4 {
     # Determine if it's a bright or dark color based on max channel value
     # For saturated colors like (255, 0, 0), we want to detect as "bright"
     $isBright = $max -ge 200
-    
+
     # Check for grayscale
     if ($max - $min -lt 30) {
         if ($brightness -lt 64) {
@@ -209,7 +189,7 @@ function Convert-RGBToANSI4 {
             return 97  # White
         }
     }
-    
+
     # Determine color based on dominant channels
     if ($r -eq $max) {
         if ($g -gt $b + 30) {
@@ -277,7 +257,7 @@ function Get-ColorTableWithRGB {
     # $orange[0] = 'DarkYellow'  (Native PowerShell)
     # $orange[1] = 33            (ANSI 4-bit FG)
     # $orange[2] = 43            (ANSI 4-bit BG)
-    # $orange[3] = 208           (ANSI 8-bit)
+    # $orange[3] = 214           (ANSI 8-bit)
     # $orange[4] = @(255,165,0)  (RGB)
 
     .EXAMPLE
@@ -312,218 +292,219 @@ function Get-ColorTableWithRGB {
     #>
     [CmdletBinding()]
     [Alias('GCT', 'Get-ColorTable', 'Get-ColourTable')]
+    [OutputType([hashtable])]
     param()
-    
+
     $table = @{
         # Neutral family
         Black = @('Black', 30, 40, 0, @(0, 0, 0))
-        LightBlack = @('DarkGray', 90, 100, 238, @(118, 118, 118))
+        LightBlack = @('DarkGray', 90, 100, 243, @(118, 118, 118))
         DarkGray = @('DarkGray', 90, 100, 8, @(128, 128, 128))
         Gray = @('Gray', 37, 47, 7, @(192, 192, 192))
-        LightGray = @('Gray', 37, 47, 253, @(238, 238, 238))
+        LightGray = @('Gray', 37, 47, 255, @(238, 238, 238))
         White = @('White', 97, 107, 15, @(255, 255, 255))
-        
+
         # Red family
-        DarkRed = @('DarkRed', 31, 41, 52, @(139, 0, 0))
+        DarkRed = @('DarkRed', 31, 41, 88, @(139, 0, 0))
         Red = @('Red', 31, 41, 1, @(255, 0, 0))
         LightRed = @('Red', 91, 101, 9, @(255, 85, 85))
-        
+
         # Green family
-        DarkGreen = @('DarkGreen', 32, 42, 28, @(0, 100, 0))
+        DarkGreen = @('DarkGreen', 32, 42, 22, @(0, 100, 0))
         Green = @('Green', 32, 42, 2, @(0, 255, 0))
         LightGreen = @('Green', 92, 102, 10, @(85, 255, 85))
-        
+
         # Yellow family
-        DarkYellow = @('DarkYellow', 33, 43, 136, @(204, 204, 0))
-        Yellow = @('Yellow', 33, 43, 220, @(255, 255, 0))
+        DarkYellow = @('DarkYellow', 33, 43, 184, @(204, 204, 0))
+        Yellow = @('Yellow', 33, 43, 226, @(255, 255, 0))
         LightYellow = @('Yellow', 93, 103, 11, @(255, 255, 85))
-        
+
         # Blue family
-        DarkBlue = @('DarkBlue', 34, 44, 19, @(0, 0, 139))
+        DarkBlue = @('DarkBlue', 34, 44, 18, @(0, 0, 139))
         Blue = @('Blue', 34, 44, 4, @(0, 0, 255))
         LightBlue = @('Blue', 94, 104, 12, @(85, 85, 255))
-        
+
         # Magenta family
-        DarkMagenta = @('DarkMagenta', 35, 45, 53, @(139, 0, 139))
+        DarkMagenta = @('DarkMagenta', 35, 45, 90, @(139, 0, 139))
         Magenta = @('Magenta', 35, 45, 5, @(255, 0, 255))
         LightMagenta = @('Magenta', 95, 105, 13, @(255, 85, 255))
-        
+
         # Cyan family
         DarkCyan = @('DarkCyan', 36, 46, 30, @(0, 139, 139))
         Cyan = @('Cyan', 36, 46, 6, @(0, 255, 255))
         LightCyan = @('Cyan', 96, 106, 14, @(85, 255, 255))
-        
+
         # Orange family
-        DarkOrange = @('DarkYellow', 33, 43, 166, @(255, 140, 0))
-        Orange = @('DarkYellow', 33, 43, 208, @(255, 165, 0))
-        LightOrange = @('Yellow', 33, 43, 215, @(255, 195, 0))
-        
+        DarkOrange = @('DarkYellow', 33, 43, 208, @(255, 140, 0))
+        Orange = @('DarkYellow', 33, 43, 214, @(255, 165, 0))
+        LightOrange = @('Yellow', 33, 43, 214, @(255, 195, 0))
+
         # Purple family
         DarkPurple = @('DarkMagenta', 35, 45, 54, @(75, 0, 130))
-        Purple = @('DarkMagenta', 35, 45, 93, @(128, 0, 128))
-        LightPurple = @('Magenta', 35, 45, 135, @(147, 112, 219))
-        
+        Purple = @('DarkMagenta', 35, 45, 90, @(128, 0, 128))
+        LightPurple = @('Magenta', 35, 45, 98, @(147, 112, 219))
+
         # Pink family
-        DarkPink = @('DarkMagenta', 35, 45, 163, @(199, 21, 133))
-        Pink = @('Magenta', 35, 45, 205, @(255, 192, 203))
-        LightPink = @('Magenta', 95, 105, 218, @(255, 182, 193))
-        
+        DarkPink = @('DarkMagenta', 35, 45, 162, @(199, 21, 133))
+        Pink = @('Magenta', 35, 45, 217, @(255, 192, 203))
+        LightPink = @('Magenta', 95, 105, 217, @(255, 182, 193))
+
         # Brown family
-        DarkBrown = @('DarkRed', 31, 41, 88, @(101, 67, 33))
+        DarkBrown = @('DarkRed', 31, 41, 239, @(101, 67, 33))
         Brown = @('DarkRed', 31, 41, 130, @(150, 75, 0))
-        LightBrown = @('DarkYellow', 33, 43, 173, @(205, 133, 63))
-        
+        LightBrown = @('DarkYellow', 33, 43, 172, @(205, 133, 63))
+
         # Teal family
-        DarkTeal = @('DarkCyan', 36, 46, 23, @(0, 128, 128))
+        DarkTeal = @('DarkCyan', 36, 46, 30, @(0, 128, 128))
         Teal = @('DarkCyan', 36, 46, 30, @(0, 150, 150))
-        LightTeal = @('Cyan', 36, 46, 80, @(64, 224, 208))
-        
+        LightTeal = @('Cyan', 36, 46, 44, @(64, 224, 208))
+
         # Violet family
-        DarkViolet = @('DarkMagenta', 35, 45, 128, @(148, 0, 211))
-        Violet = @('Magenta', 35, 45, 134, @(238, 130, 238))
-        LightViolet = @('Magenta', 95, 105, 177, @(200, 162, 200))
-        
+        DarkViolet = @('DarkMagenta', 35, 45, 92, @(148, 0, 211))
+        Violet = @('Magenta', 35, 45, 213, @(238, 130, 238))
+        LightViolet = @('Magenta', 95, 105, 182, @(200, 162, 200))
+
         # Lime family
-        DarkLime = @('DarkGreen', 32, 42, 34, @(50, 205, 50))
-        Lime = @('Green', 32, 42, 118, @(0, 255, 0))
-        LightLime = @('Green', 92, 102, 119, @(50, 255, 50))
-        
+        DarkLime = @('DarkGreen', 32, 42, 41, @(50, 205, 50))
+        Lime = @('Green', 32, 42, 46, @(0, 255, 0))
+        LightLime = @('Green', 92, 102, 46, @(50, 255, 50))
+
         # Slate family
         DarkSlate = @('DarkGray', 90, 100, 238, @(47, 79, 79))
-        Slate = @('Gray', 37, 47, 102, @(112, 128, 144))
-        LightSlate = @('Gray', 37, 47, 103, @(119, 136, 153))
-        
+        Slate = @('Gray', 37, 47, 244, @(112, 128, 144))
+        LightSlate = @('Gray', 37, 47, 102, @(119, 136, 153))
+
         # Gold family
         DarkGold = @('DarkYellow', 33, 43, 136, @(184, 134, 11))
-        Gold = @('Yellow', 33, 43, 178, @(255, 215, 0))
-        LightGold = @('Yellow', 93, 103, 185, @(255, 223, 0))
-        
+        Gold = @('Yellow', 33, 43, 220, @(255, 215, 0))
+        LightGold = @('Yellow', 93, 103, 220, @(255, 223, 0))
+
         # Sky family
-        DarkSky = @('DarkBlue', 34, 44, 24, @(0, 191, 255))
-        Sky = @('Blue', 34, 44, 111, @(135, 206, 235))
-        LightSky = @('Cyan', 36, 46, 152, @(135, 206, 250))
-        
+        DarkSky = @('DarkBlue', 34, 44, 39, @(0, 191, 255))
+        Sky = @('Blue', 34, 44, 117, @(135, 206, 235))
+        LightSky = @('Cyan', 36, 46, 117, @(135, 206, 250))
+
         # Coral family
         DarkCoral = @('DarkRed', 31, 41, 167, @(205, 91, 69))
         Coral = @('Red', 31, 41, 209, @(255, 127, 80))
         LightCoral = @('Red', 91, 101, 210, @(240, 128, 128))
-        
+
         # Olive family
         DarkOlive = @('DarkGreen', 32, 42, 58, @(85, 107, 47))
         Olive = @('DarkYellow', 33, 43, 100, @(128, 128, 0))
-        LightOlive = @('DarkYellow', 33, 43, 107, @(170, 170, 0))
-        
+        LightOlive = @('DarkYellow', 33, 43, 142, @(170, 170, 0))
+
         # Lavender family
-        DarkLavender = @('DarkMagenta', 35, 45, 97, @(100, 100, 150))
-        Lavender = @('Magenta', 35, 45, 183, @(230, 230, 250))
-        LightLavender = @('Magenta', 95, 105, 189, @(240, 240, 255))
-        
+        DarkLavender = @('DarkMagenta', 35, 45, 60, @(100, 100, 150))
+        Lavender = @('Magenta', 35, 45, 254, @(230, 230, 250))
+        LightLavender = @('Magenta', 95, 105, 255, @(240, 240, 255))
+
         # Mint family
-        DarkMint = @('DarkGreen', 32, 42, 29, @(60, 179, 113))
+        DarkMint = @('DarkGreen', 32, 42, 71, @(60, 179, 113))
         Mint = @('Green', 32, 42, 121, @(152, 251, 152))
-        LightMint = @('Green', 92, 102, 157, @(189, 252, 201))
-        
+        LightMint = @('Green', 92, 102, 158, @(189, 252, 201))
+
         # Salmon family
         DarkSalmon = @('DarkRed', 31, 41, 173, @(233, 150, 122))
-        Salmon = @('Red', 31, 41, 174, @(250, 128, 114))
-        LightSalmon = @('Red', 91, 101, 175, @(255, 160, 122))
-        
+        Salmon = @('Red', 31, 41, 210, @(250, 128, 114))
+        LightSalmon = @('Red', 91, 101, 216, @(255, 160, 122))
+
         # Indigo family
         DarkIndigo = @('DarkBlue', 34, 44, 17, @(25, 25, 112))
         Indigo = @('DarkMagenta', 35, 45, 54, @(75, 0, 130))
-        LightIndigo = @('Blue', 34, 44, 61, @(102, 102, 153))
-        
+        LightIndigo = @('Blue', 34, 44, 60, @(102, 102, 153))
+
         # Turquoise family
-        DarkTurquoise = @('DarkCyan', 36, 46, 31, @(0, 206, 209))
-        Turquoise = @('Cyan', 36, 46, 43, @(64, 224, 208))
-        LightTurquoise = @('Cyan', 96, 106, 86, @(175, 238, 238))
-        
+        DarkTurquoise = @('DarkCyan', 36, 46, 44, @(0, 206, 209))
+        Turquoise = @('Cyan', 36, 46, 44, @(64, 224, 208))
+        LightTurquoise = @('Cyan', 96, 106, 159, @(175, 238, 238))
+
         # Ruby family
-        DarkRuby = @('DarkRed', 31, 41, 52, @(155, 17, 30))
-        Ruby = @('Red', 31, 41, 124, @(224, 17, 95))
-        LightRuby = @('Red', 91, 101, 161, @(255, 102, 153))
-        
+        DarkRuby = @('DarkRed', 31, 41, 88, @(155, 17, 30))
+        Ruby = @('Red', 31, 41, 161, @(224, 17, 95))
+        LightRuby = @('Red', 91, 101, 204, @(255, 102, 153))
+
         # Jade family
         DarkJade = @('DarkGreen', 32, 42, 22, @(0, 100, 50))
         Jade = @('DarkGreen', 32, 42, 35, @(0, 168, 107))
-        LightJade = @('Green', 32, 42, 79, @(64, 216, 143))
-        
+        LightJade = @('Green', 32, 42, 78, @(64, 216, 143))
+
         # Amber family
-        DarkAmber = @('DarkYellow', 33, 43, 130, @(255, 160, 0))
+        DarkAmber = @('DarkYellow', 33, 43, 214, @(255, 160, 0))
         Amber = @('Yellow', 33, 43, 214, @(255, 191, 0))
-        LightAmber = @('Yellow', 93, 103, 221, @(255, 204, 0))
-        
+        LightAmber = @('Yellow', 93, 103, 220, @(255, 204, 0))
+
         # Steel family
-        DarkSteel = @('DarkGray', 90, 100, 60, @(70, 70, 70))
-        Steel = @('Gray', 37, 47, 66, @(113, 121, 126))
+        DarkSteel = @('DarkGray', 90, 100, 238, @(70, 70, 70))
+        Steel = @('Gray', 37, 47, 243, @(113, 121, 126))
         LightSteel = @('White', 97, 47, 146, @(176, 196, 222))
-        
+
         # Crimson family
         DarkCrimson = @('DarkRed', 31, 41, 88, @(139, 0, 0))
         Crimson = @('Red', 31, 41, 160, @(220, 20, 60))
-        LightCrimson = @('Red', 91, 101, 161, @(248, 48, 88))
-        
+        LightCrimson = @('Red', 91, 101, 197, @(248, 48, 88))
+
         # Emerald family
         DarkEmerald = @('DarkGreen', 32, 42, 22, @(0, 100, 0))
-        Emerald = @('Green', 32, 42, 36, @(80, 200, 120))
-        LightEmerald = @('Green', 92, 102, 85, @(128, 255, 170))
-        
+        Emerald = @('Green', 32, 42, 78, @(80, 200, 120))
+        LightEmerald = @('Green', 92, 102, 121, @(128, 255, 170))
+
         # Sapphire family
-        DarkSapphire = @('DarkBlue', 34, 44, 18, @(8, 37, 103))
+        DarkSapphire = @('DarkBlue', 34, 44, 17, @(8, 37, 103))
         Sapphire = @('Blue', 34, 44, 25, @(15, 82, 186))
-        LightSapphire = @('Blue', 94, 104, 69, @(100, 149, 237))
-        
+        LightSapphire = @('Blue', 94, 104, 68, @(100, 149, 237))
+
         # Wine family
         DarkWine = @('DarkRed', 31, 41, 52, @(72, 0, 25))
-        Wine = @('DarkRed', 31, 41, 88, @(114, 47, 55))
-        LightWine = @('Red', 31, 41, 125, @(179, 97, 115))
-        
+        Wine = @('DarkRed', 31, 41, 52, @(114, 47, 55))
+        LightWine = @('Red', 31, 41, 131, @(179, 97, 115))
+
         # Additional color families
         # Peach family
-        DarkPeach = @('DarkYellow', 33, 43, 172, @(255, 164, 96))
-        Peach = @('Yellow', 33, 43, 216, @(255, 218, 185))
-        LightPeach = @('Yellow', 93, 103, 223, @(255, 239, 213))
-        
+        DarkPeach = @('DarkYellow', 33, 43, 215, @(255, 164, 96))
+        Peach = @('Yellow', 33, 43, 223, @(255, 218, 185))
+        LightPeach = @('Yellow', 93, 103, 230, @(255, 239, 213))
+
         # Navy family
         DarkNavy = @('DarkBlue', 34, 44, 17, @(0, 0, 80))
         Navy = @('DarkBlue', 34, 44, 18, @(0, 0, 128))
-        LightNavy = @('Blue', 34, 44, 24, @(0, 0, 205))
-        
+        LightNavy = @('Blue', 34, 44, 20, @(0, 0, 205))
+
         # Forest family
         DarkForest = @('DarkGreen', 32, 42, 22, @(34, 75, 34))
         Forest = @('DarkGreen', 32, 42, 28, @(34, 139, 34))
-        LightForest = @('Green', 32, 42, 34, @(50, 205, 50))
-        
+        LightForest = @('Green', 32, 42, 41, @(50, 205, 50))
+
         # Rose family
-        DarkRose = @('DarkMagenta', 35, 45, 125, @(128, 0, 64))
-        Rose = @('Magenta', 35, 45, 168, @(255, 0, 127))
-        LightRose = @('Magenta', 95, 105, 211, @(255, 182, 193))
-        
+        DarkRose = @('DarkMagenta', 35, 45, 89, @(128, 0, 64))
+        Rose = @('Magenta', 35, 45, 198, @(255, 0, 127))
+        LightRose = @('Magenta', 95, 105, 217, @(255, 182, 193))
+
         # Plum family
-        DarkPlum = @('DarkMagenta', 35, 45, 89, @(102, 51, 153))
-        Plum = @('Magenta', 35, 45, 133, @(221, 160, 221))
-        LightPlum = @('Magenta', 95, 105, 176, @(238, 174, 238))
-        
+        DarkPlum = @('DarkMagenta', 35, 45, 54, @(102, 51, 153))
+        Plum = @('Magenta', 35, 45, 182, @(221, 160, 221))
+        LightPlum = @('Magenta', 95, 105, 219, @(238, 174, 238))
+
         # Tan family
         DarkTan = @('DarkYellow', 33, 43, 94, @(139, 90, 43))
         Tan = @('Yellow', 33, 43, 180, @(210, 180, 140))
-        LightTan = @('Yellow', 93, 103, 187, @(245, 222, 179))
-        
+        LightTan = @('Yellow', 93, 103, 223, @(245, 222, 179))
+
         # Maroon family
         DarkMaroon = @('DarkRed', 31, 41, 52, @(69, 0, 0))
         Maroon = @('DarkRed', 31, 41, 88, @(128, 0, 0))
-        LightMaroon = @('Red', 31, 41, 124, @(176, 48, 96))
-        
+        LightMaroon = @('Red', 31, 41, 125, @(176, 48, 96))
+
         # Aqua family (alternative cyan)
         DarkAqua = @('DarkCyan', 36, 46, 30, @(0, 128, 128))
         Aqua = @('Cyan', 36, 46, 6, @(0, 255, 255))
         LightAqua = @('Cyan', 96, 106, 14, @(127, 255, 255))
-        
+
         # Chartreuse family
         DarkChartreuse = @('DarkGreen', 32, 42, 64, @(69, 139, 0))
         Chartreuse = @('Green', 32, 42, 118, @(127, 255, 0))
-        LightChartreuse = @('Green', 92, 102, 154, @(191, 255, 127))
-        
+        LightChartreuse = @('Green', 92, 102, 156, @(191, 255, 127))
+
         # Brick family
         DarkBrick = @('DarkRed', 31, 41, 88, @(139, 26, 26))
         Brick = @('DarkRed', 31, 41, 124, @(178, 34, 34))
@@ -540,7 +521,7 @@ function Get-ColorTableWithRGB {
 function Get-LighterRGBColor {
     <#
     .SYNOPSIS
-    Answers a lighter version of an RGB color
+    Returns a lighter version of an RGB color
 
     .DESCRIPTION
     Multiplies each channel by a factor, with a floor so black becomes dark gray.
@@ -584,6 +565,8 @@ function Get-LighterRGBColor {
     #>
     [CmdletBinding()]
     [Alias('Lighten-RGBColor')]
+    [OutputType([int])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'The array it returns reaches the pipeline as three Int32 values; the analyzer reads the array''s own type.')]
     param(
         [Parameter(Mandatory)]
         [int[]]$RGB,
@@ -604,7 +587,7 @@ function Get-LighterRGBColor {
 function Get-LighterANSI8Color {
     <#
     .SYNOPSIS
-    Answers a lighter ANSI 8-bit (256-color) code
+    Returns a lighter ANSI 8-bit (256-color) code
 
     .DESCRIPTION
     Write-ColorEX uses it for -Bold in ANSI8 mode in terminals that show bold as brighter
@@ -664,6 +647,7 @@ function Get-LighterANSI8Color {
     #>
     [CmdletBinding()]
     [Alias('LA8', 'Lighten-ANSI8', 'Lighten-ANSI8Color')]
+    [OutputType([int])]
     param(
         [Parameter(Mandatory)]
         [ValidateRange(0, 255)]
@@ -739,7 +723,7 @@ function Get-LighterANSI8Color {
 function Get-LighterColorName {
     <#
     .SYNOPSIS
-    Answers the next lighter color name in the color table
+    Returns the next lighter color name in the color table
 
     .DESCRIPTION
     Shifts a color name one step lighter within its family: DarkRed to Red, Red to LightRed.
@@ -790,6 +774,7 @@ function Get-LighterColorName {
     #>
     [CmdletBinding()]
     [Alias('Lighten-ColorName')]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory)]
         [string]$ColorName
@@ -814,4 +799,85 @@ function Get-LighterColorName {
         return $lighter
     }
     return $ColorName
+}
+
+function Get-ColorContrast {
+    <#
+    .SYNOPSIS
+    Returns the contrast ratio of two colors
+
+    .DESCRIPTION
+    Returns the contrast ratio WCAG 2 defines for text in one color on a background in another:
+    (L1 + 0.05) / (L2 + 0.05), L1 being the relative luminance of the lighter color and L2 of the
+    darker. It runs from 1, for two colors of the same luminance, to 21 for black and white, and
+    is the same either way round. WCAG asks for at least 4.5 for body text and 3 for large text.
+
+    .PARAMETER Color
+    The text color: a hex code ('#FF8000', '#F80'), 'rgb(255, 128, 0)', 'hsl(30, 100%, 50%)', an
+    RGB array @(255, 128, 0), or a name in the color table.
+
+    .PARAMETER BackGroundColor
+    The background color, in the same forms as -Color.
+
+    .EXAMPLE
+    Get-ColorContrast -Color White -BackGroundColor '#1E1E2E'
+
+    The contrast of white text on a dark blue-gray background, about 16.4.
+
+    .EXAMPLE
+    if ((Get-ColorContrast Gold $background) -lt 4.5) { $text = 'Black' }
+
+    Picks black text where gold would be too faint on the background.
+
+    .OUTPUTS
+    System.Double
+    The contrast ratio, from 1 to 21.
+
+    .NOTES
+    Author: Mark Newton
+    License: MIT
+    Requires: PowerShell 5.1 or later
+
+    Windows PowerShell 5.1, PowerShell 7 and PWRSWriteColorEX return the same ratio to the last
+    bit. A value that is not a color gives an error and no ratio. Get-ColourContrast is an alias
+    of this function.
+
+    .LINK
+    https://github.com/MarkusMcNugen/PSWriteColorEX
+
+    .LINK
+    Register-ColorName
+
+    .LINK
+    Write-ColorEX
+    #>
+    [CmdletBinding()]
+    [Alias('Get-ColourContrast')]
+    [OutputType([double])]
+    param(
+        [Parameter(Mandatory, Position = 0)]
+        [Alias('C', 'ForegroundColor', 'FGC')]
+        [object]$Color,
+
+        [Parameter(Mandatory, Position = 1)]
+        [Alias('B', 'BGC')]
+        [object]$BackGroundColor
+    )
+
+    $table = Get-ColorTableWithRGB
+    $foreground = Get-ColorRegisterRgb -Value $Color -Table $table
+    $background = Get-ColorRegisterRgb -Value $BackGroundColor -Table $table
+    $readable = $true
+    foreach ($given in @(@{ Value = $Color; Rgb = $foreground }, @{ Value = $BackGroundColor; Rgb = $background })) {
+        if ($null -eq $given.Rgb) {
+            $shown = if ($given.Value -is [array]) { "@($($given.Value -join ', '))" } else { "$($given.Value)" }
+            $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
+                [System.ArgumentException]::new("'$shown' is not a color. A color is a hex code, rgb(), hsl(), an RGB array of three numbers 0-255, or a name in the color table."),
+                'InvalidColor', [System.Management.Automation.ErrorCategory]::InvalidArgument, $given.Value))
+            $readable = $false
+        }
+    }
+    if ($readable) {
+        [ColorMath]::ContrastRatio($foreground, $background)
+    }
 }

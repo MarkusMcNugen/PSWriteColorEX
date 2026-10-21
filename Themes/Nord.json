@@ -1,0 +1,62 @@
+{
+  "Colors": {
+    "Nord0": "#2E3440",
+    "Nord1": "#3B4252",
+    "Nord2": "#434C5E",
+    "Nord3": "#4C566A",
+    "Nord4": "#D8DEE9",
+    "Nord5": "#E5E9F0",
+    "Nord6": "#ECEFF4",
+    "Nord7": "#8FBCBB",
+    "Nord8": "#88C0D0",
+    "Nord9": "#81A1C1",
+    "Nord10": "#5E81AC",
+    "Nord11": "#BF616A",
+    "Nord12": "#D08770",
+    "Nord13": "#EBCB8B",
+    "Nord14": "#A3BE8C",
+    "Nord15": "#B48EAD"
+  },
+  "Default": "Default",
+  "Profiles": [
+    {
+      "Name": "Critical",
+      "ForegroundColor": "#2E3440",
+      "BackgroundColor": "#BF616A",
+      "Bold": true,
+      "Blink": true
+    },
+    {
+      "Name": "Debug",
+      "ForegroundColor": "#81A1C1",
+      "BackgroundColor": null,
+      "Italic": true
+    },
+    {
+      "Name": "Default",
+      "ForegroundColor": "#D8DEE9",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Error",
+      "ForegroundColor": "#BF616A",
+      "BackgroundColor": null,
+      "Bold": true
+    },
+    {
+      "Name": "Info",
+      "ForegroundColor": "#88C0D0",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Success",
+      "ForegroundColor": "#A3BE8C",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Warning",
+      "ForegroundColor": "#EBCB8B",
+      "BackgroundColor": null
+    }
+  ]
+}

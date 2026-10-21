@@ -95,6 +95,35 @@
   white-space: nowrap;
 }
 
+/* A named gradient's colors as a bar, blended in OKLab where the browser can */
+.wcx-gradient {
+  display: inline-block;
+  width: 10em;
+  height: 1.1em;
+  border-radius: 0.2em;
+  vertical-align: middle;
+  box-shadow: inset 0 0 0 1px rgb(127 127 127 / 0.35);
+}
+
+.wcx-gradients td:nth-child(-n + 2),
+.wcx-themes td,
+.wcx-themes th {
+  white-space: nowrap;
+}
+
+.wcx-themes td,
+.wcx-themes th {
+  padding: 0.35rem 0.6rem;
+}
+
+.wcx-themes .wcx-swatch {
+  width: 1.6em;
+}
+
+.wcx-themes td.wcx-theme-note {
+  white-space: normal;
+}
+
 .wcx-parameter-meta {
   font-size: 0.85em;
   opacity: 0.8;

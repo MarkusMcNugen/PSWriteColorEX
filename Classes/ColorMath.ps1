@@ -1,13 +1,16 @@
 ﻿<#
 .SYNOPSIS
-    The color arithmetic of gradients and color forms: OKLab, HSL and the 256 colors.
+    The color arithmetic of gradients and color forms: the spaces a gradient blends in, its
+    easing curves and stop places, HSL and the 256 colors.
 
 .DESCRIPTION
     Written so Windows PowerShell 5.1, PowerShell 7 and PWRSWriteColorEX give the same results to
     the last bit: the constants are the bit patterns of their doubles rather than decimal numbers
-    a parser may round either way, and the arithmetic is +, -, * and / in a fixed order, which
-    IEEE 754 rounds the same everywhere. A class rather than functions because a gradient
-    computes a color for every character, and a function call costs more than that arithmetic.
+    a parser may round either way, and the arithmetic is +, -, *, / and square roots in a fixed
+    order, which IEEE 754 rounds the same everywhere. Sine, cosine, arctangent and powers of two
+    are series written here from those operations, since [Math]'s may differ in the last bit
+    between .NET versions. A class rather than functions because a gradient computes a color for
+    every character, and a function call costs more than that arithmetic.
 
 .NOTES
     Author: Mark Newton
@@ -146,6 +149,188 @@ class ColorMath {
         return $root
     }
 
+    # pi, pi/2 and pi/4
+    static [double] $Pi = [BitConverter]::Int64BitsToDouble(0x400921FB54442D18)
+    static [double] $HalfPi = [BitConverter]::Int64BitsToDouble(0x3FF921FB54442D18)
+    static [double] $QuarterPi = [BitConverter]::Int64BitsToDouble(0x3FE921FB54442D18)
+
+    # 2/pi, and pi/2 split into a part whose low bits are zero and the rest, so that k x pi/2
+    # comes off a number without losing the bits beyond a double's pi/2
+    static [double] $TwoOverPi = [BitConverter]::Int64BitsToDouble(0x3FE45F306DC9C883)
+    static [double] $HalfPiHigh = [BitConverter]::Int64BitsToDouble(0x3FF921FB54400000)
+    static [double] $HalfPiLow = [BitConverter]::Int64BitsToDouble(0x3DD0B4611A626331)
+
+    # The natural logarithm of 2
+    static [double] $Ln2 = [BitConverter]::Int64BitsToDouble(0x3FE62E42FEFA39EF)
+
+    # 1/n! for n from 0 to 18
+    static [double[]] $InverseFactorials = @(
+        [BitConverter]::Int64BitsToDouble(0x3FF0000000000000),
+        [BitConverter]::Int64BitsToDouble(0x3FF0000000000000),
+        [BitConverter]::Int64BitsToDouble(0x3FE0000000000000),
+        [BitConverter]::Int64BitsToDouble(0x3FC5555555555555),
+        [BitConverter]::Int64BitsToDouble(0x3FA5555555555555),
+        [BitConverter]::Int64BitsToDouble(0x3F81111111111111),
+        [BitConverter]::Int64BitsToDouble(0x3F56C16C16C16C17),
+        [BitConverter]::Int64BitsToDouble(0x3F2A01A01A01A01A),
+        [BitConverter]::Int64BitsToDouble(0x3EFA01A01A01A01A),
+        [BitConverter]::Int64BitsToDouble(0x3EC71DE3A556C734),
+        [BitConverter]::Int64BitsToDouble(0x3E927E4FB7789F5C),
+        [BitConverter]::Int64BitsToDouble(0x3E5AE64567F544E4),
+        [BitConverter]::Int64BitsToDouble(0x3E21EED8EFF8D898),
+        [BitConverter]::Int64BitsToDouble(0x3DE6124613A86D09),
+        [BitConverter]::Int64BitsToDouble(0x3DA93974A8C07C9D),
+        [BitConverter]::Int64BitsToDouble(0x3D6AE7F3E733B81F),
+        [BitConverter]::Int64BitsToDouble(0x3D2AE7F3E733B81F),
+        [BitConverter]::Int64BitsToDouble(0x3CE952C77030AD4A),
+        [BitConverter]::Int64BitsToDouble(0x3CA6827863B97D97)
+    )
+
+    # The arctangent series' coefficients (-1)^k / (2k + 1) for k from 0 to 13
+    static [double[]] $AtanSeries = @(
+        [BitConverter]::Int64BitsToDouble(0x3FF0000000000000),
+        -[BitConverter]::Int64BitsToDouble(0x3FD5555555555555),
+        [BitConverter]::Int64BitsToDouble(0x3FC999999999999A),
+        -[BitConverter]::Int64BitsToDouble(0x3FC2492492492492),
+        [BitConverter]::Int64BitsToDouble(0x3FBC71C71C71C71C),
+        -[BitConverter]::Int64BitsToDouble(0x3FB745D1745D1746),
+        [BitConverter]::Int64BitsToDouble(0x3FB3B13B13B13B14),
+        -[BitConverter]::Int64BitsToDouble(0x3FB1111111111111),
+        [BitConverter]::Int64BitsToDouble(0x3FAE1E1E1E1E1E1E),
+        -[BitConverter]::Int64BitsToDouble(0x3FAAF286BCA1AF28),
+        [BitConverter]::Int64BitsToDouble(0x3FA8618618618618),
+        -[BitConverter]::Int64BitsToDouble(0x3FA642C8590B2164),
+        [BitConverter]::Int64BitsToDouble(0x3FA47AE147AE147B),
+        -[BitConverter]::Int64BitsToDouble(0x3FA2F684BDA12F68)
+    )
+
+    # The sine of a number from -pi/4 to pi/4: its Taylor series to the 17th power, in Horner
+    # form on the square. [Math]::Sin and the other library functions may differ in the last bit
+    # between .NET versions and platforms; this uses only *, + and -.
+    hidden static [double] SineNearZero([double] $R) {
+        $z = $R * $R
+        $factorials = [ColorMath]::InverseFactorials
+        $sum = $factorials[17]
+        for ($n = 15; $n -ge 3; $n -= 2) {
+            if ($n % 4 -eq 3) {
+                $sum = $sum * $z - $factorials[$n]
+            } else {
+                $sum = $sum * $z + $factorials[$n]
+            }
+        }
+        return $R * ($sum * $z + 1.0)
+    }
+
+    # The cosine of a number from -pi/4 to pi/4: its Taylor series to the 18th power, in Horner
+    # form on the square
+    hidden static [double] CosineNearZero([double] $R) {
+        $z = $R * $R
+        $factorials = [ColorMath]::InverseFactorials
+        $sum = -$factorials[18]
+        for ($n = 16; $n -ge 2; $n -= 2) {
+            if ($n % 4 -eq 2) {
+                $sum = $sum * $z - $factorials[$n]
+            } else {
+                $sum = $sum * $z + $factorials[$n]
+            }
+        }
+        return $sum * $z + 1.0
+    }
+
+    # A number as k x pi/2 + r, r from -pi/4 to pi/4: k's last two bits, which pick the quarter
+    # turn, and r
+    hidden static [double[]] QuarterTurns([double] $X) {
+        $k = [Math]::Round($X * [ColorMath]::TwoOverPi, [MidpointRounding]::ToEven)
+        $r = ($X - $k * [ColorMath]::HalfPiHigh) - $k * [ColorMath]::HalfPiLow
+        $quarter = (([long]$k % 4) + 4) % 4
+        return [double[]]@($quarter, $r)
+    }
+
+    # The sine of X in radians
+    static [double] Sin([double] $X) {
+        $turns = [ColorMath]::QuarterTurns($X)
+        switch ([int]$turns[0]) {
+            0 { return [ColorMath]::SineNearZero($turns[1]) }
+            1 { return [ColorMath]::CosineNearZero($turns[1]) }
+            2 { return -[ColorMath]::SineNearZero($turns[1]) }
+        }
+        return -[ColorMath]::CosineNearZero($turns[1])
+    }
+
+    # The cosine of X in radians
+    static [double] Cos([double] $X) {
+        $turns = [ColorMath]::QuarterTurns($X)
+        switch ([int]$turns[0]) {
+            0 { return [ColorMath]::CosineNearZero($turns[1]) }
+            1 { return -[ColorMath]::SineNearZero($turns[1]) }
+            2 { return -[ColorMath]::CosineNearZero($turns[1]) }
+        }
+        return [ColorMath]::SineNearZero($turns[1])
+    }
+
+    # The arctangent of a number from 0 to 1: taken from pi/4 above 1/2, then halved once with
+    # atan u = 2 atan(u / (1 + sqrt(1 + u^2))), so the series runs on no more than 0.24.
+    # [Math]::Sqrt is exact: IEEE 754 rounds a square root correctly everywhere.
+    hidden static [double] ArctangentToOne([double] $Z) {
+        $base = 0.0
+        $u = $Z
+        if ($Z -gt 0.5) {
+            $base = [ColorMath]::QuarterPi
+            $u = ($Z - 1.0) / ($Z + 1.0)
+        }
+        $half = $u / (1.0 + [Math]::Sqrt(1.0 + $u * $u))
+        $w = $half * $half
+        $series = [ColorMath]::AtanSeries
+        $sum = $series[13]
+        for ($k = 12; $k -ge 0; $k--) {
+            $sum = $sum * $w + $series[$k]
+        }
+        return $base + 2.0 * ($half * $sum)
+    }
+
+    # The angle of the point (X, Y) in radians, from -pi to pi; 0 for the origin
+    static [double] Atan2([double] $Y, [double] $X) {
+        $ax = [Math]::Abs($X)
+        $ay = [Math]::Abs($Y)
+        if ($ax -eq 0.0 -and $ay -eq 0.0) {
+            return 0.0
+        }
+        if ($ay -le $ax) {
+            $angle = [ColorMath]::ArctangentToOne($ay / $ax)
+        } else {
+            $angle = [ColorMath]::HalfPi - [ColorMath]::ArctangentToOne($ax / $ay)
+        }
+        if ($X -lt 0.0) {
+            $angle = [ColorMath]::Pi - $angle
+        }
+        if ($Y -lt 0.0) {
+            return -$angle
+        }
+        return $angle
+    }
+
+    # 2 to the power X: 2^floor(X) by halving or doubling, times e^(f ln 2) for the fraction f by
+    # its Taylor series to the 18th power
+    static [double] Exp2([double] $X) {
+        $whole = [Math]::Floor($X)
+        $w = ($X - $whole) * [ColorMath]::Ln2
+        $factorials = [ColorMath]::InverseFactorials
+        $sum = $factorials[18]
+        for ($k = 17; $k -ge 0; $k--) {
+            $sum = $sum * $w + $factorials[$k]
+        }
+        $power = [long]$whole
+        while ($power -gt 0) {
+            $sum *= 2.0
+            $power--
+        }
+        while ($power -lt 0) {
+            $sum *= 0.5
+            $power++
+        }
+        return $sum
+    }
+
     # The OKLab coordinates L, a and b of an sRGB color given as three channel values 0-255
     static [double[]] ToOkLab([int[]] $Rgb) {
         $table = [ColorMath]::SrgbToLinear
@@ -169,6 +354,12 @@ class ColorMath {
         $h = $Hue - 360.0 * [Math]::Floor($Hue / 360.0)
         $s = [Math]::Min(100.0, [Math]::Max(0.0, $Saturation)) / 100.0
         $l = [Math]::Min(100.0, [Math]::Max(0.0, $Lightness)) / 100.0
+        return [ColorMath]::HslToRgb($h, $s, $l)
+    }
+
+    # The sRGB channel values of a hue in degrees from 0 to 360 and a saturation and lightness from
+    # 0 to 1, by FromHsl's formula
+    static [int[]] HslToRgb([double] $h, [double] $s, [double] $l) {
         $chroma = (1.0 - [Math]::Abs(2.0 * $l - 1.0)) * $s
         $sector = $h / 60.0
         $x = $chroma * (1.0 - [Math]::Abs(($sector - 2.0 * [Math]::Floor($sector / 2.0)) - 1.0))
@@ -188,28 +379,167 @@ class ColorMath {
         )
     }
 
-    # Each channel value's step in the 6x6x6 color cube, 0 to 5
-    static [int[]] $CubeSteps = [ColorMath]::CubeStepTable()
+    # The OKLab coordinates of the 256-color codes 16-255, at index code - 16: the 6x6x6 cube,
+    # whose channel steps are 0, 95, 135, 175, 215 and 255, then the 24 grays, 8 to 238 by 10
+    static [double[][]] $Ansi8Labs = [ColorMath]::Ansi8LabTable()
 
-    hidden static [int[]] CubeStepTable() {
-        $steps = [int[]]::new(256)
-        for ($i = 0; $i -lt 256; $i++) {
-            if ($i -lt 48) { $steps[$i] = 0 }
-            elseif ($i -lt 115) { $steps[$i] = 1 }
-            elseif ($i -lt 155) { $steps[$i] = 2 }
-            elseif ($i -lt 195) { $steps[$i] = 3 }
-            elseif ($i -lt 235) { $steps[$i] = 4 }
-            else { $steps[$i] = 5 }
+    # The indexes of Ansi8Labs in order of lightness, the lower index first of two as light, and
+    # the lightness at each, for NearestAnsi8 to search outward from a color's own lightness
+    static [int[]] $Ansi8Order = [ColorMath]::Ansi8LightnessOrder()
+    static [double[]] $Ansi8Lightness = [ColorMath]::Ansi8LightnessTable()
+
+    hidden static [double[][]] Ansi8LabTable() {
+        $steps = [int[]]@(0, 95, 135, 175, 215, 255)
+        $labs = [double[][]]::new(240)
+        for ($i = 0; $i -lt 216; $i++) {
+            $red = $steps[[int][Math]::Floor($i / 36)]
+            $green = $steps[[int][Math]::Floor($i / 6) % 6]
+            $blue = $steps[$i % 6]
+            $labs[$i] = [ColorMath]::ToOkLab([int[]]@($red, $green, $blue))
         }
-        return $steps
+        for ($i = 0; $i -lt 24; $i++) {
+            $gray = 8 + 10 * $i
+            $labs[216 + $i] = [ColorMath]::ToOkLab([int[]]@($gray, $gray, $gray))
+        }
+        return $labs
+    }
+
+    hidden static [int[]] Ansi8LightnessOrder() {
+        $labs = [ColorMath]::Ansi8Labs
+        $order = [int[]]::new(240)
+        for ($i = 0; $i -lt 240; $i++) {
+            $place = $i
+            while ($place -gt 0 -and $labs[$order[$place - 1]][0] -gt $labs[$i][0]) {
+                $order[$place] = $order[$place - 1]
+                $place--
+            }
+            $order[$place] = $i
+        }
+        return $order
+    }
+
+    hidden static [double[]] Ansi8LightnessTable() {
+        $lightness = [double[]]::new(240)
+        for ($i = 0; $i -lt 240; $i++) {
+            $lightness[$i] = [ColorMath]::Ansi8Labs[[ColorMath]::Ansi8Order[$i]][0]
+        }
+        return $lightness
+    }
+
+    # The weight of the difference in lightness in NearestAnsi8's distance: 0.6, which keeps a
+    # dark saturated color on a code of its own hue rather than the gray of its lightness.
+    static [double] $LightnessWeight = [BitConverter]::Int64BitsToDouble(0x3FE3333333333333)
+
+    # The 256-color code nearest an sRGB color by OKLab distance, of codes 16-255, the lower code
+    # of two as near. Codes 0-15 are left out, since the terminal's scheme sets their colors. The
+    # distance is (LightnessWeight x the difference in L) squared, plus the squared differences
+    # in a and b, added in that order. The search runs outward from the color's lightness and
+    # stops on each side at a code whose lightness term alone is more than the distance of the
+    # nearest code found.
+    static [int] NearestAnsi8([int] $Red, [int] $Green, [int] $Blue) {
+        $lab = [ColorMath]::ToOkLab([int[]]@($Red, $Green, $Blue))
+        $labs = [ColorMath]::Ansi8Labs
+        $order = [ColorMath]::Ansi8Order
+        $lightness = [ColorMath]::Ansi8Lightness
+        $weight = [ColorMath]::LightnessWeight
+
+        # The first code in lightness order at least as light as the color
+        $low = 0
+        $high = 240
+        while ($low -lt $high) {
+            $middle = ($low + $high) -shr 1
+            if ($lightness[$middle] -lt $lab[0]) { $low = $middle + 1 } else { $high = $middle }
+        }
+
+        $bestCode = 256
+        $bestDistance = [double]::MaxValue
+        for ($i = $low; $i -lt 240; $i++) {
+            $dl = ($lightness[$i] - $lab[0]) * $weight
+            $dlSquared = $dl * $dl
+            if ($dlSquared -gt $bestDistance) { break }
+            $entry = $labs[$order[$i]]
+            $da = $entry[1] - $lab[1]
+            $db = $entry[2] - $lab[2]
+            $distance = $dlSquared + $da * $da + $db * $db
+            $code = $order[$i] + 16
+            if ($distance -lt $bestDistance -or ($distance -eq $bestDistance -and $code -lt $bestCode)) {
+                $bestDistance = $distance
+                $bestCode = $code
+            }
+        }
+        for ($i = $low - 1; $i -ge 0; $i--) {
+            $dl = ($lightness[$i] - $lab[0]) * $weight
+            $dlSquared = $dl * $dl
+            if ($dlSquared -gt $bestDistance) { break }
+            $entry = $labs[$order[$i]]
+            $da = $entry[1] - $lab[1]
+            $db = $entry[2] - $lab[2]
+            $distance = $dlSquared + $da * $da + $db * $db
+            $code = $order[$i] + 16
+            if ($distance -lt $bestDistance -or ($distance -eq $bestDistance -and $code -lt $bestCode)) {
+                $bestDistance = $distance
+                $bestCode = $code
+            }
+        }
+        return $bestCode
+    }
+
+    # The sRGB color of a 256-color code 16-255: the 6x6x6 cube, whose channel steps are 0, 95,
+    # 135, 175, 215 and 255, then the 24 grays, 8 to 238 by 10
+    static [int[]] Ansi8Rgb([int] $Code) {
+        if ($Code -ge 232) {
+            $gray = 8 + 10 * ($Code - 232)
+            return [int[]]@($gray, $gray, $gray)
+        }
+        $steps = [int[]]@(0, 95, 135, 175, 215, 255)
+        $index = $Code - 16
+        return [int[]]@($steps[[int][Math]::Floor($index / 36)], $steps[[int][Math]::Floor($index / 6) % 6], $steps[$index % 6])
+    }
+
+    # The relative luminance weights of red, green and blue, the 0.05 the contrast ratio adds to a
+    # luminance, and white's luminance plus that 0.05
+    static [double] $LuminanceRed = [BitConverter]::Int64BitsToDouble(0x3FCB367A0F9096BC)
+    static [double] $LuminanceGreen = [BitConverter]::Int64BitsToDouble(0x3FE6E2EB1C432CA5)
+    static [double] $LuminanceBlue = [BitConverter]::Int64BitsToDouble(0x3FB27BB2FEC56D5D)
+    static [double] $ContrastOffset = [BitConverter]::Int64BitsToDouble(0x3FA999999999999A)
+    static [double] $WhiteContrast = [BitConverter]::Int64BitsToDouble(0x3FF0CCCCCCCCCCCD)
+
+    # Whether black text on an sRGB color has a higher contrast ratio than white text: (Y + 0.05)
+    # / 0.05 against 1.05 / (Y + 0.05), Y the color's relative luminance, compared as (Y + 0.05)
+    # squared against 0.05 x 1.05
+    static [bool] BlackTextReads([int] $Red, [int] $Green, [int] $Blue) {
+        $table = [ColorMath]::SrgbToLinear
+        $luminance = [ColorMath]::LuminanceRed * $table[$Red] + [ColorMath]::LuminanceGreen * $table[$Green] + [ColorMath]::LuminanceBlue * $table[$Blue]
+        $shifted = $luminance + [ColorMath]::ContrastOffset
+        return $shifted * $shifted -gt [ColorMath]::ContrastOffset * [ColorMath]::WhiteContrast
+    }
+
+    # The relative luminance of an sRGB color, channels 0-255: its linear red, green and blue
+    # times their weights, added in that order
+    static [double] RelativeLuminance([int] $Red, [int] $Green, [int] $Blue) {
+        $table = [ColorMath]::SrgbToLinear
+        return [ColorMath]::LuminanceRed * $table[$Red] + [ColorMath]::LuminanceGreen * $table[$Green] + [ColorMath]::LuminanceBlue * $table[$Blue]
+    }
+
+    # The contrast ratio of two sRGB colors as WCAG 2 defines it, from 1 to 21: (L1 + 0.05) /
+    # (L2 + 0.05), L1 the higher relative luminance and L2 the lower
+    static [double] ContrastRatio([int[]] $First, [int[]] $Second) {
+        $one = [ColorMath]::RelativeLuminance($First[0], $First[1], $First[2]) + [ColorMath]::ContrastOffset
+        $two = [ColorMath]::RelativeLuminance($Second[0], $Second[1], $Second[2]) + [ColorMath]::ContrastOffset
+        if ($one -ge $two) {
+            return $one / $two
+        }
+        return $two / $one
     }
 
     # One color for each of Steps characters, blended evenly between the waypoints, which are RGB
-    # arrays: RGB arrays, or 256-color codes with Ansi8. Each step falls between the two
-    # waypoints around it, at a ratio from 0 to 1 between them; the first and last step of each
-    # stretch are the waypoints themselves. With OkLab the blend is in OKLab, else each channel on
-    # its own, rounded half to even. The conversions are written out in the loop because a
-    # method call costs more than the arithmetic of a step.
+    # arrays: RGB arrays, or 256-color codes with Ansi8. With at least as many steps as waypoints,
+    # waypoint w is the step nearest w * (Steps - 1) / (waypoints - 1), a half rounded up, so
+    # every waypoint is drawn, and the steps between two waypoints fall between them at a ratio
+    # from 0 to 1. With fewer steps than waypoints, the steps are spread evenly over the whole
+    # gradient. With OkLab the blend is in OKLab, else each channel on its own, rounded half to
+    # even. The OKLab conversion is written out in the loop because a method call costs more than
+    # the arithmetic of a step.
     static [object[]] Blend([object[]] $Waypoints, [int] $Steps, [bool] $Ansi8, [bool] $OkLab) {
         $points = [int[][]]::new($Waypoints.Count)
         $labs = [double[][]]::new($Waypoints.Count)
@@ -220,10 +550,20 @@ class ColorMath {
             }
         }
         $table = [ColorMath]::SrgbToLinear
-        $cube = [ColorMath]::CubeSteps
         $linear = [double[]]::new(3)
         $out = [object[]]::new($Steps)
         $segmentCount = $Waypoints.Count - 1
+
+        # Each waypoint's step, when every waypoint can have one
+        $anchors = $null
+        if ($segmentCount -gt 1 -and $Steps -ge $Waypoints.Count) {
+            $anchors = [int[]]::new($Waypoints.Count)
+            for ($w = 0; $w -lt $Waypoints.Count; $w++) {
+                $anchors[$w] = [int][Math]::Floor((2.0 * $w * ($Steps - 1) + $segmentCount) / (2.0 * $segmentCount))
+            }
+        }
+        $segmentIndex = 0
+
         for ($step = 0; $step -lt $Steps; $step++) {
             if ($Steps -eq 1) {
                 $segmentIndex = 0
@@ -231,6 +571,11 @@ class ColorMath {
             } elseif ($segmentCount -eq 1) {
                 $segmentIndex = 0
                 $ratio = [double]$step / ($Steps - 1)
+            } elseif ($null -ne $anchors) {
+                while ($step -gt $anchors[$segmentIndex + 1]) {
+                    $segmentIndex++
+                }
+                $ratio = [double]($step - $anchors[$segmentIndex]) / ($anchors[$segmentIndex + 1] - $anchors[$segmentIndex])
             } else {
                 $position = [double]$step / ($Steps - 1) * $segmentCount
                 $segmentIndex = [Math]::Min([int][Math]::Floor($position), $segmentCount - 1)
@@ -267,7 +612,7 @@ class ColorMath {
                 # Each linear value to the channel value whose linear value is nearest, the lower
                 # of two as near; below 0 is 0 and above 1 is 255. The sRGB curve gives a first
                 # guess, which may be off where [Math]::Pow differs between platforms; the
-                # table then decides, so the answer does not depend on [Math]::Pow.
+                # table then decides, so the result does not depend on [Math]::Pow.
                 for ($channel = 0; $channel -lt 3; $channel++) {
                     $value = $linear[$channel]
                     if ($value -le 0.0) {
@@ -297,24 +642,880 @@ class ColorMath {
                 continue
             }
 
-            # The nearest 256-color code, as Convert-RGBToANSI8 answers it: one of the 24 grays
-            # for a color whose channels are within 10 of each other, black (16) and white (231)
-            # at the ends, else the 6x6x6 cube
-            $redGreen = $rgb[0] - $rgb[1]
-            $greenBlue = $rgb[1] - $rgb[2]
-            if ($redGreen -gt -10 -and $redGreen -lt 10 -and $greenBlue -gt -10 -and $greenBlue -lt 10) {
-                $gray = [Math]::Round(($rgb[0] + $rgb[1] + $rgb[2]) / 3.0)
-                if ($gray -lt 8) {
-                    $out[$step] = 16
-                } elseif ($gray -gt 248) {
-                    $out[$step] = 231
-                } else {
-                    $out[$step] = 232 + [int][Math]::Min(23, [Math]::Round(($gray - 8) / 10.0))
-                }
-            } else {
-                $out[$step] = 16 + 36 * $cube[$rgb[0]] + 6 * $cube[$rgb[1]] + $cube[$rgb[2]]
-            }
+            # The nearest 256-color code by OKLab distance, as Convert-RGBToANSI8 returns it
+            $out[$step] = [ColorMath]::NearestAnsi8($rgb[0], $rgb[1], $rgb[2])
         }
         return $out
+    }
+
+    # The sRGB channel value 0-255 whose linear value is nearest the one given, the lower of two
+    # as near, by binary search of SrgbToLinear; below 0 is 0 and above 1 is 255
+    static [int] FromLinear([double] $Value) {
+        if ($Value -le 0.0) {
+            return 0
+        }
+        if ($Value -ge 1.0) {
+            return 255
+        }
+        $table = [ColorMath]::SrgbToLinear
+        $low = 0
+        $high = 255
+        while ($high - $low -gt 1) {
+            $middle = ($low + $high) -shr 1
+            if ($table[$middle] -le $Value) { $low = $middle } else { $high = $middle }
+        }
+        if ($table[$high] - $Value -lt $Value - $table[$low]) {
+            return $high
+        }
+        return $low
+    }
+
+    # The sRGB channel values 0-255 of OKLab coordinates, out-of-range channels clamped
+    static [int[]] FromOkLab([double[]] $Lab) {
+        $lRoot = $Lab[0] + [ColorMath]::LA * $Lab[1] + [ColorMath]::LB * $Lab[2]
+        $mRoot = $Lab[0] + [ColorMath]::MA * $Lab[1] + [ColorMath]::MB * $Lab[2]
+        $sRoot = $Lab[0] + [ColorMath]::SA * $Lab[1] + [ColorMath]::SB * $Lab[2]
+        $l = $lRoot * $lRoot * $lRoot
+        $m = $mRoot * $mRoot * $mRoot
+        $s = $sRoot * $sRoot * $sRoot
+        return [int[]]@(
+            [ColorMath]::FromLinear([ColorMath]::R1 * $l + [ColorMath]::R2 * $m + [ColorMath]::R3 * $s),
+            [ColorMath]::FromLinear([ColorMath]::G1 * $l + [ColorMath]::G2 * $m + [ColorMath]::G3 * $s),
+            [ColorMath]::FromLinear([ColorMath]::B1 * $l + [ColorMath]::B2 * $m + [ColorMath]::B3 * $s)
+        )
+    }
+
+    # The names -GradientSpace, -GradientHue, -GradientEasing, -GradientRepeat and
+    # -GradientDirection take, in order; the methods below take each option as its index in its list
+    static [string[]] $SpaceNames = @('OKLab', 'RGB', 'LinearRGB', 'OKLCH', 'HSL', 'HSV', 'Lab', 'LCh')
+    static [string[]] $HueNames = @('Shorter', 'Longer', 'Increasing', 'Decreasing')
+    static [string[]] $EasingNames = @(
+        'Linear', 'InSine', 'OutSine', 'InOutSine', 'InQuad', 'OutQuad', 'InOutQuad', 'InCubic', 'OutCubic',
+        'InOutCubic', 'InQuart', 'OutQuart', 'InOutQuart', 'InQuint', 'OutQuint', 'InOutQuint', 'InExpo',
+        'OutExpo', 'InOutExpo', 'InCirc', 'OutCirc', 'InOutCirc', 'InBack', 'OutBack', 'InOutBack',
+        'InElastic', 'OutElastic', 'InOutElastic', 'InBounce', 'OutBounce', 'InOutBounce'
+    )
+    static [string[]] $RepeatNames = @('None', 'Repeat', 'Mirror')
+    static [string[]] $DirectionNames = @('Forward', 'Reverse', 'CenterOut', 'EdgesIn')
+
+    # The index of a name in a list of option names, compared without regard to case; 0, each
+    # list's default, for a name not in it
+    static [int] OptionIndex([string[]] $Names, [string] $Name) {
+        for ($i = 0; $i -lt $Names.Count; $i++) {
+            if ($Names[$i] -eq $Name) {
+                return $i
+            }
+        }
+        return 0
+    }
+
+    # A gradient's options as GradientRgb takes them: the indexes of the space, hue path, easing,
+    # repeat and direction, then the bands, 0 for a smooth blend
+    static [int[]] GradientOptions([string] $Space, [string] $Hue, [string] $Easing, [string] $Repeat, [string] $Direction, [int] $Steps) {
+        return [int[]]@(
+            [ColorMath]::OptionIndex([ColorMath]::SpaceNames, $Space),
+            [ColorMath]::OptionIndex([ColorMath]::HueNames, $Hue),
+            [ColorMath]::OptionIndex([ColorMath]::EasingNames, $Easing),
+            [ColorMath]::OptionIndex([ColorMath]::RepeatNames, $Repeat),
+            [ColorMath]::OptionIndex([ColorMath]::DirectionNames, $Direction),
+            $Steps
+        )
+    }
+
+    # Degrees in a radian and radians in a degree
+    static [double] $DegreesPerRadian = [BitConverter]::Int64BitsToDouble(0x404CA5DC1A63C1F8)
+    static [double] $RadiansPerDegree = [BitConverter]::Int64BitsToDouble(0x3F91DF46A2529D39)
+
+    # Below these chromas a color counts as gray, with no hue: 2^-20 in OKLab and 2^-10 in CIELAB,
+    # above the rounding left in an sRGB gray and below the chroma of any color one step from one
+    static [double] $OkLchHueless = 1.0 / 1048576.0
+    static [double] $LchHueless = 1.0 / 1024.0
+
+    # CSS Color 4's matrices, row by row: linear sRGB to CIE XYZ with D65 white and back, and the
+    # Bradford adaptation from D65 to D50 and back
+    static [double[]] $ToXyz = @(
+        [BitConverter]::Int64BitsToDouble(0x3FDA649C610130B1), [BitConverter]::Int64BitsToDouble(0x3FD6E2A96CCDCB17), [BitConverter]::Int64BitsToDouble(0x3FC719FE95DEFF92),
+        [BitConverter]::Int64BitsToDouble(0x3FCB37C144093A36), [BitConverter]::Int64BitsToDouble(0x3FE6E2A96CCDCB17), [BitConverter]::Int64BitsToDouble(0x3FB27B32117F32DB),
+        [BitConverter]::Int64BitsToDouble(0x3F93CB7548C0E484), [BitConverter]::Int64BitsToDouble(0x3FBE838C9112641F), [BitConverter]::Int64BitsToDouble(0x3FEE6AC26776AE5E)
+    )
+    static [double[]] $FromXyz = @(
+        [BitConverter]::Int64BitsToDouble(0x4009ED81A61E643A), -[BitConverter]::Int64BitsToDouble(0x3FF8991F1A515886), -[BitConverter]::Int64BitsToDouble(0x3FDFE93D1B3918E5),
+        -[BitConverter]::Int64BitsToDouble(0x3FEF040B3AF5D706), [BitConverter]::Int64BitsToDouble(0x3FFE03F67FB55A13), [BitConverter]::Int64BitsToDouble(0x3FA546B459182D75),
+        [BitConverter]::Int64BitsToDouble(0x3FAC7B8BB9F1E66D), -[BitConverter]::Int64BitsToDouble(0x3FCA1BEABFC8688F), [BitConverter]::Int64BitsToDouble(0x3FF0E95AF667A0D1)
+    )
+    static [double[]] $D65ToD50 = @(
+        [BitConverter]::Int64BitsToDouble(0x3FF0C45207B7C1D9), [BitConverter]::Int64BitsToDouble(0x3F977F626B1E2A0E), -[BitConverter]::Int64BitsToDouble(0x3FA9B2CCFC72D22E),
+        [BitConverter]::Int64BitsToDouble(0x3F9E56C096E0CD1E), [BitConverter]::Int64BitsToDouble(0x3FEFB1A389F7B189), -[BitConverter]::Int64BitsToDouble(0x3F917BCB426228F0),
+        -[BitConverter]::Int64BitsToDouble(0x3F82EE03EA54107A), [BitConverter]::Int64BitsToDouble(0x3F8ED54198AFD11C), [BitConverter]::Int64BitsToDouble(0x3FE80F5AA72DFEC3)
+    )
+    static [double[]] $D50ToD65 = @(
+        [BitConverter]::Int64BitsToDouble(0x3FEE933CFF2FA1D7), -[BitConverter]::Int64BitsToDouble(0x3F97A71F125F4EBC), [BitConverter]::Int64BitsToDouble(0x3FB031C1FCB7565E),
+        -[BitConverter]::Int64BitsToDouble(0x3F9D0CF2F724D576), [BitConverter]::Int64BitsToDouble(0x3FF028F0EF3DEA4D), [BitConverter]::Int64BitsToDouble(0x3F958BE3371EB644),
+        [BitConverter]::Int64BitsToDouble(0x3F8938171900D5F0), -[BitConverter]::Int64BitsToDouble(0x3F94FFF50C39F78C), [BitConverter]::Int64BitsToDouble(0x3FF5492DC80EC342)
+    )
+
+    # D50 white's X and Z, Y being 1: 0.3457 / 0.3585 and (1 - 0.3457 - 0.3585) / 0.3585, as CSS
+    # writes them
+    static [double] $WhiteX = [BitConverter]::Int64BitsToDouble(0x3FEEDB829B3E0DDB)
+    static [double] $WhiteZ = [BitConverter]::Int64BitsToDouble(0x3FEA6741C471F7DC)
+
+    # CIELAB's 216/24389 and 24389/27
+    static [double] $LabEpsilon = [BitConverter]::Int64BitsToDouble(0x3F822354D28F7CD6)
+    static [double] $LabKappa = [BitConverter]::Int64BitsToDouble(0x408C3A5ED097B426)
+
+    # A matrix of nine numbers, row by row, times a column, each row's products added left to right
+    hidden static [double[]] Multiply([double[]] $Matrix, [double[]] $Column) {
+        return [double[]]@(
+            ($Matrix[0] * $Column[0] + $Matrix[1] * $Column[1] + $Matrix[2] * $Column[2]),
+            ($Matrix[3] * $Column[0] + $Matrix[4] * $Column[1] + $Matrix[5] * $Column[2]),
+            ($Matrix[6] * $Column[0] + $Matrix[7] * $Column[1] + $Matrix[8] * $Column[2])
+        )
+    }
+
+    # The CIELAB coordinates L, a and b of an sRGB color, with D50 white, as CSS lab() defines them
+    static [double[]] ToLab([int[]] $Rgb) {
+        $table = [ColorMath]::SrgbToLinear
+        $xyz = [ColorMath]::Multiply([ColorMath]::ToXyz, [double[]]@($table[$Rgb[0]], $table[$Rgb[1]], $table[$Rgb[2]]))
+        $d50 = [ColorMath]::Multiply([ColorMath]::D65ToD50, $xyz)
+        $scaled = [double[]]@(($d50[0] / [ColorMath]::WhiteX), $d50[1], ($d50[2] / [ColorMath]::WhiteZ))
+        $f = [double[]]::new(3)
+        for ($k = 0; $k -lt 3; $k++) {
+            if ($scaled[$k] -gt [ColorMath]::LabEpsilon) {
+                $f[$k] = [ColorMath]::CubeRoot($scaled[$k])
+            } else {
+                $f[$k] = ([ColorMath]::LabKappa * $scaled[$k] + 16.0) / 116.0
+            }
+        }
+        return [double[]]@((116.0 * $f[1] - 16.0), (500.0 * ($f[0] - $f[1])), (200.0 * ($f[1] - $f[2])))
+    }
+
+    # The sRGB channel values 0-255 of CIELAB coordinates with D50 white, out-of-range channels
+    # clamped
+    static [int[]] FromLab([double[]] $Lab) {
+        $epsilon = [ColorMath]::LabEpsilon
+        $kappa = [ColorMath]::LabKappa
+        $fy = ($Lab[0] + 16.0) / 116.0
+        $fx = $Lab[1] / 500.0 + $fy
+        $fz = $fy - $Lab[2] / 200.0
+        if ($fx * $fx * $fx -gt $epsilon) {
+            $x = $fx * $fx * $fx
+        } else {
+            $x = (116.0 * $fx - 16.0) / $kappa
+        }
+        if ($Lab[0] -gt $kappa * $epsilon) {
+            $y = $fy * $fy * $fy
+        } else {
+            $y = $Lab[0] / $kappa
+        }
+        if ($fz * $fz * $fz -gt $epsilon) {
+            $z = $fz * $fz * $fz
+        } else {
+            $z = (116.0 * $fz - 16.0) / $kappa
+        }
+        $d65 = [ColorMath]::Multiply([ColorMath]::D50ToD65, [double[]]@(($x * [ColorMath]::WhiteX), $y, ($z * [ColorMath]::WhiteZ)))
+        $linear = [ColorMath]::Multiply([ColorMath]::FromXyz, $d65)
+        return [int[]]@([ColorMath]::FromLinear($linear[0]), [ColorMath]::FromLinear($linear[1]), [ColorMath]::FromLinear($linear[2]))
+    }
+
+    # Lightness, chroma, hue in degrees and 1 for no hue, from a lightness and two opponent axes;
+    # a chroma below HuelessBelow has no hue
+    hidden static [double[]] Polar([double[]] $Lab, [double] $HuelessBelow) {
+        $chroma = [Math]::Sqrt($Lab[1] * $Lab[1] + $Lab[2] * $Lab[2])
+        $hue = [ColorMath]::Atan2($Lab[2], $Lab[1]) * [ColorMath]::DegreesPerRadian
+        if ($hue -lt 0.0) {
+            $hue += 360.0
+        }
+        $hueless = 0.0
+        if ($chroma -lt $HuelessBelow) {
+            $hueless = 1.0
+        }
+        return [double[]]@($Lab[0], $chroma, $hue, $hueless)
+    }
+
+    # A lightness and two opponent axes from lightness, chroma and hue in degrees
+    hidden static [double[]] FromPolar([double] $Lightness, [double] $Chroma, [double] $Hue) {
+        $radians = $Hue * [ColorMath]::RadiansPerDegree
+        return [double[]]@($Lightness, ($Chroma * [ColorMath]::Cos($radians)), ($Chroma * [ColorMath]::Sin($radians)))
+    }
+
+    # The hue in degrees of channels from 0 to 1 whose largest is Max, Range above the smallest
+    hidden static [double] SextantHue([double] $R, [double] $G, [double] $B, [double] $Max, [double] $Range) {
+        if ($Max -eq $R) {
+            $wrap = 0.0
+            if ($G -lt $B) {
+                $wrap = 6.0
+            }
+            $sextant = ($G - $B) / $Range + $wrap
+        } elseif ($Max -eq $G) {
+            $sextant = ($B - $R) / $Range + 2.0
+        } else {
+            $sextant = ($R - $G) / $Range + 4.0
+        }
+        return $sextant * 60.0
+    }
+
+    # HSL saturation, lightness and hue of an sRGB color, then 1 for a gray, which has no hue
+    hidden static [double[]] ToHsl([int[]] $Rgb) {
+        $r = $Rgb[0] / 255.0
+        $g = $Rgb[1] / 255.0
+        $b = $Rgb[2] / 255.0
+        $max = [Math]::Max([Math]::Max($r, $g), $b)
+        $min = [Math]::Min([Math]::Min($r, $g), $b)
+        $lightness = ($max + $min) / 2.0
+        $range = $max - $min
+        if ($range -eq 0.0) {
+            return [double[]]@(0.0, $lightness, 0.0, 1.0)
+        }
+        $saturation = $range / (1.0 - [Math]::Abs(2.0 * $lightness - 1.0))
+        return [double[]]@($saturation, $lightness, [ColorMath]::SextantHue($r, $g, $b, $max, $range), 0.0)
+    }
+
+    # HSV saturation, value and hue of an sRGB color, then 1 for a gray, which has no hue
+    hidden static [double[]] ToHsv([int[]] $Rgb) {
+        $r = $Rgb[0] / 255.0
+        $g = $Rgb[1] / 255.0
+        $b = $Rgb[2] / 255.0
+        $max = [Math]::Max([Math]::Max($r, $g), $b)
+        $min = [Math]::Min([Math]::Min($r, $g), $b)
+        $range = $max - $min
+        if ($range -eq 0.0) {
+            return [double[]]@(0.0, $max, 0.0, 1.0)
+        }
+        return [double[]]@(($range / $max), $max, [ColorMath]::SextantHue($r, $g, $b, $max, $range), 0.0)
+    }
+
+    # The sRGB channel values of a hue in degrees from 0 to 360 and a saturation and value from 0
+    # to 1: C = V * S, X = C * (1 - |(H / 60) mod 2 - 1|), m = V - C, each channel rounded half to
+    # even after multiplying by 255
+    static [int[]] HsvToRgb([double] $H, [double] $S, [double] $V) {
+        $chroma = $V * $S
+        $sector = $H / 60.0
+        $x = $chroma * (1.0 - [Math]::Abs(($sector - 2.0 * [Math]::Floor($sector / 2.0)) - 1.0))
+        $offset = $V - $chroma
+        $parts = switch ([int][Math]::Floor($sector)) {
+            0 { $chroma, $x, 0.0 }
+            1 { $x, $chroma, 0.0 }
+            2 { 0.0, $chroma, $x }
+            3 { 0.0, $x, $chroma }
+            4 { $x, 0.0, $chroma }
+            default { $chroma, 0.0, $x }
+        }
+        return [int[]]@(
+            [int][Math]::Round(($parts[0] + $offset) * 255.0, [MidpointRounding]::ToEven),
+            [int][Math]::Round(($parts[1] + $offset) * 255.0, [MidpointRounding]::ToEven),
+            [int][Math]::Round(($parts[2] + $offset) * 255.0, [MidpointRounding]::ToEven)
+        )
+    }
+
+    # A color's coordinates in a space, by its index in SpaceNames: three numbers, then 1 for a
+    # color with no hue and 0 for one with. The round spaces keep their hue last, in degrees from 0
+    # to 360: OKLCH and LCh hold lightness, chroma and hue; HSL saturation, lightness and hue; HSV
+    # saturation, value and hue, the saturations and lightness and value from 0 to 1.
+    static [double[]] ToCoordinates([int[]] $Rgb, [int] $Space) {
+        switch ($Space) {
+            1 { return [double[]]@($Rgb[0], $Rgb[1], $Rgb[2], 0.0) }
+            2 {
+                $table = [ColorMath]::SrgbToLinear
+                return [double[]]@($table[$Rgb[0]], $table[$Rgb[1]], $table[$Rgb[2]], 0.0)
+            }
+            3 { return [ColorMath]::Polar([ColorMath]::ToOkLab($Rgb), [ColorMath]::OkLchHueless) }
+            4 { return [ColorMath]::ToHsl($Rgb) }
+            5 { return [ColorMath]::ToHsv($Rgb) }
+            6 {
+                $lab = [ColorMath]::ToLab($Rgb)
+                return [double[]]@($lab[0], $lab[1], $lab[2], 0.0)
+            }
+            7 { return [ColorMath]::Polar([ColorMath]::ToLab($Rgb), [ColorMath]::LchHueless) }
+        }
+        $lab = [ColorMath]::ToOkLab($Rgb)
+        return [double[]]@($lab[0], $lab[1], $lab[2], 0.0)
+    }
+
+    # The two hues a blend runs between, after CSS Color 4's fix-up for the path, by its index in
+    # HueNames: a color with no hue takes the other's, and one hue moves a turn so the blend goes
+    # the chosen way round
+    hidden static [double[]] HueEnds([double[]] $A, [double[]] $B, [int] $Path) {
+        $h1 = $A[2]
+        $h2 = $B[2]
+        if ($A[3] -ne 0.0 -and $B[3] -ne 0.0) {
+            $h1 = 0.0
+            $h2 = 0.0
+        } elseif ($A[3] -ne 0.0) {
+            $h1 = $B[2]
+        } elseif ($B[3] -ne 0.0) {
+            $h2 = $A[2]
+        }
+        $difference = $h2 - $h1
+        switch ($Path) {
+            0 {
+                if ($difference -gt 180.0) {
+                    $h1 += 360.0
+                } elseif ($difference -lt -180.0) {
+                    $h2 += 360.0
+                }
+            }
+            1 {
+                if ($difference -gt 0.0 -and $difference -lt 180.0) {
+                    $h1 += 360.0
+                } elseif ($difference -gt -180.0 -and $difference -le 0.0) {
+                    $h2 += 360.0
+                }
+            }
+            2 {
+                if ($difference -lt 0.0) {
+                    $h2 += 360.0
+                }
+            }
+            3 {
+                if ($difference -gt 0.0) {
+                    $h1 += 360.0
+                }
+            }
+        }
+        return [double[]]@($h1, $h2)
+    }
+
+    # The color at Ratio along the blend from one color to another, given both colors and their
+    # coordinates in the space, by its index in SpaceNames, with the hue path by its index in
+    # HueNames: exactly the first at 0 and the second at 1
+    static [int[]] BlendColors([int[]] $From, [int[]] $To, [double[]] $A, [double[]] $B, [double] $Ratio, [int] $Space, [int] $Path) {
+        if ($Ratio -eq 0.0) {
+            return [int[]]$From.Clone()
+        }
+        if ($Ratio -eq 1.0) {
+            return [int[]]$To.Clone()
+        }
+        $mix0 = $A[0] + ($B[0] - $A[0]) * $Ratio
+        $mix1 = $A[1] + ($B[1] - $A[1]) * $Ratio
+        $mix2 = $A[2] + ($B[2] - $A[2]) * $Ratio
+        switch ($Space) {
+            0 { return [ColorMath]::FromOkLab([double[]]@($mix0, $mix1, $mix2)) }
+            1 {
+                return [int[]]@(
+                    [int][Math]::Round($mix0, [MidpointRounding]::ToEven),
+                    [int][Math]::Round($mix1, [MidpointRounding]::ToEven),
+                    [int][Math]::Round($mix2, [MidpointRounding]::ToEven)
+                )
+            }
+            2 { return [int[]]@([ColorMath]::FromLinear($mix0), [ColorMath]::FromLinear($mix1), [ColorMath]::FromLinear($mix2)) }
+            6 { return [ColorMath]::FromLab([double[]]@($mix0, $mix1, $mix2)) }
+        }
+        $ends = [ColorMath]::HueEnds($A, $B, $Path)
+        $turned = $ends[0] + ($ends[1] - $ends[0]) * $Ratio
+        $hue = $turned - 360.0 * [Math]::Floor($turned / 360.0)
+        switch ($Space) {
+            3 { return [ColorMath]::FromOkLab([ColorMath]::FromPolar($mix0, $mix1, $hue)) }
+            7 { return [ColorMath]::FromLab([ColorMath]::FromPolar($mix0, $mix1, $hue)) }
+            4 { return [ColorMath]::HslToRgb($hue, $mix0, $mix1) }
+        }
+        return [ColorMath]::HsvToRgb($hue, $mix0, $mix1)
+    }
+
+    # Back's overshoot and the factor InOutBack scales it by: 1.70158 and 1.525
+    static [double] $Back = [BitConverter]::Int64BitsToDouble(0x3FFB39ABF3387161)
+    static [double] $BackInOutScale = [BitConverter]::Int64BitsToDouble(0x3FF8666666666666)
+
+    # The value at X from 0 to 1 of an easing curve, by its index in EasingNames, as easings.net
+    # writes the curves. Back and Elastic overshoot below 0 and above 1.
+    static [double] Ease([int] $Easing, [double] $X) {
+        $overshoot = [ColorMath]::Back
+        switch ($Easing) {
+            0 { return $X }
+            1 { return 1.0 - [ColorMath]::Cos(($X * [ColorMath]::Pi) / 2.0) }
+            2 { return [ColorMath]::Sin(($X * [ColorMath]::Pi) / 2.0) }
+            3 { return -([ColorMath]::Cos([ColorMath]::Pi * $X) - 1.0) / 2.0 }
+            4 { return $X * $X }
+            5 {
+                $rest = 1.0 - $X
+                return 1.0 - $rest * $rest
+            }
+            6 {
+                if ($X -lt 0.5) {
+                    return 2.0 * $X * $X
+                }
+                $rest = -2.0 * $X + 2.0
+                return 1.0 - $rest * $rest / 2.0
+            }
+            7 { return $X * $X * $X }
+            8 {
+                $rest = 1.0 - $X
+                return 1.0 - $rest * $rest * $rest
+            }
+            9 {
+                if ($X -lt 0.5) {
+                    return 4.0 * $X * $X * $X
+                }
+                $rest = -2.0 * $X + 2.0
+                return 1.0 - $rest * $rest * $rest / 2.0
+            }
+            10 { return $X * $X * $X * $X }
+            11 {
+                $rest = 1.0 - $X
+                return 1.0 - $rest * $rest * $rest * $rest
+            }
+            12 {
+                if ($X -lt 0.5) {
+                    return 8.0 * $X * $X * $X * $X
+                }
+                $rest = -2.0 * $X + 2.0
+                return 1.0 - $rest * $rest * $rest * $rest / 2.0
+            }
+            13 { return $X * $X * $X * $X * $X }
+            14 {
+                $rest = 1.0 - $X
+                return 1.0 - $rest * $rest * $rest * $rest * $rest
+            }
+            15 {
+                if ($X -lt 0.5) {
+                    return 16.0 * $X * $X * $X * $X * $X
+                }
+                $rest = -2.0 * $X + 2.0
+                return 1.0 - $rest * $rest * $rest * $rest * $rest / 2.0
+            }
+            16 {
+                if ($X -eq 0.0) {
+                    return 0.0
+                }
+                return [ColorMath]::Exp2(10.0 * $X - 10.0)
+            }
+            17 {
+                if ($X -eq 1.0) {
+                    return 1.0
+                }
+                return 1.0 - [ColorMath]::Exp2(-10.0 * $X)
+            }
+            18 {
+                if ($X -eq 0.0) {
+                    return 0.0
+                }
+                if ($X -eq 1.0) {
+                    return 1.0
+                }
+                if ($X -lt 0.5) {
+                    return [ColorMath]::Exp2(20.0 * $X - 10.0) / 2.0
+                }
+                return (2.0 - [ColorMath]::Exp2(-20.0 * $X + 10.0)) / 2.0
+            }
+            19 { return 1.0 - [Math]::Sqrt(1.0 - $X * $X) }
+            20 {
+                $rest = $X - 1.0
+                return [Math]::Sqrt(1.0 - $rest * $rest)
+            }
+            21 {
+                if ($X -lt 0.5) {
+                    $twice = 2.0 * $X
+                    return (1.0 - [Math]::Sqrt(1.0 - $twice * $twice)) / 2.0
+                }
+                $rest = -2.0 * $X + 2.0
+                return ([Math]::Sqrt(1.0 - $rest * $rest) + 1.0) / 2.0
+            }
+            22 { return ($overshoot + 1.0) * $X * $X * $X - $overshoot * $X * $X }
+            23 {
+                $rest = $X - 1.0
+                return 1.0 + ($overshoot + 1.0) * $rest * $rest * $rest + $overshoot * $rest * $rest
+            }
+            24 {
+                $scaled = $overshoot * [ColorMath]::BackInOutScale
+                if ($X -lt 0.5) {
+                    $twice = 2.0 * $X
+                    return ($twice * $twice * (($scaled + 1.0) * 2.0 * $X - $scaled)) / 2.0
+                }
+                $rest = 2.0 * $X - 2.0
+                return ($rest * $rest * (($scaled + 1.0) * ($X * 2.0 - 2.0) + $scaled) + 2.0) / 2.0
+            }
+            25 {
+                if ($X -eq 0.0) {
+                    return 0.0
+                }
+                if ($X -eq 1.0) {
+                    return 1.0
+                }
+                $period = (2.0 * [ColorMath]::Pi) / 3.0
+                return -[ColorMath]::Exp2(10.0 * $X - 10.0) * [ColorMath]::Sin(($X * 10.0 - 10.75) * $period)
+            }
+            26 {
+                if ($X -eq 0.0) {
+                    return 0.0
+                }
+                if ($X -eq 1.0) {
+                    return 1.0
+                }
+                $period = (2.0 * [ColorMath]::Pi) / 3.0
+                return [ColorMath]::Exp2(-10.0 * $X) * [ColorMath]::Sin(($X * 10.0 - 0.75) * $period) + 1.0
+            }
+            27 {
+                if ($X -eq 0.0) {
+                    return 0.0
+                }
+                if ($X -eq 1.0) {
+                    return 1.0
+                }
+                $period = (2.0 * [ColorMath]::Pi) / 4.5
+                if ($X -lt 0.5) {
+                    return -([ColorMath]::Exp2(20.0 * $X - 10.0) * [ColorMath]::Sin((20.0 * $X - 11.125) * $period)) / 2.0
+                }
+                return ([ColorMath]::Exp2(-20.0 * $X + 10.0) * [ColorMath]::Sin((20.0 * $X - 11.125) * $period)) / 2.0 + 1.0
+            }
+            28 { return 1.0 - [ColorMath]::OutBounce(1.0 - $X) }
+            29 { return [ColorMath]::OutBounce($X) }
+            30 {
+                if ($X -lt 0.5) {
+                    return (1.0 - [ColorMath]::OutBounce(1.0 - 2.0 * $X)) / 2.0
+                }
+                return (1.0 + [ColorMath]::OutBounce(2.0 * $X - 1.0)) / 2.0
+            }
+        }
+        return $X
+    }
+
+    # easings.net's easeOutBounce: four parabolas, each lower bounce a quarter as high
+    hidden static [double] OutBounce([double] $X) {
+        if ($X -lt 1.0 / 2.75) {
+            return 7.5625 * $X * $X
+        }
+        if ($X -lt 2.0 / 2.75) {
+            $rest = $X - 1.5 / 2.75
+            return 7.5625 * $rest * $rest + 0.75
+        }
+        if ($X -lt 2.5 / 2.75) {
+            $rest = $X - 2.25 / 2.75
+            return 7.5625 * $rest * $rest + 0.9375
+        }
+        $rest = $X - 2.625 / 2.75
+        return 7.5625 * $rest * $rest + 0.984375
+    }
+
+    # A gradient color with its place after an '@', as a percent: 'Gold@40' is Gold at 0.4. The
+    # place is the digits over 10 to the power of the decimals plus 2, in one division; above 100
+    # is 1. Returns the color and the place, or $null for a text with no place.
+    static [object[]] SplitPlace([string] $Text) {
+        $at = $Text.LastIndexOf('@')
+        if ($at -lt 0) {
+            return $null
+        }
+        $place = $Text.Substring($at + 1).Trim()
+        if ($place.EndsWith('%')) {
+            $place = $place.Substring(0, $place.Length - 1).TrimEnd()
+        }
+        $whole = $place
+        $fraction = ''
+        $dot = $place.IndexOf('.')
+        if ($dot -ge 0) {
+            $whole = $place.Substring(0, $dot)
+            $fraction = $place.Substring($dot + 1)
+        }
+        $digits = $whole + $fraction
+        if ($digits.Length -eq 0 -or $digits.Length -gt 15) {
+            return $null
+        }
+        $mantissa = [long]0
+        foreach ($digit in $digits.ToCharArray()) {
+            $code = [int]$digit
+            if ($code -lt 48 -or $code -gt 57) {
+                return $null
+            }
+            $mantissa = $mantissa * 10 + ($code - 48)
+        }
+        $scale = 100.0
+        for ($k = 0; $k -lt $fraction.Length; $k++) {
+            $scale *= 10.0
+        }
+        return [object[]]@($Text.Substring(0, $at).TrimEnd(), [Math]::Min(1.0, [double]$mantissa / $scale))
+    }
+
+    # Each stop's place from 0 to 1 as CSS places color stops, given each stop's place or $null:
+    # the first at 0 and the last at 1 unless placed, a place before an earlier stop's moved up to
+    # it, and the stops with none spread evenly between the placed ones around them
+    static [double[]] ResolvePlaces([object[]] $Given) {
+        $count = $Given.Count
+        $last = $count - 1
+        $known = [object[]]::new($count)
+        for ($k = 0; $k -lt $count; $k++) {
+            if ($null -ne $Given[$k]) {
+                $known[$k] = [Math]::Min(1.0, [Math]::Max(0.0, [double]$Given[$k]))
+            }
+        }
+        if ($null -eq $known[0]) {
+            $known[0] = 0.0
+        }
+        if ($null -eq $known[$last]) {
+            $known[$last] = 1.0
+        }
+        $highest = 0.0
+        for ($k = 0; $k -lt $count; $k++) {
+            if ($null -eq $known[$k]) {
+                continue
+            }
+            if ($known[$k] -lt $highest) {
+                $known[$k] = $highest
+            } else {
+                $highest = $known[$k]
+            }
+        }
+        $places = [double[]]::new($count)
+        $k = 0
+        while ($k -le $last) {
+            if ($null -ne $known[$k]) {
+                $places[$k] = $known[$k]
+                $k++
+                continue
+            }
+            $before = $k - 1
+            $after = $k
+            while ($null -eq $known[$after]) {
+                $after++
+            }
+            $from = $places[$before]
+            $to = [double]$known[$after]
+            $span = [double]($after - $before)
+            for ($i = $k; $i -lt $after; $i++) {
+                $places[$i] = $from + ($to - $from) * (($i - $before) / $span)
+            }
+            $k = $after
+        }
+        return $places
+    }
+
+    # The segment a place falls in among stops' places, and its ratio from the segment's first
+    # stop to its last: the first stop's color at or before the first place, the last's at or
+    # after the last, and the later stop's where two share a place
+    static [double[]] Locate([double[]] $Places, [double] $Place) {
+        $last = $Places.Count - 1
+        if ($Place -le $Places[0]) {
+            return [double[]]@(0.0, 0.0)
+        }
+        if ($Place -ge $Places[$last]) {
+            return [double[]]@(($last - 1), 1.0)
+        }
+        $segment = 0
+        while ($segment + 1 -lt $last -and $Places[$segment + 1] -le $Place) {
+            $segment++
+        }
+        return [double[]]@($segment, (($Place - $Places[$segment]) / ($Places[$segment + 1] - $Places[$segment])))
+    }
+
+    # A place carried back into the span from the first stop's place to the last's by the repeat,
+    # by its index in RepeatNames: unchanged inside the span or with no repeat
+    static [double] RepeatPlace([double] $Place, [double] $First, [double] $Last, [int] $Repeat) {
+        $span = $Last - $First
+        if ($Repeat -eq 0 -or $span -le 0.0 -or ($Place -ge $First -and $Place -le $Last)) {
+            return $Place
+        }
+        $turns = ($Place - $First) / $span
+        if ($Repeat -eq 2) {
+            $within = $turns - 2.0 * [Math]::Floor($turns / 2.0)
+            if ($within -gt 1.0) {
+                $within = 2.0 - $within
+            }
+        } else {
+            $within = $turns - [Math]::Floor($turns)
+        }
+        return $First + $within * $span
+    }
+
+    # A place moved to the place of its band when the span from the first stop's place to the
+    # last's is cut into Bands: band k of n at k / (n - 1) of the span, so the first band is the
+    # first stop and the last band the last; a single band is the first stop, and 0 bands leave
+    # the place as it is
+    static [double] BandPlace([double] $Place, [double] $First, [double] $Last, [int] $Bands) {
+        $span = $Last - $First
+        if ($Bands -eq 0 -or $span -le 0.0) {
+            return $Place
+        }
+        if ($Bands -eq 1) {
+            return $First
+        }
+        $fraction = [Math]::Min(1.0, [Math]::Max(0.0, ($Place - $First) / $span))
+        $band = [Math]::Min([int][Math]::Floor($fraction * $Bands), $Bands - 1)
+        return $First + ($band / ($Bands - 1)) * $span
+    }
+
+    # The place along the gradient of a place from 0 to 1 across the text, by the direction's
+    # index in DirectionNames
+    static [double] DirectionPlace([double] $Across, [int] $Direction) {
+        switch ($Direction) {
+            1 { return 1.0 - $Across }
+            2 { return [Math]::Abs(2.0 * $Across - 1.0) }
+            3 { return 1.0 - [Math]::Abs(2.0 * $Across - 1.0) }
+        }
+        return $Across
+    }
+
+    # The place along the gradient a place across the text maps to, through the direction, the
+    # easing curve, the repeat and the bands, in that order, with Options as GradientOptions
+    # returns them
+    static [double] Shape([double] $Across, [double[]] $Places, [int[]] $Options) {
+        $first = $Places[0]
+        $last = $Places[$Places.Count - 1]
+        $eased = [ColorMath]::Ease($Options[2], [ColorMath]::DirectionPlace($Across, $Options[4]))
+        return [ColorMath]::BandPlace([ColorMath]::RepeatPlace($eased, $first, $last, $Options[3]), $first, $last, $Options[5])
+    }
+
+    # A stop's place moved to the nearest place a character takes: the characters' places are
+    # Offset + Interval x j over Denominator, from Lowest to Highest, and a half rounds up. Evenly
+    # spaced stops, stop EvenIndex of Count, are placed in integers, exactly; EvenIndex is -1 for
+    # stops that are not.
+    static [int] Snapped([double] $Place, [int] $EvenIndex, [int] $Count, [int] $Denominator, [int] $Interval, [int] $Offset, [int] $Lowest, [int] $Highest) {
+        if ($EvenIndex -ge 0) {
+            # j = floor((index x denominator / spans - offset) / interval + 1/2) in integers; the
+            # sum is never below 0, since an offset of 1 comes with an interval of 2
+            $spans = $Count - 1
+            $sum = 2 * $EvenIndex * $Denominator + $Interval * $spans - 2 * $Offset * $spans
+            $divisor = 2 * $Interval * $spans
+            $numerator = $Offset + $Interval * (($sum - $sum % $divisor) / $divisor)
+        } else {
+            $j = [Math]::Max(0.0, [Math]::Floor(($Place * $Denominator - $Offset) / $Interval + 0.5))
+            $numerator = $Offset + $Interval * [int]$j
+        }
+        return [Math]::Min($Highest, [Math]::Max($Lowest, $numerator))
+    }
+
+    # The numerator over Denominator of character I's place along the gradient, by the
+    # direction's index in DirectionNames
+    hidden static [int] CharacterNumerator([int] $I, [int] $Denominator, [int] $Direction) {
+        switch ($Direction) {
+            1 { return $Denominator - $I }
+            2 { return [Math]::Abs(2 * $I - $Denominator) }
+            3 { return $Denominator - [Math]::Abs(2 * $I - $Denominator) }
+        }
+        return $I
+    }
+
+    # Each of Count stops' place, or $null, from a list of places that may be shorter or $null
+    hidden static [object[]] StopPlaces([object[]] $Places, [int] $Count) {
+        $given = [object[]]::new($Count)
+        if ($null -ne $Places) {
+            for ($k = 0; $k -lt [Math]::Min($Places.Count, $Count); $k++) {
+                $given[$k] = $Places[$k]
+            }
+        }
+        return $given
+    }
+
+    # The color at At, a segment and the ratio along it as Locate returns them
+    hidden static [int[]] BlendAt([int[][]] $Rgbs, [double[][]] $Coordinates, [double[]] $At, [int] $Space, [int] $Hue) {
+        $segment = [int]$At[0]
+        return [ColorMath]::BlendColors($Rgbs[$segment], $Rgbs[$segment + 1], $Coordinates[$segment], $Coordinates[$segment + 1], $At[1], $Space, $Hue)
+    }
+
+    # The colors of a gradient across Count characters, as RGB arrays: Stops are RGB arrays, Places
+    # each stop's place from 0 to 1 or $null, and Options as GradientOptions returns them. With
+    # evenly spaced stops and no option but a space of OKLab or RGB, the colors are Blend's.
+    static [object[]] GradientRgb([object[]] $Stops, [object[]] $Places, [int] $Count, [int[]] $Options) {
+        if ($Count -le 0 -or $Stops.Count -eq 0) {
+            return [object[]]@()
+        }
+        $rgbs = [int[][]]::new($Stops.Count)
+        for ($k = 0; $k -lt $Stops.Count; $k++) {
+            $rgbs[$k] = [int[]]$Stops[$k]
+        }
+        $out = [object[]]::new($Count)
+        if ($Stops.Count -eq 1) {
+            for ($i = 0; $i -lt $Count; $i++) {
+                $out[$i] = [int[]]$rgbs[0].Clone()
+            }
+            return $out
+        }
+        $resolved = [ColorMath]::ResolvePlaces([ColorMath]::StopPlaces($Places, $Stops.Count))
+        $spans = $Stops.Count - 1
+        $even = $true
+        for ($k = 0; $k -le $spans; $k++) {
+            if ($resolved[$k] -ne $k / $spans) {
+                $even = $false
+            }
+        }
+        $space = $Options[0]
+        $hue = $Options[1]
+        if ($even -and $space -le 1 -and $Options[2] -eq 0 -and $Options[3] -eq 0 -and $Options[4] -eq 0 -and $Options[5] -eq 0) {
+            return [ColorMath]::Blend($rgbs, $Count, $false, $space -eq 0)
+        }
+
+        $coordinates = [double[][]]::new($Stops.Count)
+        for ($k = 0; $k -lt $Stops.Count; $k++) {
+            $coordinates[$k] = [ColorMath]::ToCoordinates($rgbs[$k], $space)
+        }
+        if ($Count -eq 1) {
+            $out[0] = [ColorMath]::BlendAt($rgbs, $coordinates, [ColorMath]::Locate($resolved, [ColorMath]::Shape(0.0, $resolved, $Options)), $space, $hue)
+            return $out
+        }
+
+        # Each character's place is a numerator over Count - 1, after the direction. The places
+        # the characters take are every numerator from 0 to Count - 1, or, from the middle out or
+        # the ends in, every other one.
+        $denominator = $Count - 1
+        $direction = $Options[4]
+        $interval = 1
+        $offset = 0
+        $lowest = 0
+        $highest = $denominator
+        if ($direction -eq 2) {
+            $interval = 2
+            $offset = $denominator % 2
+            $lowest = $denominator % 2
+        } elseif ($direction -eq 3) {
+            $interval = 2
+            $highest = $denominator - $denominator % 2
+        }
+        $width = $highest - $lowest
+        if (($width - $width % $interval) / $interval + 1 -lt $Stops.Count) {
+            for ($i = 0; $i -lt $Count; $i++) {
+                $across = [ColorMath]::CharacterNumerator($i, $denominator, $direction) / $denominator
+                $out[$i] = [ColorMath]::BlendAt($rgbs, $coordinates, [ColorMath]::Locate($resolved, [ColorMath]::Shape($across, $resolved, $Options)), $space, $hue)
+            }
+            return $out
+        }
+
+        # With a place for every stop, each stop moves to the nearest character's place
+        $numerators = [int[]]::new($Stops.Count)
+        for ($k = 0; $k -lt $Stops.Count; $k++) {
+            $evenIndex = -1
+            if ($even) {
+                $evenIndex = $k
+            }
+            $numerators[$k] = [ColorMath]::Snapped($resolved[$k], $evenIndex, $Stops.Count, $denominator, $interval, $offset, $lowest, $highest)
+        }
+        $wholeSpan = $numerators[0] -eq 0 -and $numerators[$spans] -eq $denominator
+        if ($Options[2] -eq 0 -and $Options[5] -eq 0 -and ($Options[3] -eq 0 -or $wholeSpan)) {
+            $stopNumerators = [double[]]::new($Stops.Count)
+            for ($k = 0; $k -lt $Stops.Count; $k++) {
+                $stopNumerators[$k] = $numerators[$k]
+            }
+            for ($i = 0; $i -lt $Count; $i++) {
+                $at = [ColorMath]::Locate($stopNumerators, [ColorMath]::CharacterNumerator($i, $denominator, $direction))
+                $out[$i] = [ColorMath]::BlendAt($rgbs, $coordinates, $at, $space, $hue)
+            }
+            return $out
+        }
+        $snappedPlaces = [double[]]::new($Stops.Count)
+        for ($k = 0; $k -lt $Stops.Count; $k++) {
+            $snappedPlaces[$k] = $numerators[$k] / $denominator
+        }
+        for ($i = 0; $i -lt $Count; $i++) {
+            $across = [ColorMath]::CharacterNumerator($i, $denominator, $direction) / $denominator
+            $out[$i] = [ColorMath]::BlendAt($rgbs, $coordinates, [ColorMath]::Locate($snappedPlaces, [ColorMath]::Shape($across, $snappedPlaces, $Options)), $space, $hue)
+        }
+        return $out
+    }
+
+    # The color at a place from 0 to 1 along a gradient, for a single color that moves along it;
+    # stops keep their exact places, since there are no characters to move them to. A place
+    # outside 0 to 1 is the nearer end, and NaN is 0.
+    static [int[]] GradientRgbAt([object[]] $Stops, [object[]] $Places, [double] $Place, [int[]] $Options) {
+        if ($Stops.Count -eq 0) {
+            return [int[]]@(128, 128, 128)
+        }
+        if ($Stops.Count -eq 1) {
+            return [int[]]([int[]]$Stops[0]).Clone()
+        }
+        $along = 0.0
+        if (-not [double]::IsNaN($Place)) {
+            $along = [Math]::Min(1.0, [Math]::Max(0.0, $Place))
+        }
+        $resolved = [ColorMath]::ResolvePlaces([ColorMath]::StopPlaces($Places, $Stops.Count))
+        $at = [ColorMath]::Locate($resolved, [ColorMath]::Shape($along, $resolved, $Options))
+        $segment = [int]$at[0]
+        $from = [int[]]$Stops[$segment]
+        $to = [int[]]$Stops[$segment + 1]
+        return [ColorMath]::BlendColors($from, $to, [ColorMath]::ToCoordinates($from, $Options[0]), [ColorMath]::ToCoordinates($to, $Options[0]), $at[1], $Options[0], $Options[1])
     }
 }

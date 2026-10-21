@@ -7,6 +7,115 @@ links to that version's page there. The format follows
 release is one commit, so this file, not the commit log, is the record of what
 changed in it.
 
+## [1.2.1] - 2026-10-21
+
+### Added
+
+- `-Gradient` and `-BackGroundGradient` take the name of a named gradient in
+  place of its colors, and so do a style's `Gradient` and `BackgroundGradient`:
+  twenty-one names, among them Rainbow, Sunset, Ocean, the presets of
+  gradient-string, and Progress, the color table's Red, LightRuby, Orange,
+  Yellow and Green. Tab completion lists them.
+- Gradient options, alike in `Write-ColorEX`, `Format-ColorEX`, `New-ColorStyle`
+  and a style's properties: `-GradientSpace` takes LinearRGB, OKLCH, HSL, HSV,
+  Lab and LCh besides OKLab and RGB; `-GradientHue` picks the way round the hue
+  wheel (Shorter, Longer, Increasing, Decreasing); `-GradientEasing` moves the
+  colors along the text by one of 31 curves; `-GradientRepeat` repeats or
+  mirrors stops placed short of the ends; `-GradientDirection` runs a gradient
+  in reverse, from the middle out or from the ends in; and `-GradientSteps` cuts
+  it into bands of solid color. Without them a gradient is drawn as before.
+- A gradient color can give its place after an `@`, as a percent: `'Gold@40'`.
+  Colors without a place spread evenly between the placed ones, as CSS places
+  color stops, and each lands on the nearest character.
+- `Get-GradientColor`, with the alias `Get-GradientColour`, returns a gradient's
+  colors as RGB arrays, with every gradient option: one for each of `-Count`
+  characters, or the color at each of `-Place`'s places, from 0 to 1, in the
+  order given.
+- `Get-ColorContrast`, with the alias `Get-ColourContrast`, returns the WCAG
+  contrast ratio of a `-Color` on a `-BackGroundColor`, from 1 to 21, with the
+  same value to the last bit in Windows PowerShell 5.1, PowerShell 7 and
+  PWRSWriteColorEX.
+- `Test-AnsiSupport` reports `SupportsUnicode`, whether the terminal can show
+  Unicode: `WRITECOLOREX_UNICODE`, `true` or `false`, decides first;
+  otherwise it is `$false` on Linux, macOS and FreeBSD when the locale's
+  character set is not UTF-8, and on Windows when the console is a window of
+  the console host itself drawing with a raster font. The console's own screen
+  buffer is asked, so redirected output does not change the answer.
+- `-ColorSupport` on `Write-ColorEX` and `Format-ColorEX` names the color
+  support to write for, None, ANSI4, ANSI8 or TrueColor, in place of the
+  detection, the host, redirected output and the color variables, so the
+  colors depend only on the arguments. `-Bold` lightens the colors wherever
+  bold cannot show: always with None, and with the others where the terminal
+  draws bold as brighter colors.
+- `Import-ColorProfile -Theme` reads one of the module's themes. Catppuccin
+  (Latte, Frappe, Macchiato, Mocha), Solarized (dark, light), Gruvbox (dark,
+  light), Dracula, Nord, One Dark and Tokyo Night restyle the seven profiles
+  and register their colors under names such as `DraculaPurple`. `PowerShell`
+  makes Error, Warning, Info and Debug, and on PowerShell 7.2 and later
+  Critical and Default, exactly PowerShell's own settings. `CSS` adds the 100
+  CSS color names the table lacks.
+- `Show-ColorTable -Styles`, `-Palette` and `-Profiles` write the text styles
+  with the parameters and markup tags that give them, the 256-color chart, and
+  the style profiles with their settings.
+- The `about_PSWriteColorEX` help topic: a cheat sheet of the commands and
+  parameters by task, the same as the wiki's.
+- THIRD-PARTY-NOTICES credits the sources of the themes' and the named
+  gradients' colors.
+
+### Changed
+
+- In 256 colors, a color is written as the code that looks nearest to it: the
+  code at the least distance in OKLab, a color space where equal distances look
+  equally different, with the difference in lightness counted at 0.6 of its
+  size. Hex codes, `rgb()`, `hsl()`, RGB arrays, registered names and gradients
+  all go through it, in `Convert-RGBToANSI8`. Each channel was rounded on its
+  own before, which made saturated colors pale and could turn a violet blue.
+- A color name gets the same 256-color code as its hex code. The 17 names on
+  codes 0 to 15 keep them, so they follow the terminal's scheme. 74 names
+  changed code, among them Lime (118 to 46, its exact color), Purple (93 to
+  90), Yellow (220 to 226) and DarkSky (24 to 39).
+- Each stop of a gradient falls on a character of its own when the text has at
+  least as many characters as stops, so every color given is drawn exactly.
+  Gradients of three or more stops change slightly in TrueColor too.
+- A text gradient leaves out white space, which shows no text color, unless it
+  is underlined, crossed out, overlined or reversed. A background gradient
+  still colors every character.
+- `-Style` reads a list, such as a `List[string]`, as the array it holds, and
+  styles the segments with it. A list given to `-Style` styled nothing before.
+- Every command that returns objects declares their type, which tab completion
+  uses to list their members. `Convert-HexToRGB`, `Convert-RGBToANSI4`,
+  `Convert-RGBToANSI8`, `Get-LighterRGBColor`, `Get-LighterANSI8Color`,
+  `Get-LighterColorName`, `Get-ColorTableWithRGB`, `Get-ColorProfiles`,
+  `New-ColorStyle`, `Test-AnsiSupport` and the `Write-Color*` helpers declared
+  none before.
+- `Test-AnsiSupport` declares the Windows calls that turn on escape codes in a
+  console the way the module's other console checks do, so the module compiles
+  no C#. In a Windows PowerShell 5.1 console, importing it started the C#
+  compiler before.
+
+### Fixed
+
+- A style holding a value outside its parameter's set, such as a
+  `GradientSpace` of `Wavy`, makes `Write-ColorEX -StyleProfile` and `-Default`
+  write PowerShell's parameter-check error and then the text, with that setting
+  left out, whether or not a `try` surrounds the call. Inside a `try` the whole
+  statement stopped before, and the error was the variable check's.
+- The `Write-Color*` helpers write the error for a profile setting
+  `Write-ColorEX` refuses and go on to `-PassThru`, whether or not a `try`
+  surrounds the call. Inside a `try` the whole statement stopped before.
+- The module keeps working in a runspace after another runspace that imported
+  it is disposed, as a thread job's or a runspace pool's are. Windows
+  PowerShell 5.1 then stopped every command that writes a color, along with
+  `Get-GradientColor`, `Get-ColorContrast` and the `PSColorStyle` methods, with
+  a NullReferenceException, and PowerShell 7 stopped the `Write-Color*`
+  helpers, `-StyleProfile` and the methods of the built-in profiles. Each
+  runspace now loads its own copy of the module's code, and `PSColorStyle` is
+  one type for the whole process whose methods run in the runspace that calls
+  them, with the same members as before.
+- Runspaces that import the module at the same moment all finish. In Windows
+  PowerShell 5.1, eight runspaces of a pool importing it together waited on
+  one another without end.
+
 ## [1.2.0] - 2026-10-09
 
 ### Added
@@ -35,7 +144,7 @@ changed in it.
   no wider than `-AutoPad` or the console window, at spaces where it can.
 - Every color parameter takes `#RGB`, `0xRGB`, `rgb(r, g, b)` and
   `hsl(h, s%, l%)` besides names, `#RRGGBB` codes and RGB arrays.
-- `Format-ColorEX` answers text with its colors and styles as escape codes,
+- `Format-ColorEX` returns text with its colors and styles as escape codes,
   one string per line, for use inside other strings, tables and files.
 - `Show-ColorTable` writes each color name with samples in TrueColor, 256
   colors, 16 colors and console colors.
@@ -119,7 +228,7 @@ changed in it.
 
 - `-Encoding` takes `utf8BOM`, `utf8NoBOM`, `bigendianutf32` and `ansi`.
 - `TERM=dumb` turns colors and styles off in `Write-ColorEX`, and
-  `Test-AnsiSupport` answers `None` for it.
+  `Test-AnsiSupport` returns `None` for it.
 - `Test-AnsiSupport` detects Windows Terminal running a WSL shell from
   `WT_SESSION` on Linux and macOS, as `TrueColor`.
 - Tests for `Measure-DisplayWidth`, for what `Write-ColorEX` hands to
@@ -157,7 +266,7 @@ changed in it.
   the text by code point, so Windows PowerShell 5.1 and PowerShell 7 give the
   same width. East Asian Ambiguous characters such as `●` and box drawing are
   1 cell, or 2 with `-AmbiguousAsWide`; `●` was 2 cells before.
-- On PowerShell 7.2 and later, `Test-AnsiSupport` answers `None` for a host
+- On PowerShell 7.2 and later, `Test-AnsiSupport` returns `None` for a host
   without virtual terminal support, since PowerShell removes escape codes
   from its output, and `Write-ColorEX` writes console colors there.
 - `NO_COLOR`, `FORCE_COLOR=0` and `TERM=dumb` give one plain `Write-Host`
@@ -204,7 +313,7 @@ changed in it.
 - `-Bold` on `White`, where the terminal shows bold as brighter colors,
   keeps the text white. `Lighten-ColorName` turned `White` into `LightWhite`,
   which the color table does not have, and the text lost its color before.
-  `Get-LighterColorName` answers only names the color table has.
+  `Get-LighterColorName` returns only names the color table has.
 - A hex code or an RGB array in `-Color` or `-BackGroundColor` without
   `-TrueColor`, `-ANSI8` or `-ANSI4` is written in the best mode the terminal
   has, as for a style made with `New-ColorStyle -ForegroundColor '#FF6B35'`.
@@ -219,7 +328,7 @@ changed in it.
 - `-Style 'Bold'`, one style alone, styles the first segment, as an array of
   one does. It styled nothing before, since PowerShell read the string's
   letters as the styles.
-- `Convert-RGBToANSI8` clamps values outside 0-255. `@(300, 0, 0)` answered
+- `Convert-RGBToANSI8` clamps values outside 0-255. `@(300, 0, 0)` returned
   16 (black) before.
 - `[PSColorStyle]` resolves after `Import-Module PSWriteColorEX`, as the
   examples use it. It needed `using module PSWriteColorEX` before.
@@ -236,6 +345,7 @@ changed in it.
 
 The first release.
 
+[1.2.1]: https://www.powershellgallery.com/packages/PSWriteColorEX/1.2.1
 [1.2.0]: https://www.powershellgallery.com/packages/PSWriteColorEX/1.2.0
 [1.1.0]: https://www.powershellgallery.com/packages/PSWriteColorEX/1.1.0
 [1.0.0]: https://www.powershellgallery.com/packages/PSWriteColorEX/1.0.0

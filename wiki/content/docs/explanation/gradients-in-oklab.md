@@ -32,11 +32,16 @@ RGB,   blue to yellow
 
 ## How the colors are computed
 
-Each stop is converted from RGB to OKLab, the characters are spread evenly between the stops, and
-each character's color is mixed in OKLab and converted back to RGB, rounded to whole values. A
-character is what a reader sees as one: an emoji sequence or a letter with its accent takes one
-color. With more than two stops, the gradient runs from each stop to the next in equal shares of
-the text.
+Each stop is converted from RGB to OKLab. With at least as many characters as stops, each stop
+falls on a character of its own, the one nearest its share of the text, so every color given is
+drawn exactly; the characters between two stops take colors spread evenly from one to the other,
+mixed in OKLab and converted back to RGB, rounded to whole values. A character is what a reader
+sees as one: an emoji sequence or a letter with its accent takes one color.
+
+A text gradient's colors fall on the characters that show them. White space takes none, so no
+color is spent where nothing is drawn, unless it is underlined, crossed out, overlined or
+reversed, where its color shows. A background gradient colors every character, white space
+included.
 
 The work is done in the `ColorMath` class, a loop of arithmetic per step rather than calls to
 functions, so a long gradient costs little. PWRSWriteColorEX computes the same steps with the same
@@ -44,8 +49,9 @@ constants, so both modules write the same colors to the last bit.
 
 ## In 256 colors
 
-In 256 colors each character takes the nearest 256-color of its TrueColor value, so neighboring
-characters may share a color where the steps fall between two of them:
+In 256 colors each character takes the 256-color code that looks nearest to its TrueColor value,
+as [Color modes](color-modes.md) describes, so neighboring characters may share a code where the
+steps fall between two of them:
 
 ```powershell,ansi8
 PS> Write-ColorEX -Text 'OKLab, red to green  ' -Gradient Red, Green

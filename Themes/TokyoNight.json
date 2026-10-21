@@ -1,0 +1,60 @@
+{
+  "Colors": {
+    "TokyoNightBackground": "#1A1B26",
+    "TokyoNightForeground": "#A9B1D6",
+    "TokyoNightWhite": "#C0CAF5",
+    "TokyoNightComment": "#565F89",
+    "TokyoNightBlack": "#414868",
+    "TokyoNightRed": "#F7768E",
+    "TokyoNightOrange": "#FF9E64",
+    "TokyoNightYellow": "#E0AF68",
+    "TokyoNightGreen": "#9ECE6A",
+    "TokyoNightTeal": "#73DACA",
+    "TokyoNightLightBlue": "#2AC3DE",
+    "TokyoNightCyan": "#7DCFFF",
+    "TokyoNightBlue": "#7AA2F7",
+    "TokyoNightMagenta": "#BB9AF7"
+  },
+  "Default": "Default",
+  "Profiles": [
+    {
+      "Name": "Critical",
+      "ForegroundColor": "#1A1B26",
+      "BackgroundColor": "#F7768E",
+      "Bold": true,
+      "Blink": true
+    },
+    {
+      "Name": "Debug",
+      "ForegroundColor": "#565F89",
+      "BackgroundColor": null,
+      "Italic": true
+    },
+    {
+      "Name": "Default",
+      "ForegroundColor": "#A9B1D6",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Error",
+      "ForegroundColor": "#F7768E",
+      "BackgroundColor": null,
+      "Bold": true
+    },
+    {
+      "Name": "Info",
+      "ForegroundColor": "#7DCFFF",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Success",
+      "ForegroundColor": "#9ECE6A",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Warning",
+      "ForegroundColor": "#E0AF68",
+      "BackgroundColor": null
+    }
+  ]
+}

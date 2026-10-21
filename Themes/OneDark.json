@@ -1,0 +1,58 @@
+{
+  "Colors": {
+    "OneDarkBackground": "#282C34",
+    "OneDarkForeground": "#ABB2BF",
+    "OneDarkGray": "#828997",
+    "OneDarkComment": "#5C6370",
+    "OneDarkRed": "#E06C75",
+    "OneDarkDarkRed": "#BE5046",
+    "OneDarkGreen": "#98C379",
+    "OneDarkYellow": "#E5C07B",
+    "OneDarkOrange": "#D19A66",
+    "OneDarkBlue": "#61AFEF",
+    "OneDarkPurple": "#C678DD",
+    "OneDarkCyan": "#56B6C2"
+  },
+  "Default": "Default",
+  "Profiles": [
+    {
+      "Name": "Critical",
+      "ForegroundColor": "#282C34",
+      "BackgroundColor": "#E06C75",
+      "Bold": true,
+      "Blink": true
+    },
+    {
+      "Name": "Debug",
+      "ForegroundColor": "#5C6370",
+      "BackgroundColor": null,
+      "Italic": true
+    },
+    {
+      "Name": "Default",
+      "ForegroundColor": "#ABB2BF",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Error",
+      "ForegroundColor": "#E06C75",
+      "BackgroundColor": null,
+      "Bold": true
+    },
+    {
+      "Name": "Info",
+      "ForegroundColor": "#56B6C2",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Success",
+      "ForegroundColor": "#98C379",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Warning",
+      "ForegroundColor": "#E5C07B",
+      "BackgroundColor": null
+    }
+  ]
+}

@@ -286,9 +286,11 @@ class ColorLine {
     # Items are the line's pieces in order, each @{ Index; Runs }: the segment whose colors,
     # styles, underline color and link it takes, and its runs. A run's markup or -Highlight colors
     # and styles go over the segment's. A segment with no text color of its own takes the
-    # gradient, character by character from the run's GradientIndex, and one with no background
-    # color the background gradient. Each run with codes ends with a reset; a link opens before
-    # the codes of the first run it covers and closes after the last.
+    # gradient from the run's TextGradientIndex, one step for each character that shows it (white
+    # space only where the run's ShowsSpace is set), and one with no background color takes the
+    # background gradient from the run's GradientIndex, one step for each character. Each run with
+    # codes ends with a reset; a link opens before the codes of the first run it covers and
+    # closes after the last.
     [string] Ansi([System.Collections.Generic.List[object]] $Items) {
         $esc = [ColorCode]::Esc
         $reset = [ColorCode]::Reset
@@ -356,9 +358,12 @@ class ColorLine {
                     }
                     [void]$builder.Append($codes)
                     $at = [int]$run.GradientIndex
+                    $textAt = [int]$run.TextGradientIndex
+                    $allShow = [bool]$run.ShowsSpace -or [bool]$run.AllShow
                     foreach ($character in $run.Characters) {
-                        if ($fgGradient) {
-                            $step = $this.Gradient[$at]
+                        $shows = $allShow -or -not [string]::IsNullOrWhiteSpace($character)
+                        if ($fgGradient -and $shows) {
+                            $step = $this.Gradient[$textAt]
                             if ($this.ANSI24 -and $step -is [array]) {
                                 [void]$builder.Append("$esc[38;2;$($step[0]);$($step[1]);$($step[2])m")
                             } elseif ($this.ANSI8 -and $step -is [int]) {
@@ -375,6 +380,9 @@ class ColorLine {
                         }
                         [void]$builder.Append($character)
                         $at++
+                        if ($shows) {
+                            $textAt++
+                        }
                     }
                     [void]$builder.Append($reset)
                     continue

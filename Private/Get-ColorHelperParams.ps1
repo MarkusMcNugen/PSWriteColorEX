@@ -1,7 +1,7 @@
 ﻿function Get-ColorHelperParams {
     <#
     .SYNOPSIS
-    Answers the Write-ColorEX parameters of a built-in profile, for the Write-Color* helpers.
+    Returns the Write-ColorEX parameters of a built-in profile, for the Write-Color* helpers.
 
     .DESCRIPTION
     Reads the profile from [PSColorStyle]::Profiles on each call, so a change to a profile
@@ -10,13 +10,14 @@
     #>
     [CmdletBinding()]
     [OutputType([hashtable])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'It returns the parameters of a profile, which the plural names.')]
     param(
         [Parameter(Mandatory)]
         [ValidateSet('Error', 'Warning', 'Info', 'Success', 'Critical', 'Debug')]
         [string]$Name
     )
 
-    $style = [PSColorStyle]::GetProfile($Name)
+    $style = [PSColorStyle]::Profiles[$Name]
     if (-not $style) {
         switch ($Name) {
             'Error' {
@@ -37,5 +38,7 @@
             }
         }
     }
+    # A PSColorStyle goes straight to the function its method calls; a subclass keeps its own method
+    if ($style.GetType() -eq [PSColorStyle]) { return Get-ColorStyleParameter -Style $style }
     return $style.ToWriteColorParams()
 }

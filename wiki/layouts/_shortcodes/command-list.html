@@ -1,0 +1,20 @@
+{{- /*
+Every command with its synopsis, from data/commands.json, which generate.ps1 writes from the
+module's help, in the order of their names.
+*/ -}}
+{{- $commands := hugo.Data.commands | default dict -}}
+{{- if not $commands -}}
+  {{- errorf "data/commands.json is missing or empty: run pwsh ./generate.ps1 in wiki/ (%s)" .Position -}}
+{{- end -}}
+<div class="hx:overflow-x-auto">
+<table>
+  <thead>
+    <tr><th>Command</th><th>What it does</th></tr>
+  </thead>
+  <tbody>
+  {{- range $name, $command := $commands }}
+    <tr><td><code>{{ $name }}</code></td><td>{{ $command.synopsis }}</td></tr>
+  {{- end }}
+  </tbody>
+</table>
+</div>

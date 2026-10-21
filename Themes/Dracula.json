@@ -1,0 +1,58 @@
+{
+  "Colors": {
+    "DraculaBackground": "#282A36",
+    "DraculaCurrentLine": "#44475A",
+    "DraculaSelection": "#44475A",
+    "DraculaForeground": "#F8F8F2",
+    "DraculaComment": "#6272A4",
+    "DraculaCyan": "#8BE9FD",
+    "DraculaGreen": "#50FA7B",
+    "DraculaOrange": "#FFB86C",
+    "DraculaPink": "#FF79C6",
+    "DraculaPurple": "#BD93F9",
+    "DraculaRed": "#FF5555",
+    "DraculaYellow": "#F1FA8C"
+  },
+  "Default": "Default",
+  "Profiles": [
+    {
+      "Name": "Critical",
+      "ForegroundColor": "#282A36",
+      "BackgroundColor": "#FF5555",
+      "Bold": true,
+      "Blink": true
+    },
+    {
+      "Name": "Debug",
+      "ForegroundColor": "#6272A4",
+      "BackgroundColor": null,
+      "Italic": true
+    },
+    {
+      "Name": "Default",
+      "ForegroundColor": "#F8F8F2",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Error",
+      "ForegroundColor": "#FF5555",
+      "BackgroundColor": null,
+      "Bold": true
+    },
+    {
+      "Name": "Info",
+      "ForegroundColor": "#8BE9FD",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Success",
+      "ForegroundColor": "#50FA7B",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Warning",
+      "ForegroundColor": "#F1FA8C",
+      "BackgroundColor": null
+    }
+  ]
+}

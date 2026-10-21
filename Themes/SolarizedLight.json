@@ -1,0 +1,62 @@
+{
+  "Colors": {
+    "SolarizedBase03": "#002B36",
+    "SolarizedBase02": "#073642",
+    "SolarizedBase01": "#586E75",
+    "SolarizedBase00": "#657B83",
+    "SolarizedBase0": "#839496",
+    "SolarizedBase1": "#93A1A1",
+    "SolarizedBase2": "#EEE8D5",
+    "SolarizedBase3": "#FDF6E3",
+    "SolarizedYellow": "#B58900",
+    "SolarizedOrange": "#CB4B16",
+    "SolarizedRed": "#DC322F",
+    "SolarizedMagenta": "#D33682",
+    "SolarizedViolet": "#6C71C4",
+    "SolarizedBlue": "#268BD2",
+    "SolarizedCyan": "#2AA198",
+    "SolarizedGreen": "#859900"
+  },
+  "Default": "Default",
+  "Profiles": [
+    {
+      "Name": "Critical",
+      "ForegroundColor": "#FDF6E3",
+      "BackgroundColor": "#DC322F",
+      "Bold": true,
+      "Blink": true
+    },
+    {
+      "Name": "Debug",
+      "ForegroundColor": "#93A1A1",
+      "BackgroundColor": null,
+      "Italic": true
+    },
+    {
+      "Name": "Default",
+      "ForegroundColor": "#657B83",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Error",
+      "ForegroundColor": "#DC322F",
+      "BackgroundColor": null,
+      "Bold": true
+    },
+    {
+      "Name": "Info",
+      "ForegroundColor": "#2AA198",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Success",
+      "ForegroundColor": "#859900",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Warning",
+      "ForegroundColor": "#B58900",
+      "BackgroundColor": null
+    }
+  ]
+}

@@ -43,7 +43,6 @@ $script:DebugMode = $env:PSWRITECOLOREX_DEBUG -eq 'true'
 $script:CachedANSISupport = $null   # The terminal's color support, detected at import
 $script:SupportsBoldFonts = $false  # Whether the terminal draws bold as a bold font
 $script:CachedColorTable = $null    # The color table, built on first use
-$script:RGB6LevelLookup = $null     # Each 0-255 channel value's step in the 6-step RGB cube
 $script:CustomColors = [ordered]@{}  # The color names Register-ColorName added, by name
 $script:CaptureLines = $null        # The list Format-ColorEX collects Write-ColorEX's lines in
 
@@ -51,21 +50,28 @@ if ($script:DebugMode) {
     Write-Verbose "PSWriteColorEX Debug Mode Enabled" -Verbose
 }
 
-function Initialize-RGB6LevelLookup {
-    if ($null -eq $script:RGB6LevelLookup) {
-        $script:RGB6LevelLookup = [int[]]::new(256)
-        for ($i = 0; $i -lt 256; $i++) {
-            $script:RGB6LevelLookup[$i] = if ($i -lt 48) { 0 }
-                elseif ($i -lt 115) { 1 }
-                elseif ($i -lt 155) { 2 }
-                elseif ($i -lt 195) { 3 }
-                elseif ($i -lt 235) { 4 }
-                else { 5 }
-        }
-    }
-}
+function Get-ColorSourceScript {
+    <#
+    .SYNOPSIS
+        Parses one of the module's files for this import alone and returns it as a script block
+    .DESCRIPTION
+        PowerShell compiles a file dot-sourced by its path once for the whole process and gives
+        every runspace that imports the module that one compiled copy, classes and all. Parsing
+        each file here gives this runspace a copy of its own, so nothing it defines runs in, or
+        waits on, another runspace.
+    #>
+    [CmdletBinding()]
+    [OutputType([scriptblock])]
+    param([Parameter(Mandatory)][string] $Path)
 
-Initialize-RGB6LevelLookup
+    $tokens = $null
+    $errors = $null
+    $syntax = [System.Management.Automation.Language.Parser]::ParseFile($Path, [ref]$tokens, [ref]$errors)
+    if ($errors.Count -gt 0) {
+        throw "$($errors[0].Message) (line $($errors[0].Extent.StartLineNumber))"
+    }
+    return $syntax.GetScriptBlock()
+}
 
 # Classes load before the functions that use them
 $ClassFiles = @(
@@ -77,7 +83,7 @@ $ClassFiles = @(
 foreach ($file in $ClassFiles) {
     if (Test-Path -LiteralPath $file) {
         try {
-            . $file
+            . (Get-ColorSourceScript -Path $file)
             if ($script:DebugMode) {
                 Write-Verbose "Loaded class file: $file" -Verbose
             }
@@ -87,11 +93,16 @@ foreach ($file in $ClassFiles) {
     }
 }
 
+# PSColorStyle: one type for the whole process, named [PSColorStyle] in every session
+$StyleType = Get-ColorStyleType
+$StyleKey = Register-ColorStyleType -Type $StyleType
+
 $PrivateFunctions = @(
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'DisplayWidthTable.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'ColorHost.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'Get-ColorHelperParams.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'New-GradientColorArray.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'GradientNames.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'WriteColorCore.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'ColorNames.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Private', 'ArgumentCompleters.ps1')
@@ -100,7 +111,7 @@ $PrivateFunctions = @(
 foreach ($file in $PrivateFunctions) {
     if (Test-Path -LiteralPath $file) {
         try {
-            . $file
+            . (Get-ColorSourceScript -Path $file)
             if ($script:DebugMode) {
                 Write-Verbose "Loaded private function: $(Split-Path $file -Leaf)" -Verbose
             }
@@ -121,12 +132,13 @@ $PublicFunctions = @(
     [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'ColorProfiles.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Write-ColorHelpers.ps1')
     [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Measure-DisplayWidth.ps1')
+    [System.IO.Path]::Combine($PSScriptRoot, 'Public', 'Get-GradientColor.ps1')
 )
 
 foreach ($file in $PublicFunctions) {
     if (Test-Path -LiteralPath $file) {
         try {
-            . $file
+            . (Get-ColorSourceScript -Path $file)
             if ($script:DebugMode) {
                 Write-Verbose "Loaded public function: $(Split-Path $file -Leaf)" -Verbose
             }
@@ -145,15 +157,6 @@ try {
     }
 } catch {
     Write-Warning "Could not initialize default color profiles: $_"
-}
-
-# A class defined in a module is not visible to the session that imports it, only to scripts
-# with 'using module'. A type accelerator makes [PSColorStyle] resolve after Import-Module too,
-# and is removed with the module.
-$TypeAcceleratorsClass = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
-$ExportableTypes = @([PSColorStyle])
-foreach ($Type in $ExportableTypes) {
-    $TypeAcceleratorsClass::Add($Type.FullName, $Type)
 }
 
 $script:ModuleInitialized = $false
@@ -211,7 +214,9 @@ $ExportParams = @{
         'Unregister-ColorName',
         'Export-ColorProfile',
         'Import-ColorProfile',
-        'Remove-ColorProfile'
+        'Remove-ColorProfile',
+        'Get-GradientColor',
+        'Get-ColorContrast'
     )
 
     Alias = @(
@@ -260,7 +265,11 @@ $ExportParams = @{
         # Register-ColorName and Unregister-ColorName aliases
         'Register-ColourName', 'Unregister-ColourName',
         # Export-ColorProfile, Import-ColorProfile and Remove-ColorProfile aliases
-        'Export-ColourProfile', 'Import-ColourProfile', 'Remove-ColourProfile'
+        'Export-ColourProfile', 'Import-ColourProfile', 'Remove-ColourProfile',
+        # Get-GradientColor aliases
+        'Get-GradientColour',
+        # Get-ColorContrast aliases
+        'Get-ColourContrast'
     )
 
     Variable = @()
@@ -268,8 +277,14 @@ $ExportParams = @{
 
 Export-ModuleMember @ExportParams
 
+# Removing the module drops this runspace's script block for PSColorStyle's methods; the last
+# import in the process to go takes the name [PSColorStyle] away
 $MyInvocation.MyCommand.ScriptBlock.Module.OnRemove = {
-    foreach ($Type in $ExportableTypes) {
-        $null = $TypeAcceleratorsClass::Remove($Type.FullName)
+    [System.AppDomain]::CurrentDomain.SetData($StyleKey, $null)
+    $imports = $StyleType.GetMethod('Leave', [System.Reflection.BindingFlags]'NonPublic, Static').Invoke($null, $null)
+    $accelerators = [psobject].Assembly.GetType('System.Management.Automation.TypeAccelerators')
+    $named = $accelerators::Get
+    if ($imports -le 0 -and $named.ContainsKey('PSColorStyle') -and [object]::ReferenceEquals($named['PSColorStyle'], $StyleType)) {
+        $null = $accelerators::Remove('PSColorStyle')
     }
 }.GetNewClosure()

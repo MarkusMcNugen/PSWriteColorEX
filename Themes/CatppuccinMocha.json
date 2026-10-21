@@ -1,0 +1,72 @@
+{
+  "Colors": {
+    "CatppuccinMochaRosewater": "#F5E0DC",
+    "CatppuccinMochaFlamingo": "#F2CDCD",
+    "CatppuccinMochaPink": "#F5C2E7",
+    "CatppuccinMochaMauve": "#CBA6F7",
+    "CatppuccinMochaRed": "#F38BA8",
+    "CatppuccinMochaMaroon": "#EBA0AC",
+    "CatppuccinMochaPeach": "#FAB387",
+    "CatppuccinMochaYellow": "#F9E2AF",
+    "CatppuccinMochaGreen": "#A6E3A1",
+    "CatppuccinMochaTeal": "#94E2D5",
+    "CatppuccinMochaSky": "#89DCEB",
+    "CatppuccinMochaSapphire": "#74C7EC",
+    "CatppuccinMochaBlue": "#89B4FA",
+    "CatppuccinMochaLavender": "#B4BEFE",
+    "CatppuccinMochaText": "#CDD6F4",
+    "CatppuccinMochaSubtext1": "#BAC2DE",
+    "CatppuccinMochaSubtext0": "#A6ADC8",
+    "CatppuccinMochaOverlay2": "#9399B2",
+    "CatppuccinMochaOverlay1": "#7F849C",
+    "CatppuccinMochaOverlay0": "#6C7086",
+    "CatppuccinMochaSurface2": "#585B70",
+    "CatppuccinMochaSurface1": "#45475A",
+    "CatppuccinMochaSurface0": "#313244",
+    "CatppuccinMochaBase": "#1E1E2E",
+    "CatppuccinMochaMantle": "#181825",
+    "CatppuccinMochaCrust": "#11111B"
+  },
+  "Default": "Default",
+  "Profiles": [
+    {
+      "Name": "Critical",
+      "ForegroundColor": "#1E1E2E",
+      "BackgroundColor": "#F38BA8",
+      "Bold": true,
+      "Blink": true
+    },
+    {
+      "Name": "Debug",
+      "ForegroundColor": "#7F849C",
+      "BackgroundColor": null,
+      "Italic": true
+    },
+    {
+      "Name": "Default",
+      "ForegroundColor": "#CDD6F4",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Error",
+      "ForegroundColor": "#F38BA8",
+      "BackgroundColor": null,
+      "Bold": true
+    },
+    {
+      "Name": "Info",
+      "ForegroundColor": "#89DCEB",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Success",
+      "ForegroundColor": "#A6E3A1",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Warning",
+      "ForegroundColor": "#F9E2AF",
+      "BackgroundColor": null
+    }
+  ]
+}

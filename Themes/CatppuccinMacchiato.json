@@ -1,0 +1,72 @@
+{
+  "Colors": {
+    "CatppuccinMacchiatoRosewater": "#F4DBD6",
+    "CatppuccinMacchiatoFlamingo": "#F0C6C6",
+    "CatppuccinMacchiatoPink": "#F5BDE6",
+    "CatppuccinMacchiatoMauve": "#C6A0F6",
+    "CatppuccinMacchiatoRed": "#ED8796",
+    "CatppuccinMacchiatoMaroon": "#EE99A0",
+    "CatppuccinMacchiatoPeach": "#F5A97F",
+    "CatppuccinMacchiatoYellow": "#EED49F",
+    "CatppuccinMacchiatoGreen": "#A6DA95",
+    "CatppuccinMacchiatoTeal": "#8BD5CA",
+    "CatppuccinMacchiatoSky": "#91D7E3",
+    "CatppuccinMacchiatoSapphire": "#7DC4E4",
+    "CatppuccinMacchiatoBlue": "#8AADF4",
+    "CatppuccinMacchiatoLavender": "#B7BDF8",
+    "CatppuccinMacchiatoText": "#CAD3F5",
+    "CatppuccinMacchiatoSubtext1": "#B8C0E0",
+    "CatppuccinMacchiatoSubtext0": "#A5ADCB",
+    "CatppuccinMacchiatoOverlay2": "#939AB7",
+    "CatppuccinMacchiatoOverlay1": "#8087A2",
+    "CatppuccinMacchiatoOverlay0": "#6E738D",
+    "CatppuccinMacchiatoSurface2": "#5B6078",
+    "CatppuccinMacchiatoSurface1": "#494D64",
+    "CatppuccinMacchiatoSurface0": "#363A4F",
+    "CatppuccinMacchiatoBase": "#24273A",
+    "CatppuccinMacchiatoMantle": "#1E2030",
+    "CatppuccinMacchiatoCrust": "#181926"
+  },
+  "Default": "Default",
+  "Profiles": [
+    {
+      "Name": "Critical",
+      "ForegroundColor": "#24273A",
+      "BackgroundColor": "#ED8796",
+      "Bold": true,
+      "Blink": true
+    },
+    {
+      "Name": "Debug",
+      "ForegroundColor": "#8087A2",
+      "BackgroundColor": null,
+      "Italic": true
+    },
+    {
+      "Name": "Default",
+      "ForegroundColor": "#CAD3F5",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Error",
+      "ForegroundColor": "#ED8796",
+      "BackgroundColor": null,
+      "Bold": true
+    },
+    {
+      "Name": "Info",
+      "ForegroundColor": "#91D7E3",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Success",
+      "ForegroundColor": "#A6DA95",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Warning",
+      "ForegroundColor": "#EED49F",
+      "BackgroundColor": null
+    }
+  ]
+}

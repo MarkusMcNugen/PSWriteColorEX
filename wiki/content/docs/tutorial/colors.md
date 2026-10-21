@@ -102,8 +102,10 @@ Mauve
 ## In 256 and 16 colors
 
 A name, a hex code, an `rgb()` or `hsl()` color and an RGB array are written in the best mode the
-terminal has. In a terminal with 256 colors each becomes the nearest of them, and in a terminal
-with 16 colors the nearest of those. The same command in TrueColor, then 256 colors, then 16:
+terminal has. In a terminal with 256 colors each becomes the one of them that looks nearest; a
+name and its hex code become the same one, except names such as `Red` and `Blue` that use the
+terminal's own 16 colors. In a terminal with 16 colors each becomes the nearest of those. The same
+command in TrueColor, then 256 colors, then 16:
 
 ```powershell
 PS> Write-ColorEX -Text 'Coral ', 'Teal ', '#FF8800 ', 'hsl(270, 70%, 60%)' -Color Coral, Teal, '#FF8800', 'hsl(270, 70%, 60%)'

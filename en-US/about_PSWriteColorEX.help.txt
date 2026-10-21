@@ -1,0 +1,258 @@
+﻿TOPIC
+    about_PSWriteColorEX
+
+SHORT DESCRIPTION
+    The commands and parameters of PSWriteColorEX used most, by task, each with
+    an example.
+
+LONG DESCRIPTION
+    The sections below give the commands and parameters by task. The
+    documentation site has the same sheet, with what each example writes:
+    https://markusmcnugen.github.io/PSWriteColorEX/docs/reference/cheat-sheet/
+
+WRITING
+
+    Each string of -Text is a segment, and -Color and -BackGroundColor give the
+    segments their colors in turn. The message helpers write in the style
+    profiles of their names.
+
+        PS> Write-ColorEX -Text 'Saved ', 'report.txt' -Color Green, Cyan
+        PS> Write-ColorEX -Text ' ERROR ', ' disk full ' -Color White, Red -BackGroundColor DarkRed, Black
+        PS> Write-ColorEX -Text 'Name: ' -NoNewLine; Write-ColorEX -Text 'Ada' -Color Green
+        PS> Write-ColorError 'Build failed'
+        PS> Write-ColorWarning 'Disk at 91 percent'
+        PS> Write-ColorInfo 'Using the cache'
+        PS> Write-ColorSuccess 'Deployed'
+        PS> Write-ColorCritical 'Service down'
+        PS> Write-ColorDebug 'Retry 2 of 3'
+
+COLORS
+
+    A color is a name, a hex code, rgb() or hsl(), an RGB array, or a number
+    with -ANSI8 or -ANSI4. -ANSI4, -ANSI8 and -TrueColor choose the color mode
+    for one call.
+
+        PS> Write-ColorEX -Text 'a name' -Color Orange
+        PS> Write-ColorEX -Text 'hex', ' short hex' -Color '#FF8800', '#F80'
+        PS> Write-ColorEX -Text 'rgb()', ' hsl()' -Color 'rgb(255, 136, 0)', 'hsl(32, 100%, 50%)'
+        PS> Write-ColorEX -Text 'an RGB array' -Color @(255, 136, 0) -TrueColor
+        PS> Write-ColorEX -Text '256-color 208' -Color 208 -ANSI8
+        PS> Write-ColorEX -Text '16-color 93' -Color 93 -ANSI4
+        PS> Write-ColorEX -Text ' on a background ' -Color Black -BackGroundColor '#FFD700'
+
+STYLES
+
+    The style switches style every segment, and -Style one segment at a time.
+
+        PS> Write-ColorEX -Text 'bold and italic' -Bold -Italic
+        PS> Write-ColorEX -Text 'bold', ' italic', ' underlined' -Style 'Bold', 'Italic', 'Underline'
+        PS> Write-ColorEX -Text 'misspeled' -UnderlineStyle Curly -UnderlineColor Red
+        PS> Write-ColorEX -Text ' reversed ' -Color Cyan -Reverse
+        PS> Write-ColorEX -Text 'crossed out', ' overlined' -Style 'CrossedOut', 'Overline'
+        PS> Show-ColorTable -Styles
+
+MARKUP
+
+    -Markup reads tags in the text: style names, a text color, on and a
+    background, and link=. [/] closes the tag opened last, and [[ writes [.
+
+        PS> Write-ColorEX -Markup '[bold red]Error:[/] file not found'
+        PS> Write-ColorEX -Markup '[black on #FFD700] WARN [/] [curly]check the spelling[/]'
+        PS> Write-ColorEX -Markup '[green]outer [bold underline]inner[/] outer[/] plain'
+        PS> Write-ColorEX -Markup '[link=https://example.com cyan underline]example.com[/]'
+        PS> Write-ColorEX -Markup 'Use [[bold]] for [bold]bold[/]'
+
+GRADIENTS
+
+    -Gradient blends its colors across the text and -BackGroundGradient across
+    the background, in OKLab unless -GradientSpace names another space: RGB,
+    LinearRGB, OKLCH, HSL, HSV, Lab or LCh. Either takes the name of a named
+    gradient in place of its colors, and a color may give its place as a percent
+    after an @. -GradientHue, -GradientEasing, -GradientSteps, -GradientRepeat
+    and -GradientDirection pick the way round the hue wheel, a curve along the
+    text, bands of solid color, repeats past placed colors and the way across
+    the text. Get-GradientColor returns a gradient's colors.
+
+        PS> Write-ColorEX -Text 'Deploying to production' -Gradient '#00C6FF', '#7B2FF7'
+        PS> Write-ColorEX -Text 'red, yellow and green' -Gradient Red, Yellow, Green
+        PS> Write-ColorEX -Text 'Sunset over the bay' -Gradient Sunset
+        PS> Write-ColorEX -Text 'channel by channel' -Gradient Red, Green -GradientSpace RGB
+        PS> Write-ColorEX -Text '   a banner   ' -Color White -BackGroundGradient DarkBlue, DarkMagenta
+        PS> Write-ColorEX -Text '   on ice   ' -Color Black -BackGroundGradient Ice
+        PS> Write-ColorEX -Text 'Gold sits forty percent along' -Gradient 'Red', 'Gold@40', 'Blue'
+        PS> Write-ColorEX -Text 'round the hue wheel' -Gradient Red, Blue -GradientSpace OKLCH -GradientHue Longer
+        PS> Write-ColorEX -Text 'eased in and out' -Gradient Black, White -GradientEasing InOutSine
+        PS> Write-ColorEX -Text 'three bands' -Gradient Green, Yellow, Red -GradientSteps 3
+        PS> Get-GradientColor -Gradient Red, Blue -Count 3 | ForEach-Object { $_ -join ', ' }
+
+    The named gradients: Rainbow, Sunset, Ocean, Forest, Fire, Ice, Neon,
+    Pastel, Grayscale, Atlas, Cristal, Teen, Mind, Morning, Vice, Passion,
+    Fruit, Instagram, Retro, Summer and Progress.
+
+HIGHLIGHTING AND SPLITTING
+
+    -Highlight styles what regular expressions match. -Split, -SplitAround and
+    -SplitEvenly cut a string into segments, so the colors fall on its parts.
+
+        PS> Write-ColorEX -Text 'GET /api/users 200 12ms' -Highlight @{ '\b\d{3}\b' = 'bold yellow'; '\d+ms' = 'cyan' }
+        PS> Write-ColorEX -Text 'one,two,three' -Split ',' -Color Red, Green, Blue
+        PS> Write-ColorEX -Text 'key=value' -SplitAround '=' -Color Cyan, DarkGray, White
+        PS> Write-ColorEX -Text 'STATUS' -SplitEvenly -Color Red, Yellow, Green
+
+LAYOUT
+
+    -AutoPad pads to a width in display cells, with -PadLeft, -PadCenter and
+    -PadChar to place the text and fill the rest; -Truncate and -Wrap fit longer
+    text.
+
+        PS> Write-ColorEX -Text 'Name' -AutoPad 12 -NoNewLine -Color Cyan; Write-ColorEX -Text 'Status' -Color Cyan
+        PS> Write-ColorEX -Text '42' -AutoPad 8 -PadLeft
+        PS> Write-ColorEX -Text 'Release' -AutoPad 24 -PadCenter -PadChar '='
+        PS> Write-ColorEX -Text 'A description too long for its column' -AutoPad 20 -Truncate
+        PS> Write-ColorEX -Text 'the quick brown fox jumps over the lazy dog' -AutoPad 20 -Wrap
+        PS> Write-ColorEX -Text 'four spaces in' -StartSpaces 4
+        PS> Write-ColorEX -Text 'a line before' -LinesBefore 1
+
+    -StartTab indents by tabs, -LinesAfter adds lines after, and
+    -HorizontalCenter centers the text in the window.
+
+LINKS
+
+    -Link makes each segment a link in terminals that open links, and plain text
+    elsewhere.
+
+        PS> Write-ColorEX -Text 'the documentation' -Link 'https://markusmcnugen.github.io/PSWriteColorEX/' -Color Cyan -Underline
+
+PROFILES AND THEMES
+
+    A style profile holds colors, styles and layout. -StyleProfile writes with
+    one, -Default with the default style, and a theme restyles the profiles.
+
+        PS> $badge = New-ColorStyle -Name 'Badge' -ForegroundColor Black -BackgroundColor Cyan -Bold
+        PS> Write-ColorEX -Text ' v1.2.0 ' -StyleProfile $badge
+        PS> Set-ColorDefault -ForegroundColor Cyan -Italic
+        PS> Write-ColorEX -Text 'in the default style' -Default
+        PS> Import-ColorProfile -Theme Dracula
+        PS> Write-ColorError 'Build failed, in Dracula red'
+        PS> Write-ColorEX -Text 'Dracula purple' -Color DraculaPurple
+        PS> Import-ColorProfile -Theme PowerShell
+        PS> Write-ColorWarning 'as PowerShell writes a warning'
+        PS> Export-ColorProfile -Path 'colors.json'
+        PS> Import-ColorProfile -Path 'colors.json'
+
+    The themes: CatppuccinFrappe, CatppuccinLatte, CatppuccinMacchiato,
+    CatppuccinMocha, CSS, Dracula, GruvboxDark, GruvboxLight, Nord, OneDark,
+    PowerShell, SolarizedDark, SolarizedLight and TokyoNight.
+
+COLOR NAMES AND VIEWS
+
+    Register-ColorName adds a color name and -Theme CSS the CSS names.
+    Get-ColorContrast gives the contrast ratio of a color on a background, from
+    1 to 21. Show-ColorTable writes the names, or with -Styles, -Palette or
+    -Profiles a view of the styles, the 256 colors or the profiles.
+
+        PS> Register-ColorName -Name Brand -Color '#FF6B35'
+        PS> Write-ColorEX -Text 'Acme' -Color Brand -Bold
+        PS> Get-ColorContrast Brand Black
+        PS> Import-ColorProfile -Theme CSS
+        PS> Write-ColorEX -Text 'Tomato', ' and RebeccaPurple' -Color Tomato, RebeccaPurple
+        PS> Show-ColorTable -Name *Teal
+        PS> Show-ColorTable -Profiles -Name Error, Warning
+        PS> Show-ColorTable -Palette
+
+LOGGING
+
+    -LogFile writes each line to a file as well, as plain text, with -LogTime
+    and -LogLevel in front when asked for. -ShowTime writes the time on the
+    console.
+
+        PS> Write-ColorEX -Text 'Service ', 'started' -Color Gray, Green -LogFile 'service.log'
+        PS> Write-ColorEX -Text 'Disk at 91 percent' -Color Yellow -LogFile 'service.log' -LogTime -LogLevel 'WARN'
+        PS> Write-ColorEX -Text 'written to the file only' -LogFile 'service.log' -NoConsoleOutput
+        PS> Get-Content 'service.log'
+        PS> Write-ColorEX -Text 'with the time' -ShowTime
+
+STRINGS
+
+    Format-ColorEX returns the line as a string with its escape codes, to build
+    on or write later. -ColorSupport makes it for the support named, whatever
+    the terminal and the variables.
+
+        PS> $ok = Format-ColorEX 'OK' -Color Green -Bold
+        PS> "Status: $ok"
+        PS> Format-ColorEX 'for 16 colors' -Color '#FF8800' -ColorSupport ANSI4
+        PS> Measure-DisplayWidth -Text 'Tokyo 東京'
+
+ENVIRONMENT VARIABLES
+
+    The first one set decides, on every call:
+
+    Variable                        Effect
+    FORCE_COLOR=1, 2 or 3           Colors on, in 16 colors, 256 colors or
+                                    TrueColor, whatever the terminal
+    FORCE_COLOR=0                   Colors and styles off
+    NO_COLOR, any value             Colors and styles off
+    CLICOLOR_FORCE, anything but 0  Colors on, in the mode detected, or 16
+                                    colors where none was
+    CLICOLOR=0                      Colors and styles off
+    TERM=dumb                       Colors and styles off
+
+    -ColorSupport None, ANSI4, ANSI8 or TrueColor takes the place of all of them
+    for one call. WRITECOLOREX_UNICODE=true or false sets Test-AnsiSupport's
+    SupportsUnicode.
+
+COMMANDS
+
+    Convert-HexToRGB       Converts hex color codes to RGB values
+    Convert-RGBToANSI4     Converts RGB values to closest ANSI 4-bit color
+    Convert-RGBToANSI8     Converts RGB values to the nearest ANSI 256-color
+                           code
+    Export-ColorProfile    Saves style profiles and registered color names to a
+                           file.
+    Format-ColorEX         Returns text with its colors and styles as escape
+                           codes, as Write-ColorEX would write it.
+    Get-ColorContrast      Returns the contrast ratio of two colors
+    Get-ColorProfiles      Gets available color profiles
+    Get-ColorTableWithRGB  Returns the complete color table with RGB values
+    Get-GradientColor      Returns the colors of a gradient: one for each of a
+                           number of characters, or the color at each of several
+                           places along it.
+    Get-LighterANSI8Color  Returns a lighter ANSI 8-bit (256-color) code
+    Get-LighterColorName   Returns the next lighter color name in the color
+                           table
+    Get-LighterRGBColor    Returns a lighter version of an RGB color
+    Import-ColorProfile    Reads style profiles and color names from a file
+                           Export-ColorProfile wrote, or from a theme the module
+                           ships.
+    Measure-DisplayWidth   Measures the display width of a string in terminal
+                           cells.
+    New-ColorStyle         Creates a new color style
+    Register-ColorName     Adds a color name to the color table, for every
+                           command of the module.
+    Remove-ColorProfile    Removes style profiles from [PSColorStyle]::Profiles.
+    Set-ColorDefault       Sets the default color style for Write-ColorEX
+    Show-ColorTable        Writes the color names with a sample of each in every
+                           color mode, or a view of the text styles, the 256
+                           colors or the style profiles.
+    Test-AnsiSupport       Detects the terminal's ANSI color support and the
+                           styles it shows
+    Unregister-ColorName   Removes color names Register-ColorName added.
+    Write-ColorCritical    Writes a critical message with the Critical profile
+                           (white on dark red, bold, blinking)
+    Write-ColorDebug       Writes a debug message with the Debug profile (dark
+                           gray, italic)
+    Write-ColorEX          Writes colored and styled text to the host, with
+                           optional padding, alignment and logging to a file.
+    Write-ColorError       Writes an error message with the Error profile (red,
+                           bold)
+    Write-ColorInfo        Writes an informational message with the Info profile
+                           (cyan)
+    Write-ColorSuccess     Writes a success message with the Success profile
+                           (green)
+    Write-ColorWarning     Writes a warning message with the Warning profile
+                           (yellow)
+
+SEE ALSO
+    https://markusmcnugen.github.io/PSWriteColorEX/
+    Get-Help Write-ColorEX -Full
+    Show-ColorTable

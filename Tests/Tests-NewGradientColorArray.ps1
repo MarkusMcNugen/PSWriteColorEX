@@ -7,6 +7,7 @@ BeforeAll {
 
     # The private function, run inside the module, where the ColorMath class is defined
     function New-GradientColorArray {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'It returns a new array of colors and changes nothing.')]
         param([object[]]$Colors, [int]$Steps, [string]$Mode, [string]$Space = 'OKLab')
         & (Get-Module PSWriteColorEX) {
             param($Colors, $Steps, $Mode, $Space)
@@ -254,6 +255,26 @@ Describe 'New-GradientColorArray' -Tag 'Unit', 'Function', 'Gradient' {
             # Should gradually increase from black to white
             $result[0][0] | Should -BeLessOrEqual $result[10][0]
             $result[10][0] | Should -BeLessOrEqual $result[20][0]
+        }
+
+        It 'Gives every waypoint a step of its own, the step nearest its share of the steps' {
+            $result = New-GradientColorArray -Colors @('Red', 'Yellow', 'Green', 'Cyan', 'Blue', 'Magenta') -Steps 24 -Mode TrueColor
+
+            # Waypoint w at floor((2w x 23 + 5) / 10): steps 0, 5, 9, 14, 18 and 23
+            $result[0] | Should -Be @(255, 0, 0)
+            $result[5] | Should -Be @(255, 255, 0)
+            $result[9] | Should -Be @(0, 255, 0)
+            $result[14] | Should -Be @(0, 255, 255)
+            $result[18] | Should -Be @(0, 0, 255)
+            $result[23] | Should -Be @(255, 0, 255)
+        }
+
+        It 'Spreads fewer steps than waypoints evenly over the whole gradient' {
+            $result = New-GradientColorArray -Colors @('Red', 'Yellow', 'Green', 'Blue') -Steps 3 -Mode TrueColor
+
+            $result.Count | Should -Be 3
+            $result[0] | Should -Be @(255, 0, 0)
+            $result[2] | Should -Be @(0, 0, 255)
         }
     }
 

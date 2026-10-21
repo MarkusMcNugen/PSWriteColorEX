@@ -28,14 +28,20 @@ it wrote.
   mode. See [Color modes](color-modes.md).
 - 129 color names, hex codes, `rgb()`, `hsl()`, RGB arrays and ANSI numbers. See
   [Colors](colors.md).
-- [Gradients](gradients.md) across the text and its background, blended in OKLab.
+- [Gradients](gradients.md) across the text and its background, in eight color spaces with placed
+  colors, easing, bands, repeats and directions, and twenty-one
+  [named gradients](colors-and-names.md#named-gradients).
 - [Markup tags](markup.md), regular-expression highlighting, strings split into colored parts,
   and links terminals open when clicked.
 - Bold, italic, faint, blink, reverse, crossed-out, overline, and underlines single, double,
   curly, dotted or dashed in a color of their own. See [Text styles](styles.md).
 - [Padding, centering, wrapping and cutting](layout.md) that count emoji and CJK characters as
   two cells.
-- Message helpers and [style profiles](profiles.md), saved to and read from JSON.
+- Message helpers and [style profiles](profiles.md), saved to and read from JSON, and
+  [themes](use-a-theme.md) that restyle them: Catppuccin, Solarized, Gruvbox, Dracula, Nord, One
+  Dark, Tokyo Night and PowerShell's own colors.
+- `Show-ColorTable` views of the color names, the text styles, the 256-color chart and the
+  profiles, and a [cheat sheet](cheat-sheet.md) that is also in PowerShell's help.
 - [Colored text as strings](build-colored-strings.md), for other strings, tables and files.
 - [Logging to a file](logging.md) with a time and a level, and transcripts that record each line
   once.
@@ -48,6 +54,7 @@ it wrote.
 
 {{< cards >}}
   {{< card link="docs/tutorial/getting-started/" title="Getting started" subtitle="Install a module and write a first colored line." icon="academic-cap" >}}
+  {{< card link="docs/reference/cheat-sheet/" title="Cheat sheet" subtitle="The commands and parameters used most, by task, each with an example." icon="clipboard-list" >}}
   {{< card link="docs/reference/write-colorex/" title="Write-ColorEX" subtitle="Every parameter of the command you will use most." icon="document-text" >}}
   {{< card link="docs/explanation/pwrswritecolorex/" title="PWRSWriteColorEX" subtitle="The same commands, compiled from Rust." icon="light-bulb" >}}
 {{< /cards >}}

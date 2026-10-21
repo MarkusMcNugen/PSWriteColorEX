@@ -2,7 +2,7 @@
 
 BeforeDiscovery {
     # $IsWindows does not exist in Windows PowerShell 5.1
-    $onWindows = [System.Environment]::OSVersion.Platform -eq 'Win32NT'
+    $script:onWindows = [System.Environment]::OSVersion.Platform -eq 'Win32NT'
 }
 
 BeforeAll {
@@ -358,12 +358,9 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
         It 'Does not produce warnings with -Silent switch' {
             $env:FORCE_COLOR = '0'
 
-            # Capture warnings
-            $warnings = @()
             $result = Test-AnsiSupport -Silent -WarningVariable warnings 3>$null
 
-            # Should not have warnings (they would be in $warnings if not suppressed)
-            # Note: Can't easily test for absence of Write-Warning, but function should complete
+            $warnings | Should -BeNullOrEmpty
             $result.ColorSupport | Should -Be 'None'
         }
 
@@ -1187,6 +1184,97 @@ Describe 'Test-AnsiSupport' -Tag 'Unit', 'Function' {
             $result.Details.TerminalType | Should -Be 'PowerShell Core Console'
             $result.SupportsBoldFonts | Should -Be $true
             $result.Details.Warnings | Should -BeNullOrEmpty
+        }
+    }
+
+    Context 'SupportsUnicode' {
+        BeforeEach {
+            $script:savedUnicode = @{}
+            foreach ($variableName in 'WRITECOLOREX_UNICODE', 'LC_ALL', 'LC_CTYPE', 'LANG', 'FORCE_COLOR') {
+                $script:savedUnicode[$variableName] = [System.Environment]::GetEnvironmentVariable($variableName)
+                [System.Environment]::SetEnvironmentVariable($variableName, $null)
+            }
+        }
+
+        AfterEach {
+            foreach ($variableName in $script:savedUnicode.Keys) {
+                [System.Environment]::SetEnvironmentVariable($variableName, $script:savedUnicode[$variableName])
+            }
+        }
+
+        It 'Comes after SupportsBoldFonts, as a boolean' {
+            $result = Test-AnsiSupport -Silent
+
+            ($result.PSObject.Properties.Name -join ',') | Should -Be 'ColorSupport,SupportsBoldFonts,SupportsUnicode,Details'
+            $result.SupportsUnicode | Should -BeOfType [bool]
+        }
+
+        It 'Takes WRITECOLOREX_UNICODE=<Value> as <Expected>, in any case' -TestCases @(
+            @{ Value = 'true'; Expected = $true }
+            @{ Value = 'TRUE'; Expected = $true }
+            @{ Value = 'false'; Expected = $false }
+            @{ Value = 'False'; Expected = $false }
+        ) {
+            [System.Environment]::SetEnvironmentVariable('WRITECOLOREX_UNICODE', $Value)
+
+            (Test-AnsiSupport -Silent).SupportsUnicode | Should -Be $Expected
+        }
+
+        It 'Decides before FORCE_COLOR, which returns early' {
+            [System.Environment]::SetEnvironmentVariable('WRITECOLOREX_UNICODE', 'false')
+            [System.Environment]::SetEnvironmentVariable('FORCE_COLOR', '3')
+
+            (Test-AnsiSupport -Silent).SupportsUnicode | Should -Be $false
+        }
+
+        It 'Warns about any other value and detects instead, quietly with -Silent' {
+            Mock -ModuleName PSWriteColorEX Test-ColorConsoleHostWindow { $false }
+            [System.Environment]::SetEnvironmentVariable('WRITECOLOREX_UNICODE', 'yes')
+
+            $result = Test-AnsiSupport -WarningVariable warnings -WarningAction SilentlyContinue
+            $null = Test-AnsiSupport -Silent -WarningVariable quiet -WarningAction SilentlyContinue
+
+            @($warnings.Message) | Should -Contain "WRITECOLOREX_UNICODE is 'yes'; it takes true or false, so whether the terminal can show Unicode is detected."
+            @($quiet).Count | Should -Be 0
+            if ($onWindows) { $result.SupportsUnicode | Should -Be $true }
+        }
+
+        It 'Is false only in a window of the Windows console host that draws with a raster font' -Skip:(-not $onWindows) -TestCases @(
+            @{ Window = $true; Raster = $true; Expected = $false }
+            @{ Window = $true; Raster = $false; Expected = $true }
+            @{ Window = $false; Raster = $true; Expected = $true }
+        ) {
+            Mock -ModuleName PSWriteColorEX Test-ColorConsoleHostWindow { $Window }
+            Mock -ModuleName PSWriteColorEX Test-ColorRasterFont { $Raster }
+
+            (Test-AnsiSupport -Silent).SupportsUnicode | Should -Be $Expected
+        }
+
+        It 'Reads the first of LC_ALL, LC_CTYPE and LANG that is set: <Locale>' -Skip:$onWindows -TestCases @(
+            @{ Locale = @($null, $null, 'en_US.UTF-8'); Expected = $true }
+            @{ Locale = @($null, $null, 'C'); Expected = $false }
+            @{ Locale = @($null, 'UTF-8', 'C'); Expected = $true }
+            @{ Locale = @('C', 'en_US.UTF-8', 'en_US.UTF-8'); Expected = $false }
+            @{ Locale = @($null, $null, $null); Expected = $false }
+        ) {
+            [System.Environment]::SetEnvironmentVariable('LC_ALL', $Locale[0])
+            [System.Environment]::SetEnvironmentVariable('LC_CTYPE', $Locale[1])
+            [System.Environment]::SetEnvironmentVariable('LANG', $Locale[2])
+
+            (Test-AnsiSupport -Silent).SupportsUnicode | Should -Be $Expected
+        }
+
+        It 'Reads <Locale> as UTF-8: <Expected>' -TestCases @(
+            @{ Locale = 'en_US.UTF-8'; Expected = $true }
+            @{ Locale = 'C.utf8'; Expected = $true }
+            @{ Locale = 'de_DE.UTF-8@euro'; Expected = $true }
+            @{ Locale = 'UTF-8'; Expected = $true }
+            @{ Locale = 'C'; Expected = $false }
+            @{ Locale = 'POSIX'; Expected = $false }
+            @{ Locale = 'ja_JP.eucJP'; Expected = $false }
+            @{ Locale = 'en_US.ISO-8859-1'; Expected = $false }
+        ) {
+            & (Get-Module PSWriteColorEX) { param($l) Test-ColorUtf8Locale -Locale $l } $Locale | Should -Be $Expected
         }
     }
 }

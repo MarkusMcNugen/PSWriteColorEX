@@ -1,0 +1,9 @@
+# The theme files are Export-ColorProfile's output and the help topic is generate.ps1's, both with
+# LF line ends; every checkout keeps them so, whatever the platform's line ends
+Themes/*.json text eol=lf
+en-US/*.txt text eol=lf
+
+# git archive cuts the Gallery package, which leaves these files out
+.gitattributes export-ignore
+PSScriptAnalyzerSettings.psd1 export-ignore
+.github/readme export-ignore

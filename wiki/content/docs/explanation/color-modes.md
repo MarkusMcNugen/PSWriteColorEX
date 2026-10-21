@@ -23,9 +23,16 @@ scheme. The cube and the grays of ANSI8, and every TrueColor value, look the sam
 
 `Test-AnsiSupport` finds the mode when the module is imported, from the color variables, the
 host, and the variables each terminal sets; [Test-AnsiSupport](test-ansisupport.md) gives the
-order. `Write-ColorEX` keeps that answer for the session, but reads the color variables
+order. `Write-ColorEX` keeps that result for the session, but reads the color variables
 (`FORCE_COLOR`, `NO_COLOR`, `CLICOLOR_FORCE`, `CLICOLOR` and `TERM=dumb`) on each call, so a script
 can force a mode or turn colors off at any point.
+
+`-ColorSupport` names the support for one call of `Write-ColorEX` or `Format-ColorEX`, in place of
+all of this: `None`, `ANSI4`, `ANSI8` or `TrueColor`, the values `Test-AnsiSupport` reports. The
+call writes what a terminal of that support gets, whatever the host and the variables, which suits
+output made for somewhere other than the terminal at hand. `-Bold` lightens the colors where bold
+cannot show: always with `None`, whose console colors carry no bold, and with the others where the
+terminal draws bold as brighter colors.
 
 A call asks for a mode with `-TrueColor`, `-ANSI8` or `-ANSI4`, or by holding a TrueColor color: a
 hex code, an `rgb()` or `hsl()` color, an RGB array or a gradient. Given more than one of the
@@ -55,20 +62,23 @@ Coral Teal Gold #7B2FF7
 
 ## The nearest of 256
 
-`Convert-RGBToANSI8` matches a color to the 256 colors in two ways:
-
-- A color whose red, green and blue are within 10 of each other is a gray. Its average below 8 is
-  black (16), above 248 white (231), and otherwise the nearest of the 24 grays, 232 to 255, which
-  step by 10 from 8.
-- Any other color takes the nearest step of the 6x6x6 cube in each channel, the steps falling at
-  48, 115, 155, 195 and 235, and is 16 + 36 x red + 6 x green + blue.
+`Convert-RGBToANSI8` returns the code from the cube or the grays, 16 to 255, that looks nearest to
+the color. It measures how far apart two colors are in OKLab, a color space where equal distances
+look equally different, and counts the difference in lightness at 0.6 of its size. That way a dark
+blue or brown keeps a code of its own hue instead of turning gray. It never returns codes 0 to 15,
+because the terminal's scheme sets their colors.
 
 ```powershell
 PS> Convert-RGBToANSI8 255, 136, 0
 208
+PS> Convert-RGBToANSI8 0, 51, 102
+17
 PS> Convert-RGBToANSI8 130, 128, 126
 244
 ```
+
+Windows PowerShell 5.1, PowerShell 7 and PWRSWriteColorEX do the same arithmetic, so all three
+return the same code for every color.
 
 ## The nearest of 16
 
@@ -86,5 +96,6 @@ PS> Convert-RGBToANSI4 120, 60, 0
 33
 ```
 
-A color name skips both: the color table holds each name's 256-color number, 16-color codes and
-console color, chosen for it, which [Colors and names](colors-and-names.md) lists.
+A color name gets the same 256-color code as its hex code, except the 17 names on codes 0 to 15,
+which follow the terminal's scheme. Each name's 16-color codes and console color are set in the
+color table, which [Colors and names](colors-and-names.md) lists.

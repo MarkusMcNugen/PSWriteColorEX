@@ -51,6 +51,7 @@
 #>
 
 [CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidDefaultValueSwitchParameter', '', Justification = 'Coverage is on unless -CodeCoverage:$false says otherwise, as CI calls it.')]
 param(
     [ValidateSet('NUnitXml', 'JUnitXml', 'NUnit2.5', 'NUnit3')]
     [string]$OutputFormat = 'NUnitXml',

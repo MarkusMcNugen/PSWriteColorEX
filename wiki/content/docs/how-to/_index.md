@@ -15,10 +15,12 @@ Each guide solves one task, assuming you know the basics from the [tutorial](get
 5. [Add color names](add-color-names.md) - your own named colors, kept between sessions.
 6. [Share style profiles](share-style-profiles.md) - styles saved to a file and read on another
    machine.
-7. [Turn colors off or force them](turn-colors-off.md) - NO_COLOR, FORCE_COLOR and the rest.
-8. [Record output in a transcript](record-output.md) - transcripts, log files and colored files.
-9. [Choose colors that work everywhere](choose-portable-colors.md) - colors that stay apart in
-   256 and 16 colors.
-10. [Write links](write-links.md) - text that opens a web page when clicked.
-11. [Switch to PWRSWriteColorEX](switch-to-pwrswritecolorex.md) - the same commands, compiled
+7. [Use a theme](use-a-theme.md) - Dracula, Nord, Catppuccin and others, PowerShell's own colors,
+   and the CSS color names.
+8. [Turn colors off or force them](turn-colors-off.md) - NO_COLOR, FORCE_COLOR and the rest.
+9. [Record output in a transcript](record-output.md) - transcripts, log files and colored files.
+10. [Choose colors that work everywhere](choose-portable-colors.md) - colors that stay apart in
+    256 and 16 colors.
+11. [Write links](write-links.md) - text that opens a web page when clicked.
+12. [Switch to PWRSWriteColorEX](switch-to-pwrswritecolorex.md) - the same commands, compiled
     from Rust.

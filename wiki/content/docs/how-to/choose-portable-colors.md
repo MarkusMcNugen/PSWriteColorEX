@@ -16,8 +16,8 @@ console's colors, in your own terminal:
 PS> Show-ColorTable -Name Coral, Salmon, Peach
 Name    TrueColor  256     16      Console  Hex      ANSI8  Console color
 Coral   ██████     ██████  ██████  ██████   #FF7F50    209  Red
-Peach   ██████     ██████  ██████  ██████   #FFDAB9    216  Yellow
-Salmon  ██████     ██████  ██████  ██████   #FA8072    174  Red
+Peach   ██████     ██████  ██████  ██████   #FFDAB9    223  Yellow
+Salmon  ██████     ██████  ██████  ██████   #FA8072    210  Red
 ```
 
 Coral, Salmon and Peach are three colors in TrueColor, but Coral and Salmon are both Red in 16

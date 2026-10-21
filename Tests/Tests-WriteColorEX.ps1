@@ -588,18 +588,18 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
 
     Context 'Integration with Style Profiles' {
         It 'Combines StyleProfile with explicit parameters' {
-            $profile = [PSColorStyle]::GetProfile('Error')
-            { Write-ColorEX -Text 'Test' -StyleProfile $profile -Underline -NoConsoleOutput } | Should -Not -Throw
+            $styleProfile = [PSColorStyle]::GetProfile('Error')
+            { Write-ColorEX -Text 'Test' -StyleProfile $styleProfile -Underline -NoConsoleOutput } | Should -Not -Throw
         }
 
         It 'StyleProfile does not override explicit parameters' {
-            $profile = [PSColorStyle]::new('Test', 'Red', $null)
-            { Write-ColorEX -Text 'Test' -StyleProfile $profile -Color Blue -NoConsoleOutput } | Should -Not -Throw
+            $styleProfile = [PSColorStyle]::new('Test', 'Red', $null)
+            { Write-ColorEX -Text 'Test' -StyleProfile $styleProfile -Color Blue -NoConsoleOutput } | Should -Not -Throw
         }
 
         It 'Default profile does not override StyleProfile' {
-            $profile = [PSColorStyle]::GetProfile('Warning')
-            { Write-ColorEX -Text 'Test' -StyleProfile $profile -Default -NoConsoleOutput } | Should -Not -Throw
+            $styleProfile = [PSColorStyle]::GetProfile('Warning')
+            { Write-ColorEX -Text 'Test' -StyleProfile $styleProfile -Default -NoConsoleOutput } | Should -Not -Throw
         }
     }
 
@@ -623,7 +623,6 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
 
         It 'Full-featured call with all parameters' {
             $logFile = Join-Path $TestDrive "full_test.log"
-            $style = [PSColorStyle]::new('FullTest', 'Magenta', 'DarkBlue')
 
             { Write-ColorEX -Text @('Test1', 'Test2') `
                 -Color @('Red', 'Blue') `
@@ -941,7 +940,6 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
         BeforeAll {
             # Mock Test-AnsiSupport to simulate terminal without bold font support
             Mock -ModuleName PSWriteColorEX -CommandName Test-AnsiSupport -MockWith {
-                param($Silent)
                 return [PSCustomObject]@{
                     ColorSupport = 'TrueColor'
                     SupportsBoldFonts = $false  # Triggers RGB lightening
@@ -989,7 +987,6 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
     Context 'Color Lightening for Bold (ANSI8 Mode)' {
         BeforeAll {
             Mock -ModuleName PSWriteColorEX -CommandName Test-AnsiSupport -MockWith {
-                param($Silent)
                 return [PSCustomObject]@{
                     ColorSupport = 'ANSI8'
                     SupportsBoldFonts = $false  # Triggers color name lightening
@@ -1037,7 +1034,6 @@ Describe 'Write-ColorEX' -Tag 'Unit', 'Function', 'Main' {
         BeforeAll {
             # Mock Test-AnsiSupport to force Native color mode (no ANSI support)
             Mock -ModuleName PSWriteColorEX -CommandName Test-AnsiSupport -MockWith {
-                param($Silent)
                 return [PSCustomObject]@{
                     ColorSupport = 'None'  # Forces native PowerShell colors
                     SupportsBoldFonts = $false

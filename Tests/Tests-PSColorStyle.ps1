@@ -45,7 +45,7 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
 
     Context 'Property Initialization' {
         BeforeAll {
-            $style = [PSColorStyle]::new('TestStyle', 'Red', 'Blue')
+            $script:style = [PSColorStyle]::new('TestStyle', 'Red', 'Blue')
         }
 
         It 'Initializes boolean properties to false' {
@@ -85,7 +85,7 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
 
     Context 'Property Modification' {
         BeforeEach {
-            $style = [PSColorStyle]::new('TestStyle', 'Red', $null)
+            $script:style = [PSColorStyle]::new('TestStyle', 'Red', $null)
         }
 
         It 'Allows setting Bold to true' {
@@ -327,6 +327,20 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
             $params2 = $style.ToWriteColorParams()
             $params2['Color'] | Should -Be 'Red'
         }
+
+        It 'Lets a subclass''s own ToWriteColorParams decide what -StyleProfile applies' {
+            $esc = [string][char]27
+            # The class is defined at run time, once the module has made PSColorStyle
+            $style = . ([scriptblock]::Create(@'
+class ColorStyleSubclassProbe : PSColorStyle {
+    ColorStyleSubclassProbe() : base('Probe', 'Red', $null) { }
+    [hashtable] ToWriteColorParams() { return @{ Color = 'Blue' } }
+}
+[ColorStyleSubclassProbe]::new()
+'@))
+
+            Format-ColorEX -Text 'ab' -StyleProfile $style -ColorSupport ANSI4 | Should -Be "$esc[94mab$esc[0m"
+        }
     }
 
     Context 'Clone Method' {
@@ -458,7 +472,7 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
             $debugProfile.Italic | Should -Be $true
         }
 
-        It 'Default profile answers its parameters' {
+        It 'Default profile returns its parameters' {
             $defaultProfile = [PSColorStyle]::GetProfile('Default')
             $params = $defaultProfile.ToWriteColorParams()
 
@@ -510,7 +524,7 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
             $params.StartTab | Should -Be 2
         }
 
-        It 'Each call answers a new hashtable' {
+        It 'Each call returns a new hashtable' {
             $style = [PSColorStyle]::new('Test', 'Red', $null)
             $first = $style.ToWriteColorParams()
             $first['Color'] = 'Green'
@@ -592,5 +606,120 @@ Describe 'PSColorStyle Class' -Tag 'Unit', 'Class' {
             $original.Style[0] | Should -Be 'Bold'
             $original.ForegroundColor[0] | Should -Be 255
         }
+    }
+}
+
+Describe 'PSColorStyle across runspaces' -Tag 'Unit', 'Class' {
+    BeforeAll {
+        $script:manifest = Join-Path $ModuleRoot 'PSWriteColorEX.psd1'
+        $script:esc = [string][char]27
+
+        # Imports the module in a runspace of its own, runs the script given there and disposes the
+        # runspace, returning what the script wrote
+        function Invoke-InOtherRunspace {
+            param([string]$Script)
+            $shell = [powershell]::Create()
+            try {
+                $null = $shell.AddScript("Import-Module '$script:manifest'; $Script")
+                $shell.Invoke()
+            } finally {
+                $shell.Dispose()
+            }
+        }
+    }
+
+    It 'Keeps the profiles added since and puts back the built-in ones when the module is imported again' {
+        $null = New-ColorStyle -Name 'Kept' -ForegroundColor Magenta -AddToProfiles
+        [PSColorStyle]::Profiles['Info'].ForegroundColor = 'DarkRed'
+        try {
+            Import-Module $script:manifest -Force
+            [PSColorStyle]::Profiles.ContainsKey('Kept') | Should -BeTrue
+            [PSColorStyle]::Profiles['Info'].ForegroundColor | Should -Be 'Cyan'
+        } finally {
+            [PSColorStyle]::Profiles.Remove('Kept')
+        }
+    }
+
+    It 'Keeps working after another runspace that imported the module is disposed' {
+        $null = Invoke-InOtherRunspace "(Get-GradientColor -Gradient Progress -Place 0.5) -join ','"
+
+        (Get-GradientColor -Gradient Progress -Place 0.5) -join ',' | Should -Be '255,165,0'
+        Format-ColorEX -Text 'ab' -Color Red -ColorSupport ANSI8 | Should -Be "$esc[91mab$esc[0m"
+        [PSColorStyle]::GetProfile('Info').Name | Should -Be 'Info'
+        [PSColorStyle]::Profiles['Error'].ToWriteColorParams().Color | Should -Be 'Red'
+        [PSColorStyle]::Profiles['Error'].Clone().Name | Should -Be 'Error_Copy'
+        [PSColorStyle]::IsGradient(@('Sunset')) | Should -BeTrue
+    }
+
+    It 'Keeps the methods of a style made in a runspace that is then disposed' {
+        $style = Invoke-InOtherRunspace "`$made = [PSColorStyle]::new('Made', 'Red', `$null); `$made.Bold = `$true; `$made"
+
+        $style.ToWriteColorParams().Bold | Should -BeTrue
+        $style.Clone().Name | Should -Be 'Made_Copy'
+        Format-ColorEX -Text 'ab' -StyleProfile $style -ColorSupport ANSI4 | Should -Be "$esc[1m$esc[91mab$esc[0m"
+    }
+
+    It 'Lets eight runspaces of a new process import the module at the same moment, all with one PSColorStyle' {
+        # A new process, as the module's first import in a process is the one that compiles it
+        $harness = Join-Path $TestDrive 'concurrent-import.ps1'
+        $output = Join-Path $TestDrive 'concurrent-import.txt'
+        Set-Content -LiteralPath $harness -Value @'
+param($Manifest)
+# All eight runspaces open first, and the imports start once every one is waiting to begin
+$pool = [runspacefactory]::CreateRunspacePool(8, 8)
+$pool.Open()
+$ready = [System.Threading.CountdownEvent]::new(8)
+$gate = [System.Threading.ManualResetEventSlim]::new($false)
+$jobs = foreach ($n in 1..8) {
+    $shell = [powershell]::Create()
+    $shell.RunspacePool = $pool
+    $null = $shell.AddScript({
+            param($Manifest, $Ready, $Gate)
+            $Ready.Signal()
+            $null = $Gate.Wait(30000)
+            Import-Module $Manifest
+            [System.Runtime.CompilerServices.RuntimeHelpers]::GetHashCode([type]'PSColorStyle')
+        }).AddArgument($Manifest).AddArgument($ready).AddArgument($gate)
+    [pscustomobject]@{ Shell = $shell; Handle = $shell.BeginInvoke() }
+}
+$null = $ready.Wait(30000)
+$gate.Set()
+foreach ($job in $jobs) { $job.Shell.EndInvoke($job.Handle) }
+'@
+        $process = Start-Process -FilePath (Get-Process -Id $PID).Path -NoNewWindow -PassThru -RedirectStandardOutput $output `
+            -ArgumentList '-NoProfile', '-NonInteractive', '-File', "`"$harness`"", "`"$script:manifest`""
+        $finished = $process.WaitForExit(90000)
+        if (-not $finished) {
+            $process.Kill()
+        }
+
+        $finished | Should -BeTrue
+        $types = @(Get-Content -LiteralPath $output | Where-Object { $_ -match '^\d+$' })
+        $types | Should -HaveCount 8
+        @($types | Sort-Object -Unique) | Should -HaveCount 1
+    }
+
+    It 'Says the module is not imported when a runspace without it calls a method' {
+        $shell = [powershell]::Create()
+        try {
+            $null = $shell.AddScript("try { [PSColorStyle]::GetProfile('Info') } catch { `$_.Exception.Message }")
+            $message = $shell.Invoke()
+        } finally {
+            $shell.Dispose()
+        }
+
+        "$message" | Should -Match 'PSWriteColorEX is not imported in this runspace'
+    }
+
+    It 'Has the members the class of version 1.2.0 had' {
+        $object = [PSColorStyle]::new()
+        ($object | Get-Member -MemberType Property) | Should -HaveCount 36
+        ($object | Get-Member -MemberType Method | Where-Object Name -NotIn 'Equals', 'GetHashCode', 'GetType', 'ToString').Definition |
+            Should -Be @('void AddToProfiles()', 'PSColorStyle Clone()', 'void SetAsDefault()', 'hashtable ToWriteColorParams()')
+        ([PSColorStyle] | Get-Member -Static -MemberType Property).Name | Should -Be @('Default', 'Profiles')
+        ([PSColorStyle] | Get-Member -Static -MemberType Method | Where-Object Name -NotIn 'Equals', 'ReferenceEquals', 'new').Definition |
+            Should -Be @('static PSColorStyle GetProfile(string name)', 'static void InitializeDefaultProfiles()')
+        ([PSColorStyle] | Get-Member -Static -Name new).Definition |
+            Should -Be 'PSColorStyle new(), PSColorStyle new(string name), PSColorStyle new(string name, System.Object foreground, System.Object background)'
     }
 }

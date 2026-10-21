@@ -8,11 +8,12 @@
 BeforeAll {
     $ModuleRoot = Split-Path -Parent $PSScriptRoot
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
-    $esc = [char]27
-    $ellipsis = [string][char]0x2026
+    $script:esc = [char]27
+    $script:ellipsis = [string][char]0x2026
 
     # Sets the color support Write-ColorEX found at import, and whether bold is a bold font
     function Set-TestColorSupport {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'A test helper; -WhatIf has no meaning in a test.')]
         param($Support, [bool]$BoldFonts = $true)
         & (Get-Module PSWriteColorEX) { param($s, $b) $script:CachedANSISupport = $s; $script:SupportsBoldFonts = $b } $Support $BoldFonts
     }
@@ -129,7 +130,7 @@ Describe 'Write-ColorEX markup, splitting, highlighting, links and layout' -Tag 
             $script:hostCalls[0].Object | Should -Be "$esc[91m$esc[40ma$esc[0m$esc[34m$esc[47mb$esc[0m"
         }
 
-        It 'Answers color names as escape codes with FORCE_COLOR, in a host that takes console colors' {
+        It 'Returns color names as escape codes with FORCE_COLOR, in a host that takes console colors' {
             Mock -ModuleName PSWriteColorEX Test-ColorHostAnsi { $false }
             Mock -ModuleName PSWriteColorEX Test-ColorLineComposition { $false }
             Set-TestColorSupport -Support 'None'
@@ -147,6 +148,97 @@ Describe 'Write-ColorEX markup, splitting, highlighting, links and layout' -Tag 
 
             $script:hostCalls[0].Object | Should -Be 'x'
             $script:hostCalls[0].ForegroundColor | Should -Be 'Red'
+        }
+    }
+
+    Context '-ColorSupport' {
+        It 'Returns the same string with <Variable>=<Value> set, in a host that shows no escape codes' -TestCases @(
+            @{ Variable = 'NO_COLOR'; Value = '1' }
+            @{ Variable = 'FORCE_COLOR'; Value = '0' }
+            @{ Variable = 'FORCE_COLOR'; Value = '3' }
+            @{ Variable = 'CLICOLOR'; Value = '0' }
+            @{ Variable = 'TERM'; Value = 'dumb' }
+        ) {
+            Mock -ModuleName PSWriteColorEX Test-ColorHostAnsi { $false }
+            Mock -ModuleName PSWriteColorEX Test-ColorLineComposition { $false }
+            Set-TestColorSupport -Support 'None'
+            [System.Environment]::SetEnvironmentVariable($Variable, $Value)
+
+            Format-ColorEX -Text 'x' -Color '#FF8000' -ColorSupport ANSI8 | Should -Be "$esc[38;5;208mx$esc[0m"
+        }
+
+        It 'Writes a hex color for <Support> as <Expected>' -TestCases @(
+            @{ Support = 'ANSI4'; Expected = '93' }
+            @{ Support = 'ANSI8'; Expected = '38;5;208' }
+            @{ Support = 'TrueColor'; Expected = '38;2;255;128;0' }
+            @{ Support = 'truecolor'; Expected = '38;2;255;128;0' }
+        ) {
+            Set-TestColorSupport -Support 'None'
+
+            Format-ColorEX -Text 'x' -Color '#FF8000' -ColorSupport $Support | Should -Be "$esc[$($Expected)mx$esc[0m"
+        }
+
+        It 'Returns the text alone with None, even with FORCE_COLOR set' {
+            [System.Environment]::SetEnvironmentVariable('FORCE_COLOR', '3')
+
+            Format-ColorEX -Text 'a', 'b' -Color Red, '#FF8000' -Gradient Red, Blue -Italic -ColorSupport None -Silent | Should -Be 'ab'
+        }
+
+        It 'Writes console colors with None, even where escape codes reach the screen' {
+            Write-ColorEX -Text 'x' -Color Red -ColorSupport None
+
+            $script:hostCalls.Count | Should -Be 1
+            $script:hostCalls[0].Object | Should -Be 'x'
+            $script:hostCalls[0].ForegroundColor | Should -Be 'Red'
+        }
+
+        It 'Writes a line of console colors as escape codes with ANSI4, in a host that takes console colors' {
+            Mock -ModuleName PSWriteColorEX Test-ColorHostAnsi { $false }
+            Mock -ModuleName PSWriteColorEX Test-ColorLineComposition { $false }
+            Set-TestColorSupport -Support 'None'
+
+            Write-ColorEX -Text 'a', 'b' -Color Red, DarkBlue -ColorSupport ANSI4
+
+            $script:hostCalls.Count | Should -Be 1
+            $script:hostCalls[0].Object | Should -Be "$esc[91ma$esc[0m$esc[34mb$esc[0m"
+        }
+
+        It 'Writes each piped string for the support given' {
+            'a', 'b' | Write-ColorEX -Color Red -ColorSupport ANSI4
+
+            $script:hostCalls.Object | Should -Be @("$esc[91ma$esc[0m", "$esc[91mb$esc[0m")
+        }
+
+        It 'Drops a gradient with ANSI4, with the warning a 16-color terminal gives' {
+            $text = Format-ColorEX -Text 'ab' -Gradient Red, Blue -ColorSupport ANSI4 -WarningVariable warnings -WarningAction SilentlyContinue
+
+            $text | Should -Be 'ab'
+            $warnings.Message | Should -Be 'Gradient requires ANSI 256-color or TrueColor support. Terminal supports: ANSI4 (16 colors). Gradient disabled.'
+        }
+
+        It 'Lightens bold colors with None, where the terminal draws bold fonts' {
+            Set-TestColorSupport -Support 'TrueColor' -BoldFonts $true
+
+            Write-ColorEX -Text 'x' -Color DarkRed -Bold -ColorSupport None
+
+            $script:hostCalls[0].ForegroundColor | Should -Be 'Red'
+        }
+
+        It 'Writes bold with <Support> as the terminal draws it: bold fonts <BoldFonts>' -TestCases @(
+            @{ Support = 'ANSI8'; BoldFonts = $true; Expected = '31' }
+            @{ Support = 'ANSI8'; BoldFonts = $false; Expected = '91' }
+            @{ Support = 'TrueColor'; BoldFonts = $true; Expected = '38;2;128;64;0' }
+            @{ Support = 'TrueColor'; BoldFonts = $false; Expected = '38;2;179;102;102' }
+        ) {
+            Set-TestColorSupport -Support 'None' -BoldFonts $BoldFonts
+            $color = if ($Support -eq 'ANSI8') { 'DarkRed' } else { '#804000' }
+
+            Format-ColorEX -Text 'x' -Color $color -Bold -ColorSupport $Support | Should -Be "$esc[1m$esc[$($Expected)mx$esc[0m"
+        }
+
+        It 'Refuses a support outside the four' {
+            { Format-ColorEX -Text 'x' -ColorSupport ANSI16 } | Should -Throw -ErrorId 'ParameterArgumentValidationError,Format-ColorEX'
+            { Write-ColorEX -Text 'x' -ColorSupport '' } | Should -Throw -ErrorId 'ParameterArgumentValidationError,Write-ColorEX'
         }
     }
 
@@ -202,7 +294,7 @@ Describe 'Write-ColorEX markup, splitting, highlighting, links and layout' -Tag 
         It 'Writes the hex colors of markup tags and -Highlight in the mode asked for' {
             Write-ColorEX -Text '[#FF8800 on #003366]a[/] b' -Markup -Highlight @{ 'b' = '#FF8800' } -ANSI8
 
-            $script:hostCalls[0].Object | Should -Be "$esc[38;5;208m$esc[48;5;23ma$esc[0m $esc[38;5;208mb$esc[0m"
+            $script:hostCalls[0].Object | Should -Be "$esc[38;5;208m$esc[48;5;17ma$esc[0m $esc[38;5;208mb$esc[0m"
         }
 
         It 'Lightens a bold hex color before writing it in the mode asked for' {
@@ -512,7 +604,7 @@ Describe 'Write-ColorEX markup, splitting, highlighting, links and layout' -Tag 
         It 'Writes an underline color as a 256-color number in ANSI8' {
             Write-ColorEX -Text 'x' -Underline -UnderlineColor Orange -ANSI8
 
-            $script:hostCalls[0].Object | Should -Be "$esc[4m$esc[58;5;208mx$esc[0m"
+            $script:hostCalls[0].Object | Should -Be "$esc[4m$esc[58;5;214mx$esc[0m"
         }
 
         It 'Writes a console color name''s underline color as its number 0-15' {
@@ -568,6 +660,220 @@ Describe 'Write-ColorEX markup, splitting, highlighting, links and layout' -Tag 
             Write-ColorEX -Text 'ab' -BackGroundGradient Red, Blue -WarningVariable warnings -WarningAction SilentlyContinue
 
             "$($warnings[0])" | Should -Be 'BackGroundGradient requires ANSI 256-color or TrueColor support. Terminal supports: ANSI4 (16 colors). BackGroundGradient disabled.'
+        }
+    }
+
+    Context '256 colors and gradient stops' {
+        It 'Writes a color name in 256 colors with the code its hex code takes' {
+            Write-ColorEX -Text 'x' -Color Lime -ANSI8
+            Write-ColorEX -Text 'x' -Color '#00FF00' -ANSI8
+
+            $script:hostCalls[0].Object | Should -Be "$esc[38;5;46mx$esc[0m"
+            $script:hostCalls[1].Object | Should -Be "$esc[38;5;46mx$esc[0m"
+        }
+
+        It 'Draws every stop of a gradient on a character of its own' {
+            Write-ColorEX -Text 'Sixstopsmakearainbow' -Gradient Red, Yellow, Green, Cyan, Blue, Magenta
+
+            $codes = @([regex]::Matches($script:hostCalls[0].Object, '38;2;(\d+;\d+;\d+)m') | ForEach-Object { $_.Groups[1].Value })
+            $codes.Count | Should -Be 20
+            @($codes[0], $codes[4], $codes[8], $codes[11], $codes[15], $codes[19]) | Should -Be @('255;0;0', '255;255;0', '0;255;0', '0;255;255', '0;0;255', '255;0;255')
+        }
+
+        It 'Spreads a text gradient over the characters that show, leaving out spaces' {
+            Write-ColorEX -Text 'Six stops make a rainbow' -Gradient Red, Yellow, Green, Cyan, Blue, Magenta
+
+            ($script:hostCalls[0].Object -replace "$esc\[[\d;]*m", '') | Should -Be 'Six stops make a rainbow'
+            [regex]::Matches($script:hostCalls[0].Object, '38;2;').Count | Should -Be 20
+            $script:hostCalls[0].Object | Should -Match ([regex]::Escape("$esc[38;2;0;255;255me"))
+        }
+
+        It 'Gives white space a text gradient color where an underline, a markup underline or -Reverse shows it' {
+            Write-ColorEX -Text 'a b' -Gradient Red, Blue -Underline
+            Write-ColorEX -Text 'a b' -Gradient Red, Blue -Reverse
+            Write-ColorEX -Text '[underline]a b[/] c d' -Gradient Red, Blue -Markup
+
+            [regex]::Matches($script:hostCalls[0].Object, '38;2;').Count | Should -Be 3
+            [regex]::Matches($script:hostCalls[1].Object, '38;2;').Count | Should -Be 3
+            [regex]::Matches($script:hostCalls[2].Object, '38;2;').Count | Should -Be 5
+        }
+
+        It 'Spreads a background gradient over every character, spaces included' {
+            Write-ColorEX -Text 'a b' -Color White -BackGroundGradient Red, Blue
+
+            [regex]::Matches($script:hostCalls[0].Object, '48;2;').Count | Should -Be 3
+        }
+
+        It 'Writes the rainbow in 256 colors with its hues in order' {
+            Write-ColorEX -Text 'Six stops make a rainbow' -Gradient Red, Yellow, Green, Cyan, Blue, Magenta -ANSI8
+
+            $codes = @([regex]::Matches($script:hostCalls[0].Object, '38;5;(\d+)m') | ForEach-Object { $_.Groups[1].Value }) -join ' '
+            $codes | Should -Be '196 202 214 220 226 190 154 118 46 48 50 51 45 39 27 21 57 93 165 201'
+        }
+    }
+
+    Context 'Named gradients' {
+        It 'Writes a named gradient as its colors' {
+            Write-ColorEX -Text 'abcdefgh' -Gradient Sunset
+            Write-ColorEX -Text 'abcdefgh' -Gradient '#4A1C6F', '#C2185B', '#FF6F3C', '#FFC857'
+
+            $script:hostCalls[0].Object | Should -Be $script:hostCalls[1].Object
+        }
+
+        It 'Reads a gradient name without regard to case, for the background too' {
+            Write-ColorEX -Text 'abcd' -Color White -BackGroundGradient fire
+            Write-ColorEX -Text 'abcd' -Color White -BackGroundGradient '#8B0000', '#FF4500', '#FF8C00', '#FFD700'
+
+            $script:hostCalls[0].Object | Should -Be $script:hostCalls[1].Object
+        }
+
+        It 'Draws the named gradient of a style' {
+            $style = New-ColorStyle -Name 'NamedGradientStyle' -Gradient Ocean
+            Write-ColorEX -Text 'abcdefgh' -StyleProfile $style
+            Write-ColorEX -Text 'abcdefgh' -Gradient '#003366', '#0077B6', '#00B4D8', '#90E0EF'
+
+            $script:hostCalls[0].Object | Should -Be $script:hostCalls[1].Object
+        }
+
+        It 'Reads two values as colors, even one that names a gradient' {
+            Write-ColorEX -Text 'ab' -Gradient Forest, Blue
+
+            $script:hostCalls[0].Object | Should -Be "$esc[38;2;34;139;34ma$esc[38;2;0;0;255mb$esc[0m"
+        }
+
+        It 'Holds 21 named gradients of two valid colors or more' {
+            $names = & (Get-Module PSWriteColorEX) { $script:GradientNames }
+
+            $names.Count | Should -Be 21
+            foreach ($name in $names.Keys) {
+                $names[$name].Count | Should -BeGreaterOrEqual 2 -Because $name
+                foreach ($stop in $names[$name]) { $stop | Should -Match '^#[0-9A-F]{6}$' -Because $name }
+            }
+        }
+
+        It 'Completes gradient names first, each with its colors, and each name once' {
+            $result = TabExpansion2 -inputScript 'Write-ColorEX -Text x -Gradient Fore' -cursorColumn 36
+
+            @($result.CompletionMatches | ForEach-Object CompletionText) | Should -Be @('Forest')
+            $result.CompletionMatches[0].ToolTip | Should -Be 'Forest  #0B3D20 #1E6B3A #4C9A2A #A3C94F'
+        }
+    }
+
+    Context 'Gradient options' {
+        BeforeAll {
+            # The 24-bit colors of a line, in order
+            function Get-TestGradientCode([string]$Line) {
+                @([regex]::Matches($Line, '38;2;(\d+;\d+;\d+)m') | ForEach-Object { $_.Groups[1].Value })
+            }
+        }
+
+        It 'Goes round the hue wheel the way -GradientHue names' {
+            Write-ColorEX -Text 'abc' -Gradient Red, Blue -GradientSpace HSL
+            Write-ColorEX -Text 'abc' -Gradient Red, Blue -GradientSpace HSL -GradientHue Longer
+
+            # Red is at 0 degrees and blue at 240: the short way passes magenta at 300, the long way green at 120
+            $script:hostCalls[0].Object | Should -Be "$esc[38;2;255;0;0ma$esc[38;2;255;0;255mb$esc[38;2;0;0;255mc$esc[0m"
+            $script:hostCalls[1].Object | Should -Be "$esc[38;2;255;0;0ma$esc[38;2;0;255;0mb$esc[38;2;0;0;255mc$esc[0m"
+        }
+
+        It 'Moves the colors along the text with -GradientEasing' {
+            Write-ColorEX -Text 'abcde' -Gradient Black, White -GradientSpace RGB -GradientEasing InQuad
+
+            # InQuad puts the middle character a quarter of the way along: 255 / 4 rounds to 64
+            (Get-TestGradientCode $script:hostCalls[0].Object)[2] | Should -Be '64;64;64'
+        }
+
+        It 'Cuts the gradient into bands with -GradientSteps, with both ends exact' {
+            Write-ColorEX -Text 'abcdefghijkl' -Gradient Black, White -GradientSpace RGB -GradientSteps 4
+
+            (Get-TestGradientCode $script:hostCalls[0].Object) -join ' ' | Should -Be ((@('0;0;0') * 3 + @('85;85;85') * 3 + @('170;170;170') * 3 + @('255;255;255') * 3) -join ' ')
+        }
+
+        It 'Draws placed stops again past their span with -GradientRepeat' {
+            Write-ColorEX -Text 'abcdefghi' -Gradient 'Red@0', 'Blue@25' -GradientSpace RGB -GradientRepeat Repeat
+            Write-ColorEX -Text 'abcdefghi' -Gradient 'Red@0', 'Blue@25' -GradientSpace RGB
+
+            $repeated = Get-TestGradientCode $script:hostCalls[0].Object
+            @($repeated[0], $repeated[2], $repeated[3], $repeated[4]) | Should -Be @('255;0;0', '0;0;255', '128;0;128', '255;0;0')
+            (Get-TestGradientCode $script:hostCalls[1].Object)[3..8] | Should -Be (@('0;0;255') * 6)
+        }
+
+        It 'Runs from the middle out with -GradientDirection CenterOut, and from the end with Reverse' {
+            Write-ColorEX -Text 'abcdefghi' -Gradient Red, Lime, Blue -GradientDirection CenterOut
+            Write-ColorEX -Text 'abcde' -Gradient Red, Blue -GradientSpace RGB -GradientDirection Reverse
+
+            $center = Get-TestGradientCode $script:hostCalls[0].Object
+            @($center[0], $center[4], $center[8]) | Should -Be @('0;0;255', '255;0;0', '0;0;255')
+            (Get-TestGradientCode $script:hostCalls[1].Object) -join ' ' | Should -Be '0;0;255 64;0;191 128;0;128 191;0;64 255;0;0'
+        }
+
+        It 'Puts a stop placed with @ on the character nearest its place' {
+            Write-ColorEX -Text 'abcdefghij' -Gradient 'Red', '#FFD700@40', 'Blue'
+
+            # 40% of 10 characters is character 3.6, which takes the color on character 4
+            (Get-TestGradientCode $script:hostCalls[0].Object)[4] | Should -Be '255;215;0'
+        }
+
+        It 'Takes every gradient option from a style' {
+            $style = New-ColorStyle -Name 'GradientOptionsStyle' -Gradient Red, Blue -GradientSpace HSL -GradientHue Longer
+
+            Write-ColorEX -Text 'abc' -StyleProfile $style
+
+            $script:hostCalls[0].Object | Should -Be "$esc[38;2;255;0;0ma$esc[38;2;0;255;0mb$esc[38;2;0;0;255mc$esc[0m"
+        }
+
+        It 'Refuses a style value outside its set with an error and writes the text with the setting left out' {
+            $style = New-ColorStyle -Name 'BadGradientOptionStyle' -Gradient Red, Blue -GradientSpace HSL
+            $style.GradientHue = 'Sideways'
+
+            Write-ColorEX -Text 'abc' -StyleProfile $style -ErrorVariable problems -ErrorAction SilentlyContinue
+
+            "$($problems[0])" | Should -BeLike "Cannot validate argument on parameter 'GradientHue'. The argument `"Sideways`" does not belong to the set *"
+            $script:hostCalls[0].Object | Should -Be "$esc[38;2;255;0;0ma$esc[38;2;255;0;255mb$esc[38;2;0;0;255mc$esc[0m"
+        }
+    }
+
+    Context 'Get-GradientColor' {
+        It 'Returns one RGB array for each of -Count colors' {
+            $colors = @(Get-GradientColor -Gradient Black, White -Count 3 -GradientSpace RGB)
+
+            $colors.Count | Should -Be 3
+            $colors[1].GetType() | Should -Be ([int[]])
+            $colors[1] | Should -Be @(128, 128, 128)
+        }
+
+        It 'Returns the one color at -Place, the nearer end for a place outside 0 to 1' {
+            (Get-GradientColor -Gradient Black, White -Place 0.5 -GradientSpace RGB) | Should -Be @(128, 128, 128)
+            (Get-GradientColor -Gradient Black, White -Place 7 -GradientSpace RGB) | Should -Be @(255, 255, 255)
+            (Get-GradientColor -Gradient Black, White -Place -1 -GradientSpace RGB) | Should -Be @(0, 0, 0)
+        }
+
+        It 'Returns the color at each of several places, in order, each as -Place gives it alone' {
+            $places = 0.75, 0.25, 7, 0.5
+            $together = @(Get-GradientColor -Gradient 'Red', 'Gold@40', 'Blue' -Place $places -GradientSpace OKLCH)
+            $alone = @(foreach ($place in $places) { , (Get-GradientColor -Gradient 'Red', 'Gold@40', 'Blue' -Place $place -GradientSpace OKLCH) })
+
+            $together.Count | Should -Be 4
+            $together[2].GetType() | Should -Be ([int[]])
+            ($together | ForEach-Object { $_ -join ',' }) -join ' ' | Should -Be (($alone | ForEach-Object { $_ -join ',' }) -join ' ')
+        }
+
+        It 'Returns 101 colors for the whole percents from one call' {
+            $colors = @(Get-GradientColor -Gradient Progress -Place (0..100 | ForEach-Object { $_ / 100 }))
+
+            $colors.Count | Should -Be 101
+            $colors[0] | Should -Be @(255, 0, 0)
+            $colors[100] | Should -Be @(0, 255, 0)
+        }
+
+        It 'Reads a named gradient and placed stops as -Gradient does' {
+            $progress = @(Get-GradientColor -Gradient Progress -Count 5)
+
+            ($progress | ForEach-Object { $_ -join ',' }) -join ' ' | Should -Be '255,0,0 255,102,153 255,165,0 255,255,0 0,255,0'
+        }
+
+        It 'Refuses fewer than 2 colors' {
+            { Get-GradientColor -Gradient Red -Count 3 } | Should -Throw -ErrorId 'GradientTooFewColors,*'
         }
     }
 

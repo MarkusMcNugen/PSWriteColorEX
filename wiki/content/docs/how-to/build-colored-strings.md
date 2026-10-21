@@ -4,7 +4,7 @@ weight: 40
 ---
 
 To use colored text inside another string, a table or a file, make it with `Format-ColorEX`. It
-takes the same parameters as `Write-ColorEX`, but answers each line as a string instead of
+takes the same parameters as `Write-ColorEX`, but returns each line as a string instead of
 writing it.
 
 ## Inside another string
@@ -55,6 +55,18 @@ or a log gets no escape codes:
 PS> $state = Format-ColorEX -Text 'running' -Color Green
 PS> "The web service is $state since 08:00"
 The web service is running since 08:00
+```
+
+## For a terminal other than this one
+
+With output redirected, or for a file another terminal will show, the colors found for this
+session do not fit. `-ColorSupport` names the support to make the strings for, and the strings
+are the same wherever they are made:
+
+```powershell,none
+PS> Format-ColorEX -Text 'running' -Color Green -ColorSupport ANSI4 | Set-Content 'status.txt'
+PS> Get-Content 'status.txt'
+running
 ```
 
 [Format-ColorEX](format-colorex.md) lists its parameters.

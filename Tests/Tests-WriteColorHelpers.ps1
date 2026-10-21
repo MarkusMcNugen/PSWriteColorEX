@@ -46,10 +46,10 @@ Describe 'Write-ColorError' -Tag 'Unit', 'Function', 'Helper' {
     Context 'Style Profile' {
         It 'Uses Error profile by default' {
             # Error profile should exist
-            $profile = [PSColorStyle]::GetProfile('Error')
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'Red'
-            $profile.Bold | Should -Be $true
+            $styleProfile = [PSColorStyle]::GetProfile('Error')
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'Red'
+            $styleProfile.Bold | Should -Be $true
         }
 
         It 'Uses cached style parameters for performance' {
@@ -122,9 +122,9 @@ Describe 'Write-ColorWarning' -Tag 'Unit', 'Function', 'Helper' {
 
     Context 'Style Profile' {
         It 'Uses Warning profile by default' {
-            $profile = [PSColorStyle]::GetProfile('Warning')
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'Yellow'
+            $styleProfile = [PSColorStyle]::GetProfile('Warning')
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'Yellow'
         }
     }
 
@@ -165,9 +165,9 @@ Describe 'Write-ColorInfo' -Tag 'Unit', 'Function', 'Helper' {
 
     Context 'Style Profile' {
         It 'Uses Info profile by default' {
-            $profile = [PSColorStyle]::GetProfile('Info')
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'Cyan'
+            $styleProfile = [PSColorStyle]::GetProfile('Info')
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'Cyan'
         }
     }
 }
@@ -194,9 +194,9 @@ Describe 'Write-ColorSuccess' -Tag 'Unit', 'Function', 'Helper' {
 
     Context 'Style Profile' {
         It 'Uses Success profile by default' {
-            $profile = [PSColorStyle]::GetProfile('Success')
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'Green'
+            $styleProfile = [PSColorStyle]::GetProfile('Success')
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'Green'
         }
     }
 }
@@ -223,12 +223,12 @@ Describe 'Write-ColorCritical' -Tag 'Unit', 'Function', 'Helper' {
 
     Context 'Style Profile' {
         It 'Uses Critical profile by default' {
-            $profile = [PSColorStyle]::GetProfile('Critical')
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'White'
-            $profile.BackgroundColor | Should -Be 'DarkRed'
-            $profile.Bold | Should -Be $true
-            $profile.Blink | Should -Be $true
+            $styleProfile = [PSColorStyle]::GetProfile('Critical')
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'White'
+            $styleProfile.BackgroundColor | Should -Be 'DarkRed'
+            $styleProfile.Bold | Should -Be $true
+            $styleProfile.Blink | Should -Be $true
         }
     }
 }
@@ -255,10 +255,10 @@ Describe 'Write-ColorDebug' -Tag 'Unit', 'Function', 'Helper' {
 
     Context 'Style Profile' {
         It 'Uses Debug profile by default' {
-            $profile = [PSColorStyle]::GetProfile('Debug')
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'DarkGray'
-            $profile.Italic | Should -Be $true
+            $styleProfile = [PSColorStyle]::GetProfile('Debug')
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'DarkGray'
+            $styleProfile.Italic | Should -Be $true
         }
     }
 }
@@ -432,23 +432,23 @@ Describe 'Get-ColorProfiles' -Tag 'Unit', 'Function', 'StyleManagement' {
 
     Context 'Basic Functionality' {
         It 'Returns all profiles' {
-            $profiles = Get-ColorProfiles
+            $styleProfiles = Get-ColorProfiles
 
-            $profiles | Should -Not -BeNullOrEmpty
-            $profiles.Count | Should -BeGreaterOrEqual 7
+            $styleProfiles | Should -Not -BeNullOrEmpty
+            $styleProfiles.Count | Should -BeGreaterOrEqual 7
         }
 
         It 'Returns specific profile by name' {
-            $profile = Get-ColorProfiles -Name 'Error'
+            $styleProfile = Get-ColorProfiles -Name 'Error'
 
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.Name | Should -Be 'Error'
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.Name | Should -Be 'Error'
         }
 
         It 'Returns null for non-existent profile' {
-            $profile = Get-ColorProfiles -Name 'NonExistent'
+            $styleProfile = Get-ColorProfiles -Name 'NonExistent'
 
-            $profile | Should -BeNullOrEmpty
+            $styleProfile | Should -BeNullOrEmpty
         }
 
         It 'Has GCP alias' {
@@ -466,68 +466,68 @@ Describe 'Get-ColorProfiles' -Tag 'Unit', 'Function', 'StyleManagement' {
 
     Context 'Default Profiles' {
         It 'Contains Error profile' {
-            $profile = Get-ColorProfiles -Name 'Error'
+            $styleProfile = Get-ColorProfiles -Name 'Error'
 
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'Red'
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'Red'
         }
 
         It 'Contains Warning profile' {
-            $profile = Get-ColorProfiles -Name 'Warning'
+            $styleProfile = Get-ColorProfiles -Name 'Warning'
 
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'Yellow'
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'Yellow'
         }
 
         It 'Contains Info profile' {
-            $profile = Get-ColorProfiles -Name 'Info'
+            $styleProfile = Get-ColorProfiles -Name 'Info'
 
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'Cyan'
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'Cyan'
         }
 
         It 'Contains Success profile' {
-            $profile = Get-ColorProfiles -Name 'Success'
+            $styleProfile = Get-ColorProfiles -Name 'Success'
 
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'Green'
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'Green'
         }
 
         It 'Contains Critical profile' {
-            $profile = Get-ColorProfiles -Name 'Critical'
+            $styleProfile = Get-ColorProfiles -Name 'Critical'
 
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'White'
-            $profile.BackgroundColor | Should -Be 'DarkRed'
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'White'
+            $styleProfile.BackgroundColor | Should -Be 'DarkRed'
         }
 
         It 'Contains Debug profile' {
-            $profile = Get-ColorProfiles -Name 'Debug'
+            $styleProfile = Get-ColorProfiles -Name 'Debug'
 
-            $profile | Should -Not -BeNullOrEmpty
-            $profile.ForegroundColor | Should -Be 'DarkGray'
+            $styleProfile | Should -Not -BeNullOrEmpty
+            $styleProfile.ForegroundColor | Should -Be 'DarkGray'
         }
 
         It 'Contains Default profile' {
-            $profile = Get-ColorProfiles -Name 'Default'
+            $styleProfile = Get-ColorProfiles -Name 'Default'
 
-            $profile | Should -Not -BeNullOrEmpty
+            $styleProfile | Should -Not -BeNullOrEmpty
         }
     }
 
     Context 'Return Types' {
         It 'Returns PSColorStyle objects' {
-            $profiles = Get-ColorProfiles
+            $styleProfiles = Get-ColorProfiles
 
-            foreach ($profile in $profiles) {
-                $profile.GetType().Name | Should -Be 'PSColorStyle'
+            foreach ($styleProfile in $styleProfiles) {
+                $styleProfile.GetType().Name | Should -Be 'PSColorStyle'
             }
         }
 
         It 'Single profile returns PSColorStyle' {
-            $profile = Get-ColorProfiles -Name 'Error'
+            $styleProfile = Get-ColorProfiles -Name 'Error'
 
-            $profile.GetType().Name | Should -Be 'PSColorStyle'
+            $styleProfile.GetType().Name | Should -Be 'PSColorStyle'
         }
     }
 }
@@ -680,7 +680,7 @@ Describe 'New-ColorStyle' -Tag 'Unit', 'Function', 'StyleManagement' {
 
     Context 'AddToProfiles Switch' {
         It 'Adds style to profiles when switch is used' {
-            $style = New-ColorStyle -Name 'AddToProfilesTest' -ForegroundColor Orange -AddToProfiles
+            $null = New-ColorStyle -Name 'AddToProfilesTest' -ForegroundColor Orange -AddToProfiles
 
             [PSColorStyle]::Profiles.ContainsKey('AddToProfilesTest') | Should -Be $true
         }
@@ -703,7 +703,7 @@ Describe 'New-ColorStyle' -Tag 'Unit', 'Function', 'StyleManagement' {
         }
 
         It 'Sets as default when switch is used' {
-            $style = New-ColorStyle -Name 'NewDefault' -ForegroundColor Magenta -SetAsDefault
+            $null = New-ColorStyle -Name 'NewDefault' -ForegroundColor Magenta -SetAsDefault
 
             [PSColorStyle]::Default.Name | Should -Be 'NewDefault'
             [PSColorStyle]::Default.ForegroundColor | Should -Be 'Magenta'

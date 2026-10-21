@@ -8,10 +8,13 @@ $script:HostVirtualTerminal = $null
 # Whether the process's console is a window of the Windows console host, read on first use
 $script:ConsoleHostWindow = $null
 
+# The Windows calls the console checks make, declared on first use
+$script:ConsoleNative = $null
+
 function Test-ColorHostVirtualTerminal {
     <#
     .SYNOPSIS
-    Answers whether the host lets escape codes through to the screen.
+    Returns whether the host lets escape codes through to the screen.
 
     .DESCRIPTION
     PowerShell 7.2 and later remove escape codes from the output of a host without virtual
@@ -32,16 +35,56 @@ function Test-ColorHostVirtualTerminal {
     }
 }
 
+function Get-ColorConsoleNative {
+    <#
+    .SYNOPSIS
+    Returns a type with the Windows calls the console checks make.
+
+    .DESCRIPTION
+    GetConsoleWindow, GetClassNameW, CreateFileW, GetCurrentConsoleFontEx, CloseHandle,
+    GetStdHandle, GetConsoleMode and SetConsoleMode, declared once per session. Reflection.Emit
+    declares them in about 10 ms; Add-Type takes 170 to 290 ms in pwsh.
+    #>
+    [CmdletBinding()]
+    [OutputType([type])]
+    param()
+
+    if ($null -ne $script:ConsoleNative) {
+        return $script:ConsoleNative
+    }
+    $assembly = [System.Reflection.Emit.AssemblyBuilder]::DefineDynamicAssembly(
+        [System.Reflection.AssemblyName]::new('PSWriteColorEXConsole'), [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
+    $type = $assembly.DefineDynamicModule('PSWriteColorEXConsole').DefineType('PSWriteColorEXConsole', 'Public, Abstract, Sealed')
+    $attributes = [System.Reflection.MethodAttributes]'Public, Static, PinvokeImpl'
+    # Each call: its name, its library, what it returns, and what it takes
+    $calls = @(
+        @('GetConsoleWindow', 'kernel32.dll', [IntPtr], [Type[]]@()),
+        @('GetClassNameW', 'user32.dll', [int], [Type[]]@([IntPtr], [System.Text.StringBuilder], [int])),
+        @('CreateFileW', 'kernel32.dll', [IntPtr], [Type[]]@([string], [uint32], [uint32], [IntPtr], [uint32], [uint32], [IntPtr])),
+        @('GetCurrentConsoleFontEx', 'kernel32.dll', [bool], [Type[]]@([IntPtr], [bool], [byte[]])),
+        @('CloseHandle', 'kernel32.dll', [bool], [Type[]]@([IntPtr])),
+        @('GetStdHandle', 'kernel32.dll', [IntPtr], [Type[]]@([int])),
+        @('GetConsoleMode', 'kernel32.dll', [bool], [Type[]]@([IntPtr], [uint32].MakeByRefType())),
+        @('SetConsoleMode', 'kernel32.dll', [bool], [Type[]]@([IntPtr], [uint32]))
+    )
+    foreach ($call in $calls) {
+        $method = $type.DefinePInvokeMethod($call[0], $call[1], $attributes, 'Standard', $call[2], $call[3], 'Winapi', 'Unicode')
+        $method.SetImplementationFlags('PreserveSig')
+    }
+    $script:ConsoleNative = $type.CreateType()
+    return $script:ConsoleNative
+}
+
 function Test-ColorConsoleHostWindow {
     <#
     .SYNOPSIS
-    Answers whether the process's console is a window of the Windows console host itself.
+    Returns whether the process's console is a window of the Windows console host itself.
 
     .DESCRIPTION
     The console host's own window has the class ConsoleWindowClass. A terminal that runs
     PowerShell through a pseudoconsole, such as Windows Terminal or VS Code, gives the console a
     hidden window of the class PseudoConsoleWindow, and a process with no console window, such as
-    a CI job, has none. Answers $false outside Windows.
+    a CI job, has none. Returns $false outside Windows.
     #>
     [CmdletBinding()]
     [OutputType([bool])]
@@ -55,18 +98,7 @@ function Test-ColorConsoleHostWindow {
         return $false
     }
     try {
-        # Reflection.Emit declares the two calls in about 10 ms; Add-Type takes 170 to 290 ms in pwsh
-        $assembly = [System.Reflection.Emit.AssemblyBuilder]::DefineDynamicAssembly(
-            [System.Reflection.AssemblyName]::new('PSWriteColorEXConsoleWindow'), [System.Reflection.Emit.AssemblyBuilderAccess]::Run)
-        $type = $assembly.DefineDynamicModule('PSWriteColorEXConsoleWindow').DefineType('PSWriteColorEXConsoleWindow', 'Public, Abstract, Sealed')
-        $attributes = [System.Reflection.MethodAttributes]'Public, Static, PinvokeImpl'
-        $getWindow = $type.DefinePInvokeMethod('GetConsoleWindow', 'kernel32.dll', $attributes, 'Standard', [IntPtr],
-            [Type[]]@(), 'Winapi', 'Unicode')
-        $getWindow.SetImplementationFlags('PreserveSig')
-        $getClass = $type.DefinePInvokeMethod('GetClassNameW', 'user32.dll', $attributes, 'Standard', [int],
-            [Type[]]@([IntPtr], [System.Text.StringBuilder], [int]), 'Winapi', 'Unicode')
-        $getClass.SetImplementationFlags('PreserveSig')
-        $native = $type.CreateType()
+        $native = Get-ColorConsoleNative
         $window = $native::GetConsoleWindow()
         if ($window -ne [IntPtr]::Zero) {
             $name = [System.Text.StringBuilder]::new(64)
@@ -79,10 +111,112 @@ function Test-ColorConsoleHostWindow {
     return $script:ConsoleHostWindow
 }
 
+function Test-ColorRasterFont {
+    <#
+    .SYNOPSIS
+    Returns whether the console's screen buffer draws with a raster font.
+
+    .DESCRIPTION
+    Reads the font of the console's own screen buffer, CONOUT$, so redirected standard output does
+    not change the answer. Returns $false where there is no console or its font cannot be read.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
+    if ([System.Environment]::OSVersion.Platform -ne 'Win32NT') {
+        return $false
+    }
+    try {
+        $native = Get-ColorConsoleNative
+        # GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING
+        $handle = $native::CreateFileW('CONOUT$', [uint32]3221225472, [uint32]3, [IntPtr]::Zero, [uint32]3, [uint32]0, [IntPtr]::Zero)
+        if ($handle -eq [IntPtr]::new(-1)) {
+            return $false
+        }
+        try {
+            # CONSOLE_FONT_INFOEX, 84 bytes: cbSize, nFont, dwFontSize, then FontFamily at byte 12
+            $info = [byte[]]::new(84)
+            [System.BitConverter]::GetBytes([uint32]84).CopyTo($info, 0)
+            if (-not $native::GetCurrentConsoleFontEx($handle, $false, $info)) {
+                return $false
+            }
+            # TMPF_TRUETYPE, 4, is clear for a raster font
+            return ([System.BitConverter]::ToUInt32($info, 12) -band 4) -eq 0
+        } finally {
+            $null = $native::CloseHandle($handle)
+        }
+    } catch {
+        return $false
+    }
+}
+
+function Test-ColorUtf8Locale {
+    <#
+    .SYNOPSIS
+    Returns whether a locale's character set is UTF-8.
+
+    .DESCRIPTION
+    The character set is the part after the first '.', before any '@' modifier: en_US.UTF-8,
+    C.utf8 and de_DE.UTF-8@euro are UTF-8. A locale with no '.' is read whole, as macOS sets
+    LC_CTYPE=UTF-8. C and POSIX are not.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param([Parameter(Mandatory)][string]$Locale)
+
+    $codeset = if ($Locale.Contains('.')) { $Locale.Substring($Locale.IndexOf('.') + 1) } else { $Locale }
+    $modifier = $codeset.IndexOf('@')
+    if ($modifier -ge 0) {
+        $codeset = $codeset.Substring(0, $modifier)
+    }
+    return ($codeset -replace '-', '') -eq 'utf8'
+}
+
+function Test-ColorUnicode {
+    <#
+    .SYNOPSIS
+    Returns whether the terminal can show Unicode.
+
+    .DESCRIPTION
+    WRITECOLOREX_UNICODE, true or false, decides first; any other value is warned about, unless
+    -Silent, and set aside. Otherwise, on Linux, macOS and FreeBSD the terminal cannot when the
+    locale's character set is not UTF-8: the first of LC_ALL, LC_CTYPE and LANG that is set, and
+    the C locale when none is. On Windows it cannot when the console is a window of the Windows
+    console host itself and its screen buffer draws with a raster font.
+    #>
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param([switch]$Silent)
+
+    $forced = [System.Environment]::GetEnvironmentVariable('WRITECOLOREX_UNICODE')
+    if (-not [string]::IsNullOrEmpty($forced)) {
+        if ($forced -eq 'true') {
+            return $true
+        }
+        if ($forced -eq 'false') {
+            return $false
+        }
+        if (-not $Silent) {
+            Write-Warning "WRITECOLOREX_UNICODE is '$forced'; it takes true or false, so whether the terminal can show Unicode is detected."
+        }
+    }
+    if ([System.Environment]::OSVersion.Platform -eq 'Win32NT') {
+        return -not ((Test-ColorConsoleHostWindow) -and (Test-ColorRasterFont))
+    }
+    foreach ($name in 'LC_ALL', 'LC_CTYPE', 'LANG') {
+        $locale = [System.Environment]::GetEnvironmentVariable($name)
+        if (-not [string]::IsNullOrEmpty($locale)) {
+            return Test-ColorUtf8Locale -Locale $locale
+        }
+    }
+    return $false
+}
+
 function Test-ColorHostAnsi {
     <#
     .SYNOPSIS
-    Answers whether escape codes in host output reach the screen.
+    Returns whether escape codes in host output reach the screen.
 
     .DESCRIPTION
     PowerShell 7.2 and later remove escape codes from host output when the host has no virtual
@@ -109,7 +243,7 @@ function Test-ColorHostAnsi {
 function Test-ColorLineComposition {
     <#
     .SYNOPSIS
-    Answers whether a line of plain console colors is written as one string of escape codes.
+    Returns whether a line of plain console colors is written as one string of escape codes.
 
     .DESCRIPTION
     A transcript records each Write-Host call as its own line, so a line written in several
@@ -143,11 +277,11 @@ function Test-ColorLineComposition {
 function Get-ColorHostWidth {
     <#
     .SYNOPSIS
-    Answers the width of the console in cells, or 0 when there is no console to measure.
+    Returns the width of the console in cells, or 0 when there is no console to measure.
 
     .DESCRIPTION
     With output redirected to a file or a pipe, PowerShell reports a width of -1, and some
-    hosts have no RawUI at all. Either way this answers 0, and callers skip what needs a width.
+    hosts have no RawUI at all. Either way this returns 0, and callers skip what needs a width.
     #>
     [CmdletBinding()]
     [OutputType([int])]
@@ -174,7 +308,7 @@ function Get-ColorHostWidth {
 function Resolve-ColorLogFolder {
     <#
     .SYNOPSIS
-    Answers the folder a log file named without a folder goes in.
+    Returns the folder a log file named without a folder goes in.
 
     .DESCRIPTION
     The calling script's folder, or the current file-system location when the caller is the
@@ -196,7 +330,7 @@ function Resolve-ColorLogFolder {
 function Get-ColorLogEncoding {
     <#
     .SYNOPSIS
-    Answers the text encoding a log file is written in, by the name -Encoding takes.
+    Returns the text encoding a log file is written in, by the name -Encoding takes.
 
     .DESCRIPTION
     Each name gives the same bytes on Windows PowerShell 5.1 and PowerShell 7: utf8 and
@@ -206,6 +340,7 @@ function Get-ColorLogEncoding {
     #>
     [CmdletBinding()]
     [OutputType([System.Text.Encoding])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'Each encoding returned derives from the declared System.Text.Encoding; the rule compares exact types.')]
     param(
         [Parameter(Mandatory)]
         [string]$Name

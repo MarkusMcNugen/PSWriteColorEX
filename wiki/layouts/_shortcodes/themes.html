@@ -1,0 +1,40 @@
+{{- /*
+The themes Import-ColorProfile -Theme reads, from data/presets.json, which generate.ps1 reads from
+the module: each theme, the colors of its seven profiles as samples (Critical's background, the
+others' text color), and how many color names it registers.
+*/ -}}
+{{- $presets := hugo.Data.presets | default dict -}}
+{{- if not $presets.themes -}}
+  {{- errorf "data/presets.json has no themes: run pwsh ./generate.ps1 in wiki/ (%s)" .Position -}}
+{{- end -}}
+{{- $order := slice "Default" "Error" "Warning" "Info" "Success" "Critical" "Debug" -}}
+<div class="hx:overflow-x-auto">
+<table class="wcx-themes">
+  <thead>
+    <tr><th>Theme</th>{{ range $order }}<th>{{ . }}</th>{{ end }}<th>Names</th></tr>
+  </thead>
+  <tbody>
+  {{- range $presets.themes }}
+    {{- $theme := . }}
+    <tr>
+      <td><code>{{ .name }}</code></td>
+      {{- if .profiles }}
+        {{- range $order }}
+          {{- $name := . }}
+          {{- range $theme.profiles }}
+            {{- if eq .name $name }}
+              {{- $color := .fg }}
+              {{- if and (eq $name "Critical") .bg }}{{ $color = .bg }}{{ end }}
+      <td><span class="wcx-swatch" style="background-color:{{ $color | safeCSS }}" title="{{ $name }}: {{ $color }}"></span></td>
+            {{- end }}
+          {{- end }}
+        {{- end }}
+      {{- else }}
+      <td colspan="7" class="wcx-theme-note">{{ .note }}</td>
+      {{- end }}
+      <td>{{ if .count }}{{ .count }}{{ else }}none{{ end }}</td>
+    </tr>
+  {{- end }}
+  </tbody>
+</table>
+</div>

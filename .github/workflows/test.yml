@@ -1,7 +1,9 @@
 name: Tests
 
+# Every branch but main: main only takes a commit a branch run has tested
 on:
   push:
+    branches-ignore: [main]
   pull_request:
   workflow_dispatch:
 
@@ -60,6 +62,11 @@ jobs:
         shell: pwsh
         run: ./wiki/generate.ps1
 
+      # generate.ps1 also writes the cheat sheet page as the module's help topic, which must be
+      # committed as it writes it
+      - name: Check the help topic matches the cheat sheet
+        run: git diff --exit-code -- en-US
+
   windows-powershell:
     name: Windows PowerShell 5.1
     runs-on: windows-latest
@@ -94,3 +101,46 @@ jobs:
           name: test-results-windows-powershell
           path: TestResults.xml
           if-no-files-found: ignore
+
+  # PSScriptAnalyzer runs over the repository in both hosts under the settings file at its root,
+  # with the module imported so the analyzer knows its aliases, and any finding fails the job; a
+  # script with a known finding is analyzed first, so a run that analyzed nothing fails rather
+  # than passing
+  analyzer:
+    name: Script analysis / ${{ matrix.host }}
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shell: pwsh
+            host: PowerShell 7
+          - shell: powershell
+            host: Windows PowerShell 5.1
+    defaults:
+      run:
+        shell: ${{ matrix.shell }} -NonInteractive -NoProfile -Command ". '{0}'"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($PSVersionTable.PSEdition -eq 'Desktop') {
+              Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser | Out-Null
+          }
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+
+      - name: Analyze the scripts
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Import-Module PSScriptAnalyzer
+          Import-Module ./PSWriteColorEX.psd1
+          $control = Invoke-ScriptAnalyzer -ScriptDefinition 'function Get-Thing { $unused = 1 }' -Settings ./PSScriptAnalyzerSettings.psd1
+          if (-not $control) { throw 'The analyzer reported nothing for a script with a known finding' }
+          $files = @(Get-ChildItem -Path . -Recurse -File -Include *.ps1, *.psm1, *.psd1)
+          $findings = @(Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1)
+          $findings | Select-Object RuleName, Severity, ScriptName, Line, Message | Format-Table -AutoSize -Wrap | Out-String -Width 200
+          "$($findings.Count) findings in $($files.Count) files, PSScriptAnalyzer $((Get-Module PSScriptAnalyzer).Version)"
+          if ($files.Count -eq 0 -or $findings.Count -gt 0) { exit 1 }

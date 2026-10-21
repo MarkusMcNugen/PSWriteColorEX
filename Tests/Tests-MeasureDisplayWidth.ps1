@@ -2,7 +2,7 @@
 
 BeforeDiscovery {
     # Each case: a name, the code points of the text, its width, and its width with -AmbiguousAsWide
-    $widthCases = @(
+    $script:widthCases = @(
         @{ Name = 'printable ASCII'; CodePoints = @(0x48, 0x65, 0x6C, 0x6C, 0x6F); Width = 5; WideWidth = 5 }
         @{ Name = 'CJK characters'; CodePoints = @(0x4E16, 0x754C); Width = 4; WideWidth = 4 }
         @{ Name = 'ASCII and CJK'; CodePoints = @(0x48, 0x69, 0x20, 0x4E16, 0x754C); Width = 7; WideWidth = 7 }
@@ -35,7 +35,7 @@ BeforeDiscovery {
 
     # Each case: a name, the code points of the text, and the code points of each character a
     # terminal draws from it
-    $splitCases = @(
+    $script:splitCases = @(
         @{ Name = 'letters'; CodePoints = @(0x61, 0x62); Characters = @(@(0x61), @(0x62)) }
         @{ Name = 'an emoji outside the BMP'; CodePoints = @(0x61, 0x1F600, 0x62); Characters = @(@(0x61), @(0x1F600), @(0x62)) }
         @{ Name = 'a letter and a combining accent'; CodePoints = @(0x65, 0x301, 0x78); Characters = @(@(0x65, 0x301), @(0x78)) }
@@ -88,7 +88,7 @@ Describe 'Measure-DisplayWidth' -Tag 'Unit', 'Function', 'DisplayWidth' {
             Measure-DisplayWidth 'abc' | Should -Be 3
         }
 
-        It 'Answers an integer' {
+        It 'Returns an integer' {
             Measure-DisplayWidth 'abc' | Should -BeOfType [int]
         }
 
@@ -122,7 +122,7 @@ Describe 'Split-DisplayCharacter' -Tag 'Unit', 'Function', 'DisplayWidth' {
         }
     }
 
-    It 'Answers nothing for an empty string' {
+    It 'Returns nothing for an empty string' {
         $result = @(& (Get-Module PSWriteColorEX) { Split-DisplayCharacter -Text '' })
         $result.Count | Should -Be 0
     }

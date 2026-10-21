@@ -4,9 +4,17 @@
         Detects the terminal's ANSI color support and the styles it shows
 
     .DESCRIPTION
-        Test-AnsiSupport reads the environment and the host to answer which ANSI color mode the
+        Test-AnsiSupport reads the environment and the host to find which ANSI color mode the
         terminal supports (TrueColor, 256-color, 16-color or none), whether it draws bold as a
-        bold font, and which text styles it shows. Write-ColorEX falls back to the modes it reports.
+        bold font, whether it can show Unicode, and which text styles it shows. Write-ColorEX falls
+        back to the modes it reports.
+
+        UNICODE:
+        WRITECOLOREX_UNICODE, true or false, decides first. Otherwise the terminal cannot show
+        Unicode on Linux, macOS and FreeBSD when the locale's character set is not UTF-8 (the first
+        of LC_ALL, LC_CTYPE and LANG that is set; the C locale when none is), and on Windows when the
+        console is a window of the Windows console host itself and draws with a raster font. The
+        console's own screen buffer is asked, so redirected output does not change the answer.
 
         On Windows PowerShell 5.1 in the Windows console host it switches on virtual terminal
         processing for the session when it is off.
@@ -58,6 +66,10 @@
         SupportsBoldFonts (boolean):
             - $true  : Terminal renders true bold fonts
             - $false : Terminal only brightens colors when Bold SGR is used
+
+        SupportsUnicode (boolean):
+            - $true  : Terminal can show Unicode, such as box-drawing and block characters
+            - $false : Terminal shows only ASCII well
 
         Details (hashtable):
             - PowerShellVersion           : PowerShell version string
@@ -118,6 +130,8 @@
         - VTE_VERSION    : GNOME Terminal (VTE) version
         - TERM_PROGRAM   : iTerm2, Terminal.app, VS Code, Ghostty, WezTerm, Warp, tmux
         - TMUX, KITTY_WINDOW_ID, ALACRITTY_WINDOW_ID, TERMINAL_EMULATOR : tmux, Kitty, Alacritty, JetBrains IDEs
+        - WRITECOLOREX_UNICODE : true or false sets SupportsUnicode
+        - LC_ALL, LC_CTYPE, LANG : the locale, whose character set decides SupportsUnicode on Linux, macOS and FreeBSD
 
         PLATFORM NOTES:
         Windows - Uses P/Invoke to check/enable Virtual Terminal Processing
@@ -138,6 +152,7 @@
     #>
     [CmdletBinding()]
     [Alias('TAS', 'Test-ANSI')]
+    [OutputType([System.Management.Automation.PSCustomObject])]
     param(
         [switch]$Silent = $False
     )
@@ -146,6 +161,7 @@
     $results = [PSCustomObject]@{
         ColorSupport = 'None'  # None, ANSI4, ANSI8, TrueColor
         SupportsBoldFonts = $False  # Whether terminal supports true bold fonts (vs color lightening only)
+        SupportsUnicode = $True  # Whether terminal can show Unicode
         Details = @{
             PowerShellVersion = $PSVersionTable.PSVersion.ToString()
             IsConsoleHost = $Host.Name -eq 'ConsoleHost'
@@ -169,6 +185,9 @@
             Warnings = @()
         }
     }
+
+    # Unicode first, since the color variables below do not bear on it
+    $results.SupportsUnicode = Test-ColorUnicode -Silent:$Silent
 
     # Check for forced color support first
     $forceColor = [Environment]::GetEnvironmentVariable('FORCE_COLOR')
@@ -236,7 +255,7 @@
     } ElseIf ($terminalEmulator -eq 'JetBrains-JediTerm') {
         $modernTerminal = 'JetBrains IDE Terminal'
     }
-    
+
     # Determine terminal type and color support level
     If ($colorTerm -eq 'truecolor' -or $colorTerm -eq '24bit') {
         $results.ColorSupport = 'TrueColor'
@@ -511,56 +530,37 @@
         # Use P/Invoke for Windows PowerShell to check/enable console mode
         ElseIf ($isWin10Plus) {
             try {
-                # Define P/Invoke signatures if not already defined
-                If (-not ('ConsoleHelper' -as [type])) {
-                    Add-Type -TypeDefinition @"
-using System;
-using System.Runtime.InteropServices;
+                $native = Get-ColorConsoleNative
 
-public class ConsoleHelper {
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+                # Constants
+                $STDOUT_HANDLE = -11
+                $ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+                # Get console mode
+                $stdoutHandle = $native::GetStdHandle($STDOUT_HANDLE)
+                $consoleMode = 0
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern IntPtr GetStdHandle(int nStdHandle);
-}
-"@ -ErrorAction SilentlyContinue
-                }
+                If ($native::GetConsoleMode($stdoutHandle, [ref]$consoleMode)) {
+                    $results.Details.HasVirtualTerminalProcessing = ($consoleMode -band $ENABLE_VIRTUAL_TERMINAL_PROCESSING) -ne 0
 
-                If ('ConsoleHelper' -as [type]) {
-                    # Constants
-                    $STDOUT_HANDLE = -11
-                    $ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
-
-                    # Get console mode
-                    $stdoutHandle = [ConsoleHelper]::GetStdHandle($STDOUT_HANDLE)
-                    $consoleMode = 0
-
-                    If ([ConsoleHelper]::GetConsoleMode($stdoutHandle, [ref]$consoleMode)) {
-                        $results.Details.HasVirtualTerminalProcessing = ($consoleMode -band $ENABLE_VIRTUAL_TERMINAL_PROCESSING) -ne 0
-
-                        # Try to enable VT processing if not already enabled
-                        If (-not $results.Details.HasVirtualTerminalProcessing) {
-                            $newMode = $consoleMode -bor $ENABLE_VIRTUAL_TERMINAL_PROCESSING
-                            If ([ConsoleHelper]::SetConsoleMode($stdoutHandle, $newMode)) {
-                                $results.Details.HasVirtualTerminalProcessing = $True
-                                If (-not $Silent) {
-                                    Write-Warning 'ANSI support has been enabled for this session only. To enable permanently, run in Admin PowerShell: Set-ItemProperty HKCU:\Console VirtualTerminalLevel -Type DWORD 1'
-                                }
+                    # Try to enable VT processing if not already enabled
+                    If (-not $results.Details.HasVirtualTerminalProcessing) {
+                        $newMode = $consoleMode -bor $ENABLE_VIRTUAL_TERMINAL_PROCESSING
+                        If ($native::SetConsoleMode($stdoutHandle, $newMode)) {
+                            $results.Details.HasVirtualTerminalProcessing = $True
+                            If (-not $Silent) {
+                                Write-Warning 'ANSI support has been enabled for this session only. To enable permanently, run in Admin PowerShell: Set-ItemProperty HKCU:\Console VirtualTerminalLevel -Type DWORD 1'
                             }
                         }
+                    }
 
-                        If ($results.Details.HasVirtualTerminalProcessing) {
-                            $results.Details.TerminalType = 'Windows PowerShell Console (conhost)'
-                            $results.ColorSupport = If ($supportsTrueColor) { 'TrueColor' } ElseIf ($isWin10Plus) { 'ANSI8' } Else { 'ANSI4' }
-                            $results.Details.StyleSupport.Underline = $True
-                            # PowerShell 5.1 conhost doesn't support true bold - it just makes colors lighter
-                            $results.SupportsBoldFonts = $False
-                            $results.Details.Warnings += 'PowerShell 5.1 conhost does NOT support true bold font rendering. Bold style will make colors lighter instead of actually bolding the text. Use PowerShell 7+ or Windows Terminal for proper bold support.'
-                        }
+                    If ($results.Details.HasVirtualTerminalProcessing) {
+                        $results.Details.TerminalType = 'Windows PowerShell Console (conhost)'
+                        $results.ColorSupport = If ($supportsTrueColor) { 'TrueColor' } ElseIf ($isWin10Plus) { 'ANSI8' } Else { 'ANSI4' }
+                        $results.Details.StyleSupport.Underline = $True
+                        # PowerShell 5.1 conhost doesn't support true bold - it just makes colors lighter
+                        $results.SupportsBoldFonts = $False
+                        $results.Details.Warnings += 'PowerShell 5.1 conhost does NOT support true bold font rendering. Bold style will make colors lighter instead of actually bolding the text. Use PowerShell 7+ or Windows Terminal for proper bold support.'
                     }
                 }
             }
@@ -569,9 +569,9 @@ public class ConsoleHelper {
                 $results.Details.HasVirtualTerminalProcessing = $False
             }
         }
-        
+
         $results.Details.EnableInstructions = 'To enable ANSI colors permanently on Windows, run in Admin PowerShell: Set-ItemProperty HKCU:\Console VirtualTerminalLevel -Type DWORD 1'
-        
+
         # Windows version warnings
         If (-not $isWin10Plus -and -not $Silent) {
             Write-Warning 'Windows versions before Windows 10 build 10586 do not support ANSI colors natively. Consider using ConEmu or Windows Terminal.'

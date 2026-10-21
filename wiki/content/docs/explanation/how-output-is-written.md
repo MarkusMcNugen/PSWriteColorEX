@@ -50,5 +50,5 @@ console colors as one line per color unless `FORCE_COLOR` or `CLICOLOR_FORCE` is
 ## Writing nothing, or collecting instead
 
 `-NoConsoleOutput` writes nothing to the host, for a call that only writes its log file.
-`Format-ColorEX` builds the same lines and answers them as strings instead of writing them, with
+`Format-ColorEX` builds the same lines and returns them as strings instead of writing them, with
 escape codes wherever the host would show them; see [Format-ColorEX](format-colorex.md).

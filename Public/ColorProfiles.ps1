@@ -106,15 +106,36 @@
 function Import-ColorProfile {
     <#
     .SYNOPSIS
-    Reads style profiles and color names from a file Export-ColorProfile wrote.
+    Reads style profiles and color names from a file Export-ColorProfile wrote, or from a theme
+    the module ships.
 
     .DESCRIPTION
     Import-ColorProfile registers the file's color names, replacing names in use, then adds its
     profiles to [PSColorStyle]::Profiles, replacing profiles of the same name, and makes the
     style the file names the default style.
 
+    -Theme reads one of the module's themes instead:
+
+    - A color theme registers its colors under names that start with the theme's name, such as
+      DraculaPurple or Nord8 (SolarizedDark and SolarizedLight both use names that start with
+      Solarized), and restyles the profiles Default, Error, Warning, Info, Success, Critical and
+      Debug in its colors, with Default the default style.
+    - CSS adds the CSS color names the color table lacks, such as Tomato, SlateGray and
+      RebeccaPurple. A name already in the table keeps its color, and Grey, DarkGrey and LightGrey
+      take the colors of Gray, DarkGray and LightGray.
+    - PowerShell restyles Error, Warning, Info and Debug as PowerShell's own error, warning,
+      verbose and debug output, and in PowerShell 7.2 and later Critical and Default as its error
+      and formatting accents, with Default the default style. Each takes the text color,
+      background and styles of PowerShell's setting and nothing else; a console color in it is
+      written as the terminal's own color, as PowerShell writes it.
+
     .PARAMETER Path
     The file to read.
+
+    .PARAMETER Theme
+    The theme to read: CatppuccinFrappe, CatppuccinLatte, CatppuccinMacchiato, CatppuccinMocha,
+    CSS, Dracula, GruvboxDark, GruvboxLight, Nord, OneDark, PowerShell, SolarizedDark,
+    SolarizedLight or TokyoNight.
 
     .PARAMETER PassThru
     Writes the profiles read to the pipeline.
@@ -122,6 +143,23 @@ function Import-ColorProfile {
     .EXAMPLE
     Import-ColorProfile -Path ~/colors.json
     Write-ColorEX -Text 'Deploying' -StyleProfile ([PSColorStyle]::Profiles['Build'])
+
+    .EXAMPLE
+    Import-ColorProfile -Theme Dracula
+    Write-ColorError 'Build failed'
+    Write-ColorEX -Text 'In Dracula purple' -Color DraculaPurple
+
+    Restyles the profiles in Dracula's colors and registers its palette.
+
+    .EXAMPLE
+    Import-ColorProfile -Theme PowerShell
+
+    Makes Write-ColorError, Write-ColorWarning, Write-ColorInfo and Write-ColorDebug look like
+    PowerShell's own error, warning, verbose and debug output.
+
+    .EXAMPLE
+    Import-ColorProfile -Theme CSS
+    Write-ColorEX -Text 'Tomato' -Color Tomato
 
     .EXAMPLE
     # In a PowerShell profile script, so the styles are there in every session
@@ -144,27 +182,69 @@ function Import-ColorProfile {
     .LINK
     Export-ColorProfile
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName = 'Path')]
     [Alias('Import-ColourProfile')]
     [OutputType([PSColorStyle])]
     param(
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = 'Path')]
         [string] $Path,
+
+        [Parameter(Mandatory, ParameterSetName = 'Theme')]
+        [ValidateSet('CatppuccinFrappe', 'CatppuccinLatte', 'CatppuccinMacchiato', 'CatppuccinMocha', 'CSS',
+            'Dracula', 'GruvboxDark', 'GruvboxLight', 'Nord', 'OneDark', 'PowerShell', 'SolarizedDark',
+            'SolarizedLight', 'TokyoNight')]
+        [string] $Theme,
 
         [switch] $PassThru
     )
 
-    $file = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    if ($Theme -eq 'PowerShell') {
+        $settings = Get-PowerShellColorSetting
+        foreach ($style in (Get-PowerShellThemeStyle -PSStyleValue $settings.PSStyle -PrivateData $settings.PrivateData)) {
+            $style.AddToProfiles()
+            if ($style.Name -eq 'Default') {
+                $style.SetAsDefault()
+            }
+            if ($PassThru) {
+                $style
+            }
+        }
+        return
+    }
+
+    $source = $Path
+    if ($PSCmdlet.ParameterSetName -eq 'Theme') {
+        # The theme's file, its name compared without case as -Theme compares it
+        $themeFiles = @(Get-ChildItem -LiteralPath (Join-Path $script:ModuleRoot 'Themes') -Filter '*.json' -File -ErrorAction SilentlyContinue |
+            Where-Object { $_.BaseName -eq $Theme })
+        if ($themeFiles.Count -eq 0) {
+            $PSCmdlet.ThrowTerminatingError([System.Management.Automation.ErrorRecord]::new(
+                [System.IO.FileNotFoundException]::new("The module has no file for the theme '$Theme'."),
+                'ThemeFileNotFound', [System.Management.Automation.ErrorCategory]::ObjectNotFound, $Theme))
+        }
+        $file = $themeFiles[0].FullName
+        $source = $file
+    } else {
+        $file = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    }
     try {
         $document = [System.IO.File]::ReadAllText($file) | ConvertFrom-Json -ErrorAction Stop
     } catch {
         $PSCmdlet.ThrowTerminatingError([System.Management.Automation.ErrorRecord]::new(
-            [System.IO.InvalidDataException]::new("Cannot read the profiles in '$Path'. $($_.Exception.Message)"),
-            'InvalidProfileFile', [System.Management.Automation.ErrorCategory]::InvalidData, $Path))
+            [System.IO.InvalidDataException]::new("Cannot read the profiles in '$source'. $($_.Exception.Message)"),
+            'InvalidProfileFile', [System.Management.Automation.ErrorCategory]::InvalidData, $source))
     }
 
+    # The CSS theme adds only the names the color table lacks
+    $namesInUse = $null
+    if ($Theme -eq 'CSS') {
+        $namesInUse = Get-ColorTableWithRGB
+    }
     if ($document.Colors) {
         foreach ($property in $document.Colors.PSObject.Properties) {
+            if ($null -ne $namesInUse -and $namesInUse.ContainsKey($property.Name)) {
+                continue
+            }
             Register-ColorName -Name $property.Name -Color (ConvertFrom-ColorJsonValue -Value $property.Value) -Force
         }
     }

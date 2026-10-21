@@ -68,6 +68,8 @@ function Write-ColorError {
     #>
     [CmdletBinding()]
     [Alias('WCE', 'Write-ErrorColor', 'Write-ErrorColour', 'Write-ColourError', 'WError', 'wcerror')]
+    [OutputType([string])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'With -PassThru each string of -Text goes down the pipeline on its own; the analyzer reads the array''s own type.')]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true)]
         [string[]]$Text,
@@ -92,7 +94,13 @@ function Write-ColorError {
         }
         if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-        Write-ColorEX @params
+        # A profile setting Write-ColorEX refuses gives its error in place of the line, and the
+        # helper goes on
+        try {
+            Write-ColorEX @params
+        } catch {
+            $PSCmdlet.WriteError($_)
+        }
 
         if ($PassThru) {
             $Text
@@ -152,6 +160,8 @@ function Write-ColorWarning {
     #>
     [CmdletBinding()]
     [Alias('WCW', 'Write-WarningColor', 'Write-WarningColour', 'Write-ColourWarning', 'WWarning', 'WCWarn', 'wcwarning')]
+    [OutputType([string])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'With -PassThru each string of -Text goes down the pipeline on its own; the analyzer reads the array''s own type.')]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true)]
         [string[]]$Text,
@@ -176,7 +186,13 @@ function Write-ColorWarning {
         }
         if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-        Write-ColorEX @params
+        # A profile setting Write-ColorEX refuses gives its error in place of the line, and the
+        # helper goes on
+        try {
+            Write-ColorEX @params
+        } catch {
+            $PSCmdlet.WriteError($_)
+        }
 
         if ($PassThru) {
             $Text
@@ -237,6 +253,8 @@ function Write-ColorInfo {
     #>
     [CmdletBinding()]
     [Alias('WCI', 'Write-InfoColor', 'Write-InfoColour', 'Write-ColourInfo', 'WInfo', 'wcinfo')]
+    [OutputType([string])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'With -PassThru each string of -Text goes down the pipeline on its own; the analyzer reads the array''s own type.')]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true)]
         [string[]]$Text,
@@ -261,7 +279,13 @@ function Write-ColorInfo {
         }
         if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-        Write-ColorEX @params
+        # A profile setting Write-ColorEX refuses gives its error in place of the line, and the
+        # helper goes on
+        try {
+            Write-ColorEX @params
+        } catch {
+            $PSCmdlet.WriteError($_)
+        }
 
         if ($PassThru) {
             $Text
@@ -322,6 +346,8 @@ function Write-ColorSuccess {
     #>
     [CmdletBinding()]
     [Alias('WCS', 'Write-SuccessColor', 'Write-SuccessColour', 'Write-ColourSuccess', 'WSuccess', 'wcok', 'wcsuccess')]
+    [OutputType([string])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'With -PassThru each string of -Text goes down the pipeline on its own; the analyzer reads the array''s own type.')]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true)]
         [string[]]$Text,
@@ -346,7 +372,13 @@ function Write-ColorSuccess {
         }
         if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-        Write-ColorEX @params
+        # A profile setting Write-ColorEX refuses gives its error in place of the line, and the
+        # helper goes on
+        try {
+            Write-ColorEX @params
+        } catch {
+            $PSCmdlet.WriteError($_)
+        }
 
         if ($PassThru) {
             $Text
@@ -407,6 +439,8 @@ function Write-ColorCritical {
     #>
     [CmdletBinding()]
     [Alias('WCC', 'Write-CriticalColor', 'Write-CriticalColour', 'Write-ColourCritical', 'WCritical', 'wccritical')]
+    [OutputType([string])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'With -PassThru each string of -Text goes down the pipeline on its own; the analyzer reads the array''s own type.')]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true)]
         [string[]]$Text,
@@ -431,7 +465,13 @@ function Write-ColorCritical {
         }
         if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-        Write-ColorEX @params
+        # A profile setting Write-ColorEX refuses gives its error in place of the line, and the
+        # helper goes on
+        try {
+            Write-ColorEX @params
+        } catch {
+            $PSCmdlet.WriteError($_)
+        }
 
         if ($PassThru) {
             $Text
@@ -492,6 +532,8 @@ function Write-ColorDebug {
     #>
     [CmdletBinding()]
     [Alias('WCD', 'Write-DebugColor', 'Write-DebugColour', 'Write-ColourDebug', 'WDebug', 'wcdebug')]
+    [OutputType([string])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseOutputTypeCorrectly', '', Justification = 'With -PassThru each string of -Text goes down the pipeline on its own; the analyzer reads the array''s own type.')]
     param(
         [Parameter(Position = 0, ValueFromPipeline = $true)]
         [string[]]$Text,
@@ -516,7 +558,13 @@ function Write-ColorDebug {
         }
         if ($NoConsoleOutput) { $params['NoConsoleOutput'] = $true }
 
-        Write-ColorEX @params
+        # A profile setting Write-ColorEX refuses gives its error in place of the line, and the
+        # helper goes on
+        try {
+            Write-ColorEX @params
+        } catch {
+            $PSCmdlet.WriteError($_)
+        }
 
         if ($PassThru) {
             $Text
@@ -565,7 +613,7 @@ function Set-ColorDefault {
 
     .EXAMPLE
     Set-ColorDefault -ForegroundColor Cyan -Bold
-    
+
     .EXAMPLE
     $style = [PSColorStyle]::new("MyDefault", "Green", $null)
     Set-ColorDefault -Style $style
@@ -577,35 +625,36 @@ function Set-ColorDefault {
     #>
     [CmdletBinding(DefaultParameterSetName = 'Properties')]
     [Alias('SCD', 'Set-ColourDefault', 'Set-DefaultColor', 'Set-DefaultColour')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'It sets a style in the session only; -WhatIf would change the command surface PWRSWriteColorEX matches.')]
     param(
         [Parameter(ParameterSetName = 'Object')]
         [PSColorStyle]$Style,
-        
+
         [Parameter(ParameterSetName = 'Properties')]
         [object]$ForegroundColor = "Gray",
-        
+
         [Parameter(ParameterSetName = 'Properties')]
         [object]$BackgroundColor = $null,
-        
+
         [Parameter(ParameterSetName = 'Properties')]
         [switch]$Bold,
-        
+
         [Parameter(ParameterSetName = 'Properties')]
         [switch]$Italic,
-        
+
         [Parameter(ParameterSetName = 'Properties')]
         [switch]$Underline,
-        
+
         [Parameter(ParameterSetName = 'Properties')]
         [switch]$ShowTime,
-        
+
         [Parameter(ParameterSetName = 'Properties')]
         [int]$StartTab = 0,
-        
+
         [Parameter(ParameterSetName = 'Properties')]
         [int]$StartSpaces = 0
     )
-    
+
     if ($PSCmdlet.ParameterSetName -eq 'Object') {
         $Style.SetAsDefault()
     } else {
@@ -625,25 +674,27 @@ function Get-ColorProfiles {
     <#
     .SYNOPSIS
     Gets available color profiles
-    
+
     .DESCRIPTION
     Returns all registered color profiles or a specific profile by name
-    
+
     .PARAMETER Name
     The name of a specific profile to retrieve
-    
+
     .EXAMPLE
     Get-ColorProfiles
-    
+
     .EXAMPLE
     Get-ColorProfiles -Name "Error"
     #>
     [CmdletBinding()]
     [Alias('GCP', 'Get-ColourProfiles', 'Get-Profiles', 'gcprofiles')]
+    [OutputType([PSColorStyle])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'A published command name, which PWRSWriteColorEX matches; renaming it would break scripts.')]
     param(
         [string]$Name
     )
-    
+
     if ($Name) {
         return [PSColorStyle]::GetProfile($Name)
     } else {
@@ -671,7 +722,8 @@ function New-ColorStyle {
     The background color, in the same forms as -ForegroundColor.
 
     .PARAMETER Gradient
-    Two or more colors to blend across the text, in place of -ForegroundColor.
+    Two or more colors to blend across the text, or the name of a named gradient, such as Sunset,
+    in place of -ForegroundColor.
 
     .PARAMETER Bold
     Bold text.
@@ -728,10 +780,31 @@ function New-ColorStyle {
     The character to pad with. A space when left out.
 
     .PARAMETER BackgroundGradient
-    Two or more colors to blend across the background. It replaces -BackgroundColor.
+    Two or more colors to blend across the background, or the name of a named gradient. It
+    replaces -BackgroundColor.
 
     .PARAMETER GradientSpace
-    How the gradients blend their colors: OKLab or RGB. Without it, Write-ColorEX's default, OKLab.
+    How the gradients blend their colors: OKLab, RGB, LinearRGB, OKLCH, HSL, HSV, Lab or LCh, as
+    Write-ColorEX's -GradientSpace takes them. Without it, Write-ColorEX's default, OKLab.
+
+    .PARAMETER GradientHue
+    The way round the hue wheel in OKLCH, HSL, HSV and LCh: Shorter, Longer, Increasing or
+    Decreasing. Without it, Write-ColorEX's default, Shorter.
+
+    .PARAMETER GradientEasing
+    A curve that moves the colors along the text, as Write-ColorEX's -GradientEasing takes it.
+    Without it, Write-ColorEX's default, Linear.
+
+    .PARAMETER GradientRepeat
+    What the gradients do past placed first and last colors: None, Repeat or Mirror. Without it,
+    Write-ColorEX's default, None.
+
+    .PARAMETER GradientDirection
+    The way the gradients run across the text: Forward, Reverse, CenterOut or EdgesIn. Without
+    it, Write-ColorEX's default, Forward.
+
+    .PARAMETER GradientSteps
+    Cuts the gradients into this many bands of solid color. 0 blends smoothly.
 
     .PARAMETER Reverse
     Swaps the text and background colors.
@@ -768,14 +841,19 @@ function New-ColorStyle {
     #>
     [CmdletBinding()]
     [Alias('NCS', 'New-ColourStyle', 'New-Style', 'ncstyle')]
+    [OutputType([PSColorStyle])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'It returns a new style and changes the session only with -AddToProfiles or -SetAsDefault; -WhatIf would change the command surface PWRSWriteColorEX matches.')]
     param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, Position = 0)]
         [string]$Name,
 
+        [Parameter(Position = 1)]
         [object]$ForegroundColor = "Gray",
 
+        [Parameter(Position = 2)]
         [object]$BackgroundColor = $null,
 
+        [Parameter(Position = 3)]
         [object[]]$Gradient = $null,
 
         [switch]$Bold,
@@ -790,19 +868,34 @@ function New-ColorStyle {
         [switch]$NoNewLine,
         [switch]$HorizontalCenter,
 
+        [Parameter(Position = 4)]
         [int]$StartTab = 0,
+        [Parameter(Position = 5)]
         [int]$StartSpaces = 0,
+        [Parameter(Position = 6)]
         [int]$LinesBefore = 0,
+        [Parameter(Position = 7)]
         [int]$LinesAfter = 0,
 
+        [Parameter(Position = 8)]
         [int]$AutoPad = 0,
         [switch]$PadLeft,
+        [Parameter(Position = 9)]
         [char]$PadChar = ' ',
 
+        [Parameter(Position = 10)]
         [object[]]$BackgroundGradient = $null,
-        [ValidateSet('OKLab', 'RGB')][string]$GradientSpace,
+        [Parameter(Position = 11)]
+        [ValidateSet('OKLab', 'RGB', 'LinearRGB', 'OKLCH', 'HSL', 'HSV', 'Lab', 'LCh')][string]$GradientSpace,
+        [ValidateSet('Shorter', 'Longer', 'Increasing', 'Decreasing')][string]$GradientHue,
+        [ValidateSet('Linear', 'InSine', 'OutSine', 'InOutSine', 'InQuad', 'OutQuad', 'InOutQuad', 'InCubic', 'OutCubic', 'InOutCubic', 'InQuart', 'OutQuart', 'InOutQuart', 'InQuint', 'OutQuint', 'InOutQuint', 'InExpo', 'OutExpo', 'InOutExpo', 'InCirc', 'OutCirc', 'InOutCirc', 'InBack', 'OutBack', 'InOutBack', 'InElastic', 'OutElastic', 'InOutElastic', 'InBounce', 'OutBounce', 'InOutBounce')][string]$GradientEasing,
+        [ValidateSet('None', 'Repeat', 'Mirror')][string]$GradientRepeat,
+        [ValidateSet('Forward', 'Reverse', 'CenterOut', 'EdgesIn')][string]$GradientDirection,
+        [ValidateRange(0, [int]::MaxValue)][int]$GradientSteps = 0,
         [switch]$Reverse,
+        [Parameter(Position = 12)]
         [object]$UnderlineColor = $null,
+        [Parameter(Position = 13)]
         [ValidateSet('Single', 'Double', 'Curly', 'Dotted', 'Dashed')][string]$UnderlineStyle,
         [switch]$PadCenter,
         [switch]$Truncate,
@@ -834,6 +927,11 @@ function New-ColorStyle {
     $style.PadChar = $PadChar
     $style.BackgroundGradient = $BackgroundGradient
     $style.GradientSpace = $GradientSpace
+    $style.GradientHue = $GradientHue
+    $style.GradientEasing = $GradientEasing
+    $style.GradientRepeat = $GradientRepeat
+    $style.GradientDirection = $GradientDirection
+    $style.GradientSteps = $GradientSteps
     $style.Reverse = $Reverse
     $style.UnderlineColor = $UnderlineColor
     $style.UnderlineStyle = $UnderlineStyle

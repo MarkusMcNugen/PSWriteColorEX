@@ -3,21 +3,23 @@ title: Format-ColorEX
 weight: 30
 ---
 
-Answers text with its colors and styles as escape codes, one string per line, as `Write-ColorEX`
+Returns text with its colors and styles as escape codes, one string per line, as `Write-ColorEX`
 would write it.
 
 {{< syntax "Format-ColorEX" >}}
 
 ## Description
 
-`Format-ColorEX` takes `Write-ColorEX`'s text, color, style and width parameters and answers each
+`Format-ColorEX` takes `Write-ColorEX`'s text, color, style and width parameters and returns each
 line as a string instead of writing it to the host, for a string built from several pieces, a
 table column, a file or another command.
 
 The strings hold escape codes wherever the host shows them, by the same detection and color
 variables `Write-ColorEX` uses. Where `Write-ColorEX` would write console colors instead, or with
-colors turned off, the strings are the text alone. `-Wrap` answers one string per line, and a
-style profile's `-LinesBefore` and `-LinesAfter` answer empty strings.
+colors turned off, the strings are the text alone. `-ColorSupport` gives the support to format
+for in place of the detection and the color variables, so the strings are the same wherever they
+are made: in a terminal, with output redirected, or with `NO_COLOR` set. `-Wrap` returns one
+string per line, and a style profile's `-LinesBefore` and `-LinesAfter` return empty strings.
 
 It takes no logging, time or console-window parameters: `-LogFile`, `-ShowTime`,
 `-HorizontalCenter`, `-BlankLine` and `-NoNewLine` belong to writing to the host.
@@ -35,11 +37,11 @@ Status: OK, 3 checks passed
 Each line is one string, and the escape codes are part of it:
 
 ```powershell
-PS> $lines = Format-ColorEX -Text 'Wrapped text answers one string for each line' -AutoPad 20 -Wrap
+PS> $lines = Format-ColorEX -Text 'Wrapped text returns one string for each line' -AutoPad 20 -Wrap
 PS> $lines.Count
 3
 PS> $lines
-Wrapped text answers
+Wrapped text returns
 one string for each
 line
 ```
@@ -49,6 +51,16 @@ With colors off, the strings are the text alone:
 ```powershell,none
 PS> Format-ColorEX -Text 'plain' -Color Red
 plain
+```
+
+`-ColorSupport` makes the strings for the support named, with colors off as here, in a redirected
+output, or in a terminal that shows fewer colors:
+
+```powershell,none
+PS> Format-ColorEX -Text '256 colors with NO_COLOR set' -Color '#FF8800' -ColorSupport ANSI8
+256 colors with NO_COLOR set
+PS> Format-ColorEX -Text 'the text alone' -Color '#FF8800' -ColorSupport None
+the text alone
 ```
 
 [Build colored strings](build-colored-strings.md) puts them in tables and files.

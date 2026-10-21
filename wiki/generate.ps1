@@ -27,8 +27,10 @@ Flags after the fence's language, comma-separated, as in ```powershell,ansi8:
   norun                       the commands are not run, and the written lines are shown in the
                               terminal's own colors, for output that depends on the machine.
 
-data/commands.json holds each command's syntax, aliases, and parameters with their help, and
-data/colors.json the color table, for the reference pages.
+data/commands.json holds each command's syntax, aliases, and parameters with their help,
+data/colors.json the color table, and data/presets.json the named gradients and the themes, for the
+reference pages. The cheat sheet page, content/docs/reference/cheat-sheet.md, is also written as the
+module's help topic, en-US/about_PSWriteColorEX.help.txt.
 
 The 16 colors and the console colors are drawn in Windows Terminal's Campbell scheme, and
 command lines are colored as PSReadLine 2.4 colors them by default.
@@ -37,6 +39,8 @@ command lines are colored as PSReadLine 2.4 colors them by default.
 pwsh ./generate.ps1
 #>
 [CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'The helpers are the script''s own; a plural names the several things one returns.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'The helpers set the script''s own state while it runs; -WhatIf has no meaning here.')]
 param(
     [string]$ContentPath = (Join-Path $PSScriptRoot 'content'),
     [string]$DataPath = (Join-Path $PSScriptRoot 'data'),
@@ -93,17 +97,17 @@ function Get-Color256([int]$Number) {
     if ($Number -lt 232) {
         $n = $Number - 16
         $levels = 0, 95, 135, 175, 215, 255
-        return ConvertTo-Hex $levels[[int][math]::Floor($n / 36)] $levels[[int][math]::Floor(($n % 36) / 6)] $levels[$n % 6]
+        return ConvertTo-Hex -R $levels[[int][math]::Floor($n / 36)] -G $levels[[int][math]::Floor(($n % 36) / 6)] -B $levels[$n % 6]
     }
     $v = 8 + 10 * ($Number - 232)
-    return ConvertTo-Hex $v $v $v
+    return ConvertTo-Hex -R $v -G $v -B $v
 }
 
 # The color halfway between two #RRGGBB colors, which is how a faint color is drawn
 function Get-MixedColor([string]$A, [string]$B) {
     $x = [Convert]::FromHexString($A.Substring(1))
     $y = [Convert]::FromHexString($B.Substring(1))
-    ConvertTo-Hex (($x[0] + $y[0]) -shr 1) (($x[1] + $y[1]) -shr 1) (($x[2] + $y[2]) -shr 1)
+    ConvertTo-Hex -R (($x[0] + $y[0]) -shr 1) -G (($x[1] + $y[1]) -shr 1) -B (($x[2] + $y[2]) -shr 1)
 }
 
 # The graphic rendition a terminal holds between escape codes, and the link OSC 8 opened
@@ -222,14 +226,14 @@ function Add-Span([OutputLines]$Out, [TerminalState]$State, [string]$Text) {
     $Out.Add($Text, (Get-SpanStyle $State), $class, $State.Link)
 }
 
-# The color an extended color code names: 5;N from the 256 colors, 2;R;G;B in TrueColor. Answers
+# The color an extended color code names: 5;N from the 256 colors, 2;R;G;B in TrueColor. Returns
 # the color and how many codes after the 38, 48 or 58 it took.
 function Get-ExtendedColor([string[]]$Codes, [int]$At) {
     if ($At + 1 -lt $Codes.Count -and $Codes[$At + 1] -eq '5' -and $At + 2 -lt $Codes.Count) {
         return @((Get-Color256 ([int]$Codes[$At + 2])), 2)
     }
     if ($At + 1 -lt $Codes.Count -and $Codes[$At + 1] -eq '2' -and $At + 4 -lt $Codes.Count) {
-        return @((ConvertTo-Hex ([int]$Codes[$At + 2]) ([int]$Codes[$At + 3]) ([int]$Codes[$At + 4])), 4)
+        return @((ConvertTo-Hex -R ([int]$Codes[$At + 2]) -G ([int]$Codes[$At + 3]) -B ([int]$Codes[$At + 4])), 4)
     }
     return @($null, $Codes.Count)
 }
@@ -312,7 +316,7 @@ function Add-AnsiText([OutputLines]$Out, [TerminalState]$State, [string]$Text) {
                 while ($j -lt $n -and ([int]$Text[$j] -lt 0x40 -or [int]$Text[$j] -gt 0x7E)) { $j++ }
                 if ($j -ge $n) { break }
                 if ($Text[$j] -eq 'm') {
-                    Add-Span $Out $State $buffer.ToString()
+                    Add-Span -Out $Out -State $State -Text $buffer.ToString()
                     [void]$buffer.Clear()
                     Set-GraphicRendition $State $Text.Substring($i + 2, $j - $i - 2)
                 }
@@ -331,7 +335,7 @@ function Add-AnsiText([OutputLines]$Out, [TerminalState]$State, [string]$Text) {
                 if ($end -lt 0) { break }
                 $body = $Text.Substring($i + 2, $end - $i - 2)
                 if ($body.StartsWith('8;')) {
-                    Add-Span $Out $State $buffer.ToString()
+                    Add-Span -Out $Out -State $State -Text $buffer.ToString()
                     [void]$buffer.Clear()
                     $separator = $body.IndexOf(';', 2)
                     $uri = if ($separator -ge 0) { $body.Substring($separator + 1) } else { '' }
@@ -344,7 +348,7 @@ function Add-AnsiText([OutputLines]$Out, [TerminalState]$State, [string]$Text) {
             continue
         }
         if ($c -eq "`n") {
-            Add-Span $Out $State $buffer.ToString()
+            Add-Span -Out $Out -State $State -Text $buffer.ToString()
             [void]$buffer.Clear()
             $Out.EndLine()
             $i++
@@ -355,13 +359,13 @@ function Add-AnsiText([OutputLines]$Out, [TerminalState]$State, [string]$Text) {
         }
         $i++
     }
-    Add-Span $Out $State $buffer.ToString()
+    Add-Span -Out $Out -State $State -Text $buffer.ToString()
 }
 
 # A line in a rendition of its own, as the console writes warnings and errors
 function Add-StyledLine([OutputLines]$Out, [string]$Rendition, [string]$Text) {
     $Out.Finish()
-    Add-AnsiText $Out ([TerminalState]::new()) "$script:Esc[${Rendition}m$Text$script:Esc[0m"
+    Add-AnsiText -Out $Out -State ([TerminalState]::new()) -Text "$script:Esc[${Rendition}m$Text$script:Esc[0m"
     $Out.EndLine()
 }
 
@@ -374,7 +378,7 @@ function Add-HostWrite([OutputLines]$Out, [TerminalState]$State, $Message) {
     if ($null -ne $Message.BackgroundColor) {
         $State.Background = $script:Palette[$script:ConsoleIndex["$($Message.BackgroundColor)"]]
     }
-    Add-AnsiText $Out $State ([string]$Message.Message)
+    Add-AnsiText -Out $Out -State $State -Text ([string]$Message.Message)
     if ($null -ne $Message.ForegroundColor) { $State.Foreground = $savedForeground }
     if ($null -ne $Message.BackgroundColor) { $State.Background = $savedBackground }
     if (-not $Message.NoNewLine) {
@@ -439,7 +443,7 @@ function Get-CommandLines([string]$Text) {
     $out = [OutputLines]::new()
     $state = [TerminalState]::new()
     $state.Foreground = $script:Palette[$script:TokenColor.Prompt]
-    Add-Span $out $state 'PS> '
+    Add-Span -Out $out -State $state -Text 'PS> '
     $run = [System.Text.StringBuilder]::new()
     $runColor = -1
     for ($p = 0; $p -lt $Text.Length; $p++) {
@@ -447,14 +451,14 @@ function Get-CommandLines([string]$Text) {
         if ($c -eq "`n" -or $colors[$p] -ne $runColor) {
             if ($run.Length) {
                 $state.Foreground = $script:Palette[$runColor]
-                Add-Span $out $state $run.ToString()
+                Add-Span -Out $out -State $state -Text $run.ToString()
                 [void]$run.Clear()
             }
         }
         if ($c -eq "`n") {
             $out.EndLine()
             $state.Foreground = $script:Palette[$script:TokenColor.Prompt]
-            Add-Span $out $state '>> '
+            Add-Span -Out $out -State $state -Text '>> '
             $runColor = -1
             continue
         }
@@ -463,7 +467,7 @@ function Get-CommandLines([string]$Text) {
     }
     if ($run.Length) {
         $state.Foreground = $script:Palette[$runColor]
-        Add-Span $out $state $run.ToString()
+        Add-Span -Out $out -State $state -Text $run.ToString()
     }
     $out.Finish()
     return , $out.Lines
@@ -587,13 +591,13 @@ function Format-Objects([System.Management.Automation.Runspaces.Runspace]$Runspa
 function Invoke-SessionCommand([System.Management.Automation.Runspaces.Runspace]$Runspace, [string]$Text) {
     $out = [OutputLines]::new()
     $state = [TerminalState]::new()
-    $items = Invoke-InRunspace $Runspace $script:RunCommand @($Text)
+    $items = Invoke-InRunspace -Runspace $Runspace -Script $script:RunCommand -Arguments @($Text)
     $group = [System.Collections.Generic.List[object]]::new()
     $flush = {
         if ($group.Count -gt 0) {
             $out.Finish()
             foreach ($line in (Format-Objects $Runspace $group)) {
-                Add-AnsiText $out $state $line
+                Add-AnsiText -Out $out -State $state -Text $line
                 $out.EndLine()
             }
             $group.Clear()
@@ -604,17 +608,17 @@ function Invoke-SessionCommand([System.Management.Automation.Runspaces.Runspace]
         if ($value -is [System.Management.Automation.InformationRecord]) {
             & $flush
             if ($value.MessageData -is [System.Management.Automation.HostInformationMessage]) {
-                Add-HostWrite $out $state $value.MessageData
+                Add-HostWrite -Out $out -State $state -Message $value.MessageData
             }
         } elseif ($value -is [System.Management.Automation.WarningRecord]) {
             & $flush
-            Add-StyledLine $out '33;1' "WARNING: $($value.Message)"
+            Add-StyledLine -Out $out -Rendition '33;1' -Text "WARNING: $($value.Message)"
         } elseif ($value -is [System.Management.Automation.ErrorRecord]) {
             & $flush
             $name = if ($value.InvocationInfo -and $value.InvocationInfo.MyCommand) { $value.InvocationInfo.MyCommand.Name } else { '' }
             $text = if ($name) { "${name}: $($value.Exception.Message)" } else { $value.Exception.Message }
             foreach ($line in $text.Replace("`r", '').Split("`n")) {
-                Add-StyledLine $out '31;1' $line
+                Add-StyledLine -Out $out -Rendition '31;1' -Text $line
             }
         } elseif ($value -is [System.Management.Automation.VerboseRecord] -or $value -is [System.Management.Automation.DebugRecord] -or $value -is [System.Management.Automation.ProgressRecord]) {
             continue
@@ -681,7 +685,7 @@ function ConvertTo-PlainLines($Written) {
     $lines = [System.Collections.Generic.List[object]]::new()
     foreach ($line in $Written) {
         $out = [OutputLines]::new()
-        Add-Span $out ([TerminalState]::new()) $line
+        Add-Span -Out $out -State ([TerminalState]::new()) -Text $line
         $out.Finish()
         $lines.Add($out.Lines[0])
     }
@@ -830,7 +834,7 @@ function Get-ColorData([System.Management.Automation.Runspaces.Runspace]$Runspac
             Order = $variantOrder[$variant]
             Data = [ordered]@{
                 name = $name
-                hex = ConvertTo-Hex $rgb[0] $rgb[1] $rgb[2]
+                hex = ConvertTo-Hex -R $rgb[0] -G $rgb[1] -B $rgb[2]
                 rgb = $rgb
                 ansi8 = [int]$value[3]
                 ansi8hex = Get-Color256 ([int]$value[3])
@@ -842,6 +846,193 @@ function Get-ColorData([System.Management.Automation.Runspaces.Runspace]$Runspac
         }
     }
     return @($entries | Sort-Object Family, Order | ForEach-Object Data)
+}
+
+function Get-PresetData([System.Management.Automation.Runspaces.Runspace]$Runspace) {
+    # The named gradients in the module's order, and the themes Import-ColorProfile -Theme takes:
+    # how many color names each theme file holds, and its profiles' colors
+    $script = @'
+$module = Get-Module PSWriteColorEX
+[pscustomobject]@{
+    Gradients = & $module { $script:GradientNames }
+    Themes = @((Get-Command Import-ColorProfile).Parameters['Theme'].Attributes |
+        Where-Object { $_ -is [System.Management.Automation.ValidateSetAttribute] } | ForEach-Object { $_.ValidValues })
+    Root = $module.ModuleBase
+}
+'@
+    $data = (Invoke-InRunspace $Runspace $script)[0]
+    $gradients = @(foreach ($name in $data.Gradients.Keys) {
+        [ordered]@{ name = [string]$name; colors = @(foreach ($color in $data.Gradients[$name]) { ([string]$color).ToUpperInvariant() }) }
+    })
+    $themes = @(foreach ($name in $data.Themes) {
+        if ($name -eq 'PowerShell') {
+            [ordered]@{ name = $name; count = 0; note = "Error, Warning, Info and Debug, and on PowerShell 7.2 and later Critical and Default, as PowerShell's own settings"; profiles = @() }
+            continue
+        }
+        $document = Get-Content -LiteralPath (Join-Path (Join-Path $data.Root 'Themes') "$name.json") -Raw | ConvertFrom-Json
+        $note = ''
+        if ($name -eq 'CSS') {
+            $note = 'The CSS color names the color table lacks; no profiles'
+        }
+        [ordered]@{
+            name = $name
+            count = @($document.Colors.PSObject.Properties).Count
+            note = $note
+            profiles = @(foreach ($entry in @($document.Profiles)) {
+                [ordered]@{ name = [string]$entry.Name; fg = $entry.ForegroundColor; bg = $entry.BackgroundColor }
+            })
+        }
+    })
+    return [ordered]@{ gradients = $gradients; themes = $themes }
+}
+
+# Text wrapped at Width columns, each line opening with Indent spaces
+function Format-Wrapped([string]$Text, [int]$Indent, [int]$Width = 80) {
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $line = ''
+    foreach ($word in $Text.Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)) {
+        if ($line.Length -gt 0 -and $Indent + $line.Length + 1 + $word.Length -gt $Width) {
+            $lines.Add((' ' * $Indent) + $line)
+            $line = $word
+        } elseif ($line.Length -gt 0) {
+            $line += ' ' + $word
+        } else {
+            $line = $word
+        }
+    }
+    if ($line.Length -gt 0) {
+        $lines.Add((' ' * $Indent) + $line)
+    }
+    return , $lines
+}
+
+# Markdown inline text as plain text: code spans and links as their text
+function ConvertTo-PlainText([string]$Text) {
+    $plain = [regex]::Replace($Text, '\[([^\]]+)\]\([^)]+\)', '$1')
+    return $plain.Replace('`', '')
+}
+
+function ConvertTo-AboutTopic([string]$Path, [string]$Topic, $Presets, $Commands) {
+    # The cheat sheet page as a plain-text help topic: the page's description as the short
+    # description, then each section under its heading in capitals, paragraphs wrapped at 80
+    # columns, the commands of each session without what they write, tables as aligned columns,
+    # and the lists the shortcodes draw written out. The page's text before its first section
+    # introduces the page, and is left out.
+    $text = [System.IO.File]::ReadAllText($Path).Replace("`r`n", "`n")
+    $front = [regex]::Match($text, '\A---\n(.*?)\n---\n', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $description = [regex]::Match($front.Groups[1].Value, '(?m)^description:\s*(.+)$').Groups[1].Value.Trim()
+    $body = $text.Substring($front.Length)
+    $gradientNames = @($Presets.gradients | ForEach-Object { $_.name })
+    $themeNames = @($Presets.themes | ForEach-Object { $_.name })
+    $body = $body.Replace('{{< gradient-names >}}', (($gradientNames[0..($gradientNames.Count - 2)] -join ', ') + ' and ' + $gradientNames[-1]))
+    $body = $body.Replace('{{< theme-names >}}', (($themeNames[0..($themeNames.Count - 2)] -join ', ') + ' and ' + $themeNames[-1]))
+
+    $out = [System.Collections.Generic.List[string]]::new()
+    $out.Add('TOPIC')
+    $out.Add("    $Topic")
+    $out.Add('')
+    $out.Add('SHORT DESCRIPTION')
+    foreach ($line in (Format-Wrapped $description 4)) { $out.Add($line) }
+    $out.Add('')
+    $out.Add('LONG DESCRIPTION')
+    foreach ($line in (Format-Wrapped 'The sections below give the commands and parameters by task. The documentation site has the same sheet, with what each example writes: https://markusmcnugen.github.io/PSWriteColorEX/docs/reference/cheat-sheet/' 4)) { $out.Add($line) }
+
+    $inSection = $false
+    $paragraph = [System.Collections.Generic.List[string]]::new()
+    $table = [System.Collections.Generic.List[string[]]]::new()
+    $flushParagraph = {
+        if ($paragraph.Count -gt 0) {
+            $out.Add('')
+            foreach ($line in (Format-Wrapped (ConvertTo-PlainText ($paragraph -join ' ')) 4)) { $out.Add($line) }
+            $paragraph.Clear()
+        }
+    }
+    $flushTable = {
+        if ($table.Count -gt 0) {
+            $widths = [int[]]::new($table[0].Count)
+            foreach ($row in $table) {
+                for ($c = 0; $c -lt $row.Count -and $c -lt $widths.Count; $c++) { $widths[$c] = [Math]::Max($widths[$c], $row[$c].Length) }
+            }
+            $out.Add('')
+            foreach ($row in $table) {
+                # The last column wraps under itself
+                $lead = '    '
+                for ($c = 0; $c -lt $row.Count - 1; $c++) { $lead += $row[$c].PadRight($widths[$c]) + '  ' }
+                $wrapped = Format-Wrapped $row[$row.Count - 1] $lead.Length
+                if ($wrapped.Count -eq 0) {
+                    $out.Add($lead.TrimEnd())
+                    continue
+                }
+                $out.Add($lead + $wrapped[0].TrimStart())
+                for ($w = 1; $w -lt $wrapped.Count; $w++) { $out.Add($wrapped[$w]) }
+            }
+            $table.Clear()
+        }
+    }
+    $lines = $body.Split("`n")
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $line = $lines[$i]
+        $heading = [regex]::Match($line, '^##\s+(.+)$')
+        if ($heading.Success) {
+            & $flushParagraph
+            & $flushTable
+            $inSection = $true
+            $out.Add('')
+            $out.Add((ConvertTo-PlainText $heading.Groups[1].Value).ToUpperInvariant())
+            continue
+        }
+        if (-not $inSection) {
+            continue
+        }
+        if ($line -match '^```') {
+            & $flushParagraph
+            & $flushTable
+            $out.Add('')
+            $i++
+            while ($i -lt $lines.Count -and $lines[$i] -notmatch '^```') {
+                if ($lines[$i].StartsWith('PS> ') -or $lines[$i].StartsWith('>> ')) {
+                    $out.Add('        ' + $lines[$i])
+                }
+                $i++
+            }
+            continue
+        }
+        if ($line.Trim() -eq '{{< command-list >}}') {
+            & $flushParagraph
+            # In ordinal order, as Hugo orders the keys of the page's table
+            $names = [string[]]@($Commands.Keys)
+            [Array]::Sort($names, [System.StringComparer]::Ordinal)
+            $width = ($names | Measure-Object -Property Length -Maximum).Maximum
+            $out.Add('')
+            foreach ($name in $names) {
+                $wrapped = Format-Wrapped ($Commands[$name].synopsis -replace '\s+', ' ') ($width + 6)
+                $out.Add('    ' + $name.PadRight($width) + '  ' + $wrapped[0].TrimStart())
+                for ($w = 1; $w -lt $wrapped.Count; $w++) { $out.Add($wrapped[$w]) }
+            }
+            continue
+        }
+        if ($line.StartsWith('|')) {
+            & $flushParagraph
+            if ($line -notmatch '^\|[\s:|-]+\|$') {
+                $table.Add([string[]]@($line.Trim().Trim('|').Split('|') | ForEach-Object { ConvertTo-PlainText $_.Trim() }))
+            }
+            continue
+        }
+        if ($line.Trim() -eq '') {
+            & $flushParagraph
+            & $flushTable
+            continue
+        }
+        $paragraph.Add($line.Trim())
+    }
+    & $flushParagraph
+    & $flushTable
+    $out.Add('')
+    $out.Add('SEE ALSO')
+    $out.Add('    https://markusmcnugen.github.io/PSWriteColorEX/')
+    $out.Add('    Get-Help Write-ColorEX -Full')
+    $out.Add('    Show-ColorTable')
+    return ($out -join "`n") + "`n"
 }
 
 function Write-Data([string]$Name, $Value) {
@@ -869,7 +1060,7 @@ $support = if ($Mode -eq 'Detected') { 'TrueColor' } else { $Mode }
 [PSColorStyle]::Profiles = @{}
 [PSColorStyle]::InitializeDefaultProfiles()
 '@
-    $null = Invoke-InRunspace $runspace $setup @($Folder, $ModulePath, $Mode)
+    $null = Invoke-InRunspace -Runspace $runspace -Script $setup -Arguments @($Folder, $ModulePath, $Mode)
     return $runspace
 }
 
@@ -938,7 +1129,7 @@ try {
                         $command = $commands[$c]
                         $commandCount++
                         $command.Output = Invoke-SessionCommand $runspace $command.Text
-                        $difference = Compare-Output $command ($c -eq $commands.Count - 1) $clock
+                        $difference = Compare-Output -Command $command -Last ($c -eq $commands.Count - 1) -Clock $clock
                         if ($difference) {
                             $report = [System.Text.StringBuilder]::new()
                             [void]$report.AppendLine("${relative}:$($block.Line): PS> $($command.Text.Split("`n")[0])")
@@ -978,8 +1169,17 @@ try {
     $null = New-Item -ItemType Directory -Path $folder
     $runspace = New-SessionRunspace $folder 'TrueColor'
     try {
-        Write-Data 'commands.json' (Get-CommandData $runspace)
+        $commandData = Get-CommandData $runspace
+        $presetData = Get-PresetData $runspace
+        Write-Data 'commands.json' $commandData
         Write-Data 'colors.json' (Get-ColorData $runspace)
+        Write-Data 'presets.json' $presetData
+        # The cheat sheet as the module's help topic, UTF-8 with a byte order mark so Windows
+        # PowerShell 5.1 reads its wide characters
+        $topicFolder = Join-Path (Split-Path -Parent $ModulePath) 'en-US'
+        $null = New-Item -ItemType Directory -Force -Path $topicFolder
+        $topic = ConvertTo-AboutTopic -Path (Join-Path $ContentPath 'docs/reference/cheat-sheet.md') -Topic 'about_PSWriteColorEX' -Presets $presetData -Commands $commandData
+        [System.IO.File]::WriteAllText((Join-Path $topicFolder 'about_PSWriteColorEX.help.txt'), $topic, [System.Text.UTF8Encoding]::new($true))
     } finally {
         $runspace.Dispose()
         Remove-Item -LiteralPath $folder -Recurse -Force -ErrorAction SilentlyContinue

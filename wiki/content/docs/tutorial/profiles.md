@@ -81,6 +81,23 @@ PS> Write-ColorEX -Text 'plain Gray again' -Default
 plain Gray again
 ```
 
+## Themes
+
+A theme restyles all seven profiles at once, in the colors of a scheme such as Dracula, Nord or
+Catppuccin, or in PowerShell's own colors. `Show-ColorTable -Profiles` shows the result:
+
+```powershell
+PS> Import-ColorProfile -Theme Dracula
+PS> Write-ColorError 'Build failed'
+Build failed
+PS> Show-ColorTable -Profiles -Name Error, Success
+Profile  Sample       Settings
+Error    Sample text  #FF5555, Bold
+Success  Sample text  #50FA7B
+```
+
+[Use a theme](use-a-theme.md) shows every theme.
+
 ## Keeping profiles
 
 Profiles last for the session. `Export-ColorProfile` saves them to a file and

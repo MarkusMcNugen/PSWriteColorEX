@@ -11,20 +11,23 @@ writes the same output.
 ## Why it exists
 
 The same work costs less in compiled code: a call takes a fraction of the time, which matters for
-a script that writes thousands of lines; see [Performance](performance.md). Its version always
-matches the PSWriteColorEX release whose commands and output it has.
+a script that writes thousands of lines; see [Performance](performance.md). Its major and minor
+version are those of the PSWriteColorEX release whose commands and output it has, and its patch
+number may differ.
 
 ## How the two stay the same
 
 Three test suites hold PWRSWriteColorEX to PSWriteColorEX, and its CI runs them on every platform
 it builds:
 
-- The surface test compares every command, parameter (type, position, aliases, valid values,
-  parameter sets), alias and `PSColorStyle` member with what PSWriteColorEX declares.
-- The parity suite runs 495 calls against both modules, each in a process of its own, under eight
+- The surface test compares every command and the types it returns, every parameter (type,
+  position, aliases, valid values, parameter sets), alias and `PSColorStyle` member with what
+  PSWriteColorEX declares.
+- The parity suite runs 717 calls against both modules, each in a process of its own, under eight
   color environments: TrueColor, 256 colors, 16 colors, `NO_COLOR`, `TERM=dumb`, `CLICOLOR=0`,
   `CLICOLOR_FORCE` with `TERM=dumb`, and the support the terminal reports. It compares each write
-  to the host with its colors, each warning, error and object, and the bytes of each log file.
+  to the host with its colors, each warning, error and object, and the bytes of each log file,
+  then compares the theme files and the help topic PWRSWriteColorEX copies from PSWriteColorEX.
 - The transcript test checks that a transcript records each line once.
 
 Beyond the suites, a profile file is the same bytes from either module, so each reads the other's,

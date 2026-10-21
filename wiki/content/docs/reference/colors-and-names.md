@@ -72,10 +72,39 @@ x
 
 {{% parameters "Unregister-ColorName" "unregister-colorname-" %}}
 
+## Named gradients
+
+`-Gradient` and `-BackGroundGradient` take one of these names in place of a list of colors, and so
+does a style's `Gradient` or `BackgroundGradient`. A name is read without regard to case; two
+values or more are always colors, so `-Gradient Forest, Blue` blends the color Forest into blue.
+
+{{< gradients >}}
+
+Atlas to Summer are the presets of [gradient-string](https://github.com/bokub/gradient-string)
+(MIT, copyright 2017 Boris K). Its rainbow and pastel blend in HSV, so Rainbow and Pastel here are
+this module's own.
+
+## CSS color names
+
+`Import-ColorProfile -Theme CSS` registers the CSS color names the table lacks, 100 of CSS's 148,
+with the colors CSS gives them: Tomato, SlateGray, RebeccaPurple and the rest. A name already in
+the table keeps its color, so Green stays `#00FF00` where CSS has `#008000`, and a name registered
+before keeps the color it was given. Grey, DarkGrey and LightGrey take the colors of Gray,
+DarkGray and LightGray, so the two spellings name one color.
+
+```powershell
+PS> Import-ColorProfile -Theme CSS
+PS> Write-ColorEX -Text 'Tomato', ' SlateGray', ' RebeccaPurple' -Color Tomato, SlateGray, RebeccaPurple
+Tomato SlateGray RebeccaPurple
+```
+
 ## Color table
 
-Each name with its color in TrueColor, the nearest of the 256 colors, the nearest of the 16, and
-its console color, the last three drawn in Windows Terminal's default scheme.
-`Get-ColorTableWithRGB` answers the same table, and `Show-ColorTable` writes it in your terminal.
+Each name with its color in TrueColor, its 256-color code, its 16-color code and its console color,
+the last three drawn in Windows Terminal's default scheme. A name gets the same 256-color code as
+its hex code: the one that looks nearest. The exceptions are 17 names that use codes 0 to 15, so
+they follow the terminal's scheme: Black, Red, Green, Blue, Magenta, Cyan, Aqua, Gray, DarkGray,
+White, LightRed, LightGreen, LightYellow, LightBlue, LightMagenta, LightCyan and LightAqua.
+`Get-ColorTableWithRGB` returns the same table, and `Show-ColorTable` writes it in your terminal.
 
 {{< colors >}}

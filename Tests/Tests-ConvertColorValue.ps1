@@ -1,4 +1,11 @@
 #Requires -Modules Pester
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', 'LA8', Justification = 'The alias tests call each alias by name.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', 'Lighten-ANSI8', Justification = 'The alias tests call each alias by name.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', 'Lighten-ANSI8Color', Justification = 'The alias tests call each alias by name.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', 'Lighten-ColorName', Justification = 'The alias tests call each alias by name.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', 'Lighten-RGBColor', Justification = 'The alias tests call each alias by name.')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingCmdletAliases', 'Get-ColourContrast', Justification = 'The alias tests call each alias by name.')]
+param()
 
 BeforeAll {
     # Import the module
@@ -170,92 +177,83 @@ Describe 'Convert-RGBToANSI8' -Tag 'Unit', 'Function', 'ColorConversion' {
         }
     }
 
-    Context 'Grayscale Detection' {
-        It 'Detects pure black as grayscale' {
-            $result = Convert-RGBToANSI8 @(0, 0, 0)
-
-            $result | Should -Be 16
+    Context 'Nearest by OKLab' {
+        It 'Returns each code of 16-255 for its own color' {
+            $steps = 0, 95, 135, 175, 215, 255
+            $wrong = foreach ($code in 16..255) {
+                $rgb = if ($code -ge 232) {
+                    $gray = 8 + 10 * ($code - 232)
+                    @($gray, $gray, $gray)
+                } else {
+                    $i = $code - 16
+                    @($steps[[int][Math]::Floor($i / 36)], $steps[[int][Math]::Floor($i / 6) % 6], $steps[$i % 6])
+                }
+                $result = Convert-RGBToANSI8 -RGB $rgb
+                if ($result -ne $code) { "$code -> $result" }
+            }
+            $wrong | Should -BeNullOrEmpty
         }
 
-        It 'Detects pure white as grayscale' {
-            $result = Convert-RGBToANSI8 @(255, 255, 255)
-
-            $result | Should -Be 231
+        It 'Returns the code a full search of codes 16-255 finds nearest by weighted OKLab distance' {
+            $wrong = & (Get-Module PSWriteColorEX) {
+                $random = [System.Random]::new(20261009)
+                $colors = [System.Collections.Generic.List[int[]]]::new()
+                foreach ($r in 0, 51, 102, 153, 204, 255) {
+                    foreach ($g in 0, 51, 102, 153, 204, 255) {
+                        foreach ($b in 0, 51, 102, 153, 204, 255) { $colors.Add([int[]]@($r, $g, $b)) }
+                    }
+                }
+                for ($n = 0; $n -lt 300; $n++) { $colors.Add([int[]]@($random.Next(256), $random.Next(256), $random.Next(256))) }
+                foreach ($color in $colors) {
+                    $lab = [ColorMath]::ToOkLab($color)
+                    $nearest = 0
+                    $nearestDistance = [double]::MaxValue
+                    for ($i = 0; $i -lt 240; $i++) {
+                        $entry = [ColorMath]::Ansi8Labs[$i]
+                        $dl = ($entry[0] - $lab[0]) * [ColorMath]::LightnessWeight
+                        $da = $entry[1] - $lab[1]
+                        $db = $entry[2] - $lab[2]
+                        $distance = $dl * $dl + $da * $da + $db * $db
+                        if ($distance -lt $nearestDistance) { $nearestDistance = $distance; $nearest = $i + 16 }
+                    }
+                    $result = Convert-RGBToANSI8 -RGB $color
+                    if ($result -ne $nearest) { "($($color -join ', ')) -> $result, nearest $nearest" }
+                }
+            }
+            $wrong | Should -BeNullOrEmpty
         }
 
-        It 'Detects mid-gray as grayscale' {
-            $result = Convert-RGBToANSI8 @(128, 128, 128)
-
-            # Should be in grayscale range (232-255) or close to gray in color cube
-            $result | Should -BeGreaterOrEqual 0
-            $result | Should -BeLessOrEqual 255
+        It 'Keeps a saturated violet saturated rather than adding green' {
+            Convert-RGBToANSI8 @(110, 51, 255) | Should -Be 57
+            Convert-RGBToANSI8 @(56, 33, 255) | Should -Be 21
         }
 
-        It 'Answers an integer for a gray' {
+        It 'Never returns a code from 0 to 15' {
+            foreach ($rgb in @(@(0, 0, 0), @(255, 0, 0), @(0, 0, 255), @(192, 192, 192), @(255, 255, 255))) {
+                Convert-RGBToANSI8 -RGB $rgb | Should -BeGreaterOrEqual 16
+            }
+        }
+    }
+
+    Context 'Edge Cases' {
+        It 'Returns 16 for black and 231 for white' {
+            Convert-RGBToANSI8 @(0, 0, 0) | Should -Be 16
+            Convert-RGBToANSI8 @(255, 255, 255) | Should -Be 231
+        }
+
+        It 'Returns an integer, 244 for #808080' {
             $result = Convert-RGBToANSI8 @(128, 128, 128)
 
             $result | Should -BeOfType [int]
             $result | Should -Be 244
         }
 
-        It 'Detects near-gray values as grayscale' {
-            # RGB values within 10 of each other should be grayscale
-            $result = Convert-RGBToANSI8 @(100, 105, 100)
-
-            $result | Should -BeGreaterOrEqual 0
-        }
-    }
-
-    Context 'Color Cube Mapping' {
-        It 'Maps pure red to color cube' {
-            $result = Convert-RGBToANSI8 @(255, 0, 0)
-
-            # Red in 6x6x6 cube
-            $result | Should -BeGreaterOrEqual 16
-            $result | Should -BeLessOrEqual 231
+        It 'Returns a gray for a color whose channels nearly match' {
+            Convert-RGBToANSI8 @(100, 105, 100) | Should -Be 242
         }
 
-        It 'Maps pure green to color cube' {
-            $result = Convert-RGBToANSI8 @(0, 255, 0)
-
-            $result | Should -BeGreaterOrEqual 16
-            $result | Should -BeLessOrEqual 231
-        }
-
-        It 'Maps pure blue to color cube' {
-            $result = Convert-RGBToANSI8 @(0, 0, 255)
-
-            $result | Should -BeGreaterOrEqual 16
-            $result | Should -BeLessOrEqual 231
-        }
-
-        It 'Maps orange correctly' {
-            $result = Convert-RGBToANSI8 @(255, 165, 0)
-
-            # Should map to orange-like color in cube
-            $result | Should -BeGreaterOrEqual 16
-            $result | Should -BeLessOrEqual 255
-        }
-    }
-
-    Context 'Edge Cases' {
-        It 'Handles all zeros' {
-            $result = Convert-RGBToANSI8 @(0, 0, 0)
-
-            $result | Should -Be 16
-        }
-
-        It 'Handles all maximum values' {
-            $result = Convert-RGBToANSI8 @(255, 255, 255)
-
-            $result | Should -Be 231
-        }
-
-        It 'Handles mid-range values' {
-            $result = Convert-RGBToANSI8 @(127, 127, 127)
-
-            $result | Should -BeGreaterOrEqual 0
-            $result | Should -BeLessOrEqual 255
+        It 'Clamps values outside 0-255' {
+            Convert-RGBToANSI8 @(300, -5, 0) | Should -Be (Convert-RGBToANSI8 @(255, 0, 0))
         }
 
         It 'Returns consistent results for same input' {
@@ -263,23 +261,7 @@ Describe 'Convert-RGBToANSI8' -Tag 'Unit', 'Function', 'ColorConversion' {
             $result2 = Convert-RGBToANSI8 @(100, 150, 200)
 
             $result1 | Should -Be $result2
-        }
-    }
-
-    Context 'Lookup Table Usage' {
-        It 'Uses lookup table when available' {
-            # Lookup table should be initialized by module
-            $result = Convert-RGBToANSI8 @(255, 128, 0)
-
-            $result | Should -BeOfType [int]
-        }
-
-        It 'Falls back when lookup table not available' {
-            # Even without lookup table, should return valid result
-            $result = Convert-RGBToANSI8 @(100, 100, 100)
-
-            $result | Should -BeGreaterOrEqual 0
-            $result | Should -BeLessOrEqual 255
+            $result1 | Should -Be 67
         }
     }
 }
@@ -475,7 +457,7 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Color Table Structure' {
         BeforeAll {
-            $colorTable = Get-ColorTableWithRGB
+            $script:colorTable = Get-ColorTableWithRGB
         }
 
         It 'Contains expected number of colors' {
@@ -507,7 +489,7 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Neutral Colors' {
         BeforeAll {
-            $colorTable = Get-ColorTableWithRGB
+            $script:colorTable = Get-ColorTableWithRGB
         }
 
         It 'Contains Black' {
@@ -535,7 +517,7 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Primary Color Families' {
         BeforeAll {
-            $colorTable = Get-ColorTableWithRGB
+            $script:colorTable = Get-ColorTableWithRGB
         }
 
         It 'Contains Red family (Dark, Normal, Light)' {
@@ -577,7 +559,7 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Extended Color Families' {
         BeforeAll {
-            $colorTable = Get-ColorTableWithRGB
+            $script:colorTable = Get-ColorTableWithRGB
         }
 
         It 'Contains Orange family' {
@@ -607,7 +589,7 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'Specialty Color Families' {
         BeforeAll {
-            $colorTable = Get-ColorTableWithRGB
+            $script:colorTable = Get-ColorTableWithRGB
         }
 
         It 'Contains Crimson family' {
@@ -631,7 +613,7 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'RGB Value Validation' {
         BeforeAll {
-            $colorTable = Get-ColorTableWithRGB
+            $script:colorTable = Get-ColorTableWithRGB
         }
 
         It 'All RGB values are within valid range (0-255)' {
@@ -664,7 +646,7 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
 
     Context 'ANSI Code Validation' {
         BeforeAll {
-            $colorTable = Get-ColorTableWithRGB
+            $script:colorTable = Get-ColorTableWithRGB
         }
 
         It 'All ANSI4 foreground codes are valid' {
@@ -687,6 +669,29 @@ Describe 'Get-ColorTableWithRGB' -Tag 'Unit', 'Function', 'ColorConversion' {
                 $ansi8 | Should -BeGreaterOrEqual 0
                 $ansi8 | Should -BeLessOrEqual 255
             }
+        }
+
+        It 'Keeps the names on codes 0-15 there, so they follow the terminal''s scheme' {
+            $kept = [ordered]@{
+                Black = 0; Red = 1; Green = 2; Blue = 4; Magenta = 5; Cyan = 6; Aqua = 6; Gray = 7; DarkGray = 8
+                LightRed = 9; LightGreen = 10; LightYellow = 11; LightBlue = 12; LightMagenta = 13; LightCyan = 14
+                LightAqua = 14; White = 15
+            }
+            foreach ($name in $kept.Keys) {
+                $colorTable[$name][3] | Should -Be $kept[$name] -Because $name
+            }
+            @($colorTable.Keys | Where-Object { $colorTable[$_][3] -lt 16 }).Count | Should -Be $kept.Count
+        }
+
+        It 'Gives every other name the 256-color code its color takes as a hex code' {
+            $wrong = foreach ($key in $colorTable.Keys) {
+                $entry = $colorTable[$key]
+                if ($entry[3] -ge 16) {
+                    $nearest = Convert-RGBToANSI8 -RGB $entry[4]
+                    if ($entry[3] -ne $nearest) { "$key $($entry[3]), nearest $nearest" }
+                }
+            }
+            $wrong | Should -BeNullOrEmpty
         }
     }
 
@@ -1225,7 +1230,7 @@ Describe 'Get-LighterANSI8Color' -Tag 'Unit', 'Function', 'ColorConversion' {
             $result | Should -Be 255
         }
 
-        It 'Answers an integer for a gray' {
+        It 'Returns an integer for a gray' {
             $result = Get-LighterANSI8Color -ANSI8Code 240
 
             $result | Should -BeOfType [int]
@@ -1400,5 +1405,50 @@ Describe 'Lighten-* aliases' -Tag 'Unit', 'Function', 'ColorConversion' {
             (Get-Command $name).ResolvedCommandName | Should -Be 'Get-LighterANSI8Color'
         }
         Lighten-ANSI8Color -ANSI8Code 1 | Should -Be 9
+    }
+}
+
+Describe 'Get-ColorContrast' -Tag 'Unit', 'Function', 'ColorConversion' {
+    It 'Returns the WCAG contrast ratio, from 1 to 21' {
+        $ratio = Get-ColorContrast -Color White -BackGroundColor Black
+        $ratio | Should -BeOfType [double]
+        [Math]::Abs($ratio - 21) | Should -BeLessThan 1e-12
+        Get-ColorContrast Crimson Crimson | Should -Be 1
+        [Math]::Abs((Get-ColorContrast Red White) - 3.998) | Should -BeLessThan 0.001
+        [Math]::Abs((Get-ColorContrast @(229, 229, 229) Black) - 16.67) | Should -BeLessThan 0.01
+    }
+
+    It 'Gives the same ratio either way round' {
+        $one = Get-ColorContrast Gold '#1E1E2E'
+        $two = Get-ColorContrast '#1E1E2E' Gold
+        [BitConverter]::DoubleToInt64Bits($one) | Should -Be ([BitConverter]::DoubleToInt64Bits($two))
+    }
+
+    It 'Takes a color in each form Register-ColorName takes' {
+        $expected = Get-ColorContrast @(255, 128, 0) @(0, 0, 128)
+        Get-ColorContrast '#FF8000' Navy | Should -Be $expected
+        Get-ColorContrast 'rgb(255, 128, 0)' '#000080' | Should -Be $expected
+        Get-ColorContrast 'hsl(30, 100%, 50%)' 'rgb(0, 0, 128)' | Should -Be $expected
+        Get-ColorContrast '#F80' Navy | Should -Be (Get-ColorContrast @(255, 136, 0) Navy)
+        Register-ColorName Brand '#FF8000'
+        try {
+            Get-ColourContrast -C Brand -BGC Navy | Should -Be $expected
+        } finally {
+            Unregister-ColorName Brand
+        }
+    }
+
+    It 'Gives an error and no ratio for a value that is not a color' {
+        $ratio = Get-ColorContrast NoSuchColor White -ErrorVariable failures -ErrorAction SilentlyContinue
+        $ratio | Should -BeNullOrEmpty
+        $failures.Count | Should -Be 1
+        $failures[0].FullyQualifiedErrorId | Should -BeLike 'InvalidColor*'
+        $failures[0].Exception.Message | Should -Be "'NoSuchColor' is not a color. A color is a hex code, rgb(), hsl(), an RGB array of three numbers 0-255, or a name in the color table."
+        $null = Get-ColorContrast @(1, 2) @(256, 0, 0) -ErrorVariable both -ErrorAction SilentlyContinue
+        @($both | ForEach-Object { $_.Exception.Message.Split(' ')[0] }) | Should -Be @("'@(1,", "'@(256,")
+    }
+
+    It 'Get-ColourContrast runs Get-ColorContrast' {
+        (Get-Command Get-ColourContrast).ResolvedCommandName | Should -Be 'Get-ColorContrast'
     }
 }

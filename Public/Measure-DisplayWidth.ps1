@@ -4,7 +4,7 @@
         Measures the display width of a string in terminal cells.
 
     .DESCRIPTION
-        Answers how many terminal cells a string occupies, which String.Length does not: Length
+        Returns how many terminal cells a string takes up, which String.Length does not: Length
         counts UTF-16 code units. The width of each character comes from the table of the Rust
         crate unicode-width 0.2.2, which PWRSWriteColorEX uses, so both modules measure alike:
         - Wide characters (CJK, most emoji) take 2 cells

@@ -1,18 +1,20 @@
 ﻿function Format-ColorEX {
     <#
     .SYNOPSIS
-    Answers text with its colors and styles as escape codes, as Write-ColorEX would write it.
+    Returns text with its colors and styles as escape codes, as Write-ColorEX would write it.
 
     .DESCRIPTION
-    Format-ColorEX takes Write-ColorEX's text, color, style and width parameters and answers each
+    Format-ColorEX takes Write-ColorEX's text, color, style and width parameters and returns each
     line as a string instead of writing it to the host, for a string built from several pieces,
     a table column, a file or another command.
 
     The strings hold escape codes wherever the host shows them, by the same detection and color
     variables Write-ColorEX uses. Where it would write console colors instead, or with colors
-    turned off, the strings are the text alone.
+    turned off, the strings are the text alone. -ColorSupport gives the color support to format
+    for in place of the detection and the color variables, so the strings are the same wherever
+    they are made.
 
-    -Wrap answers one string per line, and a style profile's -LinesBefore and -LinesAfter answer
+    -Wrap returns one string per line, and a style profile's -LinesBefore and -LinesAfter return
     empty strings.
 
     .PARAMETER Text
@@ -33,7 +35,24 @@
     takes them.
 
     .PARAMETER GradientSpace
-    How the gradients blend their colors: OKLab (the default) or RGB.
+    How the gradients blend their colors: OKLab (the default), RGB, LinearRGB, OKLCH, HSL, HSV,
+    Lab or LCh, as Write-ColorEX's -GradientSpace takes them.
+
+    .PARAMETER GradientHue
+    The way round the hue wheel in OKLCH, HSL, HSV and LCh: Shorter (the default), Longer,
+    Increasing or Decreasing.
+
+    .PARAMETER GradientEasing
+    A curve that moves the colors along the text, as Write-ColorEX's -GradientEasing takes it.
+
+    .PARAMETER GradientRepeat
+    What a gradient does past placed first and last colors: None (the default), Repeat or Mirror.
+
+    .PARAMETER GradientDirection
+    The way a gradient runs across the text: Forward (the default), Reverse, CenterOut or EdgesIn.
+
+    .PARAMETER GradientSteps
+    Cuts a gradient into this many bands of solid color; 0, the default, blends smoothly.
 
     .PARAMETER ANSI4
     Uses ANSI 4-bit colors.
@@ -43,6 +62,11 @@
 
     .PARAMETER ANSI24
     Uses 24-bit TrueColor.
+
+    .PARAMETER ColorSupport
+    The color support to format for, in place of the detection and the color variables: None,
+    ANSI4, ANSI8 or TrueColor, as Write-ColorEX's -ColorSupport takes it. ANSI4, ANSI8 and
+    TrueColor give escape codes for that support, and None gives the text alone.
 
     .PARAMETER Style
     The styles of each segment, as Write-ColorEX's -Style takes them.
@@ -157,6 +181,12 @@
 
     Three strings, each 20 cells wide.
 
+    .EXAMPLE
+    Format-ColorEX 'Done' -Color Green -ColorSupport ANSI8
+
+    "Done" in green as a 256-color escape code. The string is the same whether it is made in a
+    terminal, with output redirected or with NO_COLOR set.
+
     .NOTES
     Author: Mark Newton
     License: MIT
@@ -185,10 +215,16 @@
         [alias ('Grad')][object[]] $Gradient = $null,
         [AllowNull()]
         [alias ('BGGrad')][object[]] $BackGroundGradient = $null,
-        [ValidateSet('OKLab', 'RGB')][string] $GradientSpace = 'OKLab',
+        [ValidateSet('OKLab', 'RGB', 'LinearRGB', 'OKLCH', 'HSL', 'HSV', 'Lab', 'LCh')][string] $GradientSpace = 'OKLab',
+        [ValidateSet('Shorter', 'Longer', 'Increasing', 'Decreasing')][string] $GradientHue = 'Shorter',
+        [ValidateSet('Linear', 'InSine', 'OutSine', 'InOutSine', 'InQuad', 'OutQuad', 'InOutQuad', 'InCubic', 'OutCubic', 'InOutCubic', 'InQuart', 'OutQuart', 'InOutQuart', 'InQuint', 'OutQuint', 'InOutQuint', 'InExpo', 'OutExpo', 'InOutExpo', 'InCirc', 'OutCirc', 'InOutCirc', 'InBack', 'OutBack', 'InOutBack', 'InElastic', 'OutElastic', 'InOutElastic', 'InBounce', 'OutBounce', 'InOutBounce')][string] $GradientEasing = 'Linear',
+        [ValidateSet('None', 'Repeat', 'Mirror')][string] $GradientRepeat = 'None',
+        [ValidateSet('Forward', 'Reverse', 'CenterOut', 'EdgesIn')][string] $GradientDirection = 'Forward',
+        [ValidateRange(0, [int]::MaxValue)][int] $GradientSteps = 0,
         [alias ('A4')][switch] $ANSI4,
         [alias ('A8')][switch] $ANSI8,
         [alias ('A24', 'TrueColor', 'TC')][switch] $ANSI24,
+        [ValidateSet('None', 'ANSI4', 'ANSI8', 'TrueColor')][string] $ColorSupport,
         [ValidateScript({$_ -is [string] -or $_ -is [int] -or $_ -is [int[]] -or $_ -is [string[]] -or $_ -is [object[]]})][alias ('S')][object] $Style = $null,
         [PSColorStyle] $StyleProfile = $null,
         [switch] $Default,

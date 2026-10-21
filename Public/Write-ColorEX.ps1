@@ -36,6 +36,8 @@
     - CLICOLOR_FORCE, set to anything but 0, keeps colors on: the support detected, or ANSI4
     - CLICOLOR=0 or TERM=dumb turns colors and styles off
 
+    -ColorSupport gives the color support to write for in place of all of these.
+
     .PARAMETER Text
     The text to write. Several strings are written on one line, each with its own colors and styles.
     Strings piped in are written one line each.
@@ -78,19 +80,34 @@
     Example: -BackGroundColor 'DarkRed' -or- -BackGroundColor '#2C2C2C'
 
     .PARAMETER Gradient
-    Two or more colors to blend across the characters of the text. Each character takes a color
-    interpolated between the colors given.
+    Two or more colors to blend across the characters of the text, or the name of a named
+    gradient. With at least as many characters as colors, each color given falls on a character
+    of its own, and the characters between take colors blended between them. White space takes no
+    color, since it shows none, unless it is underlined, crossed out, overlined or reversed.
+
+    A color may give its place along the text after an '@', as a percent: 'Gold@40' puts Gold 40%
+    of the way along, on the nearest character. The first color is at 0% and the last at 100%
+    unless placed, and colors without a place spread evenly between the placed ones around them,
+    as CSS places color stops.
+
+    The named gradients are Rainbow, Sunset, Ocean, Forest, Fire, Ice, Neon, Pastel, Grayscale and
+    Progress, and gradient-string's Atlas, Cristal, Teen, Mind, Morning, Vice, Passion, Fruit,
+    Instagram, Retro and Summer. Tab completion lists them with their colors.
 
     A gradient needs ANSI 8-bit or TrueColor support and selects the best mode available.
     A segment with a color in -Color keeps that color instead of the gradient, and a $null entry
     leaves its segment to the gradient. -Color repeats its colors over the segments, so
     -Color $null, 'Yellow', $null colors the second of three segments yellow and the others
-    with the gradient. -GradientSpace sets how the colors blend.
+    with the gradient. -GradientSpace sets how the colors blend, -GradientHue the way round the
+    hue wheel, -GradientEasing a curve along the text, -GradientRepeat what happens past placed
+    colors, -GradientDirection the way across the text, and -GradientSteps bands of solid color.
 
     Alias: Grad
 
     Example: -Gradient @('Red', 'Blue')
     Example: -Gradient @('Red', 'Yellow', 'Green', 'Cyan', 'Blue', 'Magenta')
+    Example: -Gradient Sunset
+    Example: -Gradient 'Red', 'Gold@30', 'Green'
 
     .PARAMETER ANSI4
     Uses ANSI 4-bit colors (16 colors: 8 normal and 8 bright).
@@ -110,12 +127,27 @@
 
     Aliases: A24, TrueColor, TC
 
+    .PARAMETER ColorSupport
+    The color support to write for, in place of the terminal's: None, ANSI4, ANSI8 or TrueColor,
+    the values Test-AnsiSupport reports. It replaces the whole check, the terminal, the host,
+    redirected output and the color variables, so the colors depend only on the arguments. The
+    output is what Write-ColorEX writes on a terminal of that support: color modes fall back to
+    it, ANSI4, ANSI8 and TrueColor write escape codes whatever the host, and None writes the
+    console's colors.
+
+    -Bold lightens the colors where bold cannot show: always with None, and with the others where
+    the terminal draws bold as brighter colors.
+
+    Example: -ColorSupport ANSI8
+
     .PARAMETER Style
     Styles for the text segments in order: an array with one style per segment, or with an array
     of styles for a segment that takes several. One style alone styles the first segment, as an
-    array of one does. -Bold and the other style switches style every segment.
+    array of one does, and a list, such as a List[string], styles the segments as its array does.
+    -Bold and the other style switches style every segment.
 
-    Valid styles: Bold, Faint, Italic, Underline, Blink, CrossedOut, DoubleUnderline, Overline, Reverse
+    Valid styles: Bold, Faint, Italic, Underline, Blink, CrossedOut, DoubleUnderline, Overline,
+    Reverse, Curly, Dotted, Dashed
 
     Alias: S
 
@@ -377,9 +409,9 @@
     Alias: Invert
 
     .PARAMETER BackGroundGradient
-    Two or more colors to blend across the background of the text, as -Gradient does for the
-    text. A segment with a color in -BackGroundColor keeps it, and a $null entry leaves its
-    segment to the gradient.
+    Two or more colors to blend across the background of the text, or the name of a named
+    gradient, as -Gradient takes them, over every character, white space included. A segment with
+    a color in -BackGroundColor keeps it, and a $null entry leaves its segment to the gradient.
 
     Alias: BGGrad
 
@@ -390,8 +422,67 @@
 
     - OKLab: in the OKLab color space, where equal steps look equally far apart and the brightness stays even. Red to green passes through a golden yellow rather than a dark olive, and blue to yellow through a light blue rather than gray.
     - RGB: red, green and blue each on their own.
+    - LinearRGB: red, green and blue each on their own in linear light, as light mixes; brighter between two colors than RGB.
+    - OKLCH: around the hue wheel, in OKLab's lightness, chroma and hue, so the colors between two hues stay as vivid as the ends.
+    - HSL: around the hue wheel, in hue, saturation and lightness.
+    - HSV: around the hue wheel, in hue, saturation and value.
+    - Lab: in CIELAB, as CSS lab() defines it.
+    - LCh: around the hue wheel, in CIELAB's lightness, chroma and hue.
+
+    In OKLCH, HSL, HSV and LCh, -GradientHue picks the way round the wheel.
 
     Default: OKLab
+
+    .PARAMETER GradientHue
+    The way round the hue wheel from one color to the next in the -GradientSpace values OKLCH,
+    HSL, HSV and LCh, as CSS Color 4 names the ways:
+
+    - Shorter: the shorter way round.
+    - Longer: the longer way round.
+    - Increasing: with the hue rising, past 360 on from 0.
+    - Decreasing: with the hue falling, past 0 on from 360.
+
+    A gray has no hue and takes the hue of the color it blends with.
+
+    Default: Shorter
+
+    .PARAMETER GradientEasing
+    A curve that moves the colors along the text: Linear, or the In, Out and InOut forms of Sine,
+    Quad, Cubic, Quart, Quint, Expo, Circ, Back, Elastic and Bounce, as easings.net draws them. An
+    In curve holds the first colors longer, an Out curve reaches the last colors sooner, and an
+    InOut curve does both; Back and Elastic run past the ends and come back.
+
+    Example: -Gradient Red, Blue -GradientEasing InOutSine
+
+    Default: Linear
+
+    .PARAMETER GradientRepeat
+    What a gradient does past its first and last colors when they are placed with '@' inside the
+    text, as CSS gradients and repeating gradients do:
+
+    - None: the end colors hold.
+    - Repeat: the gradient starts over.
+    - Mirror: the gradient runs back and forth.
+
+    Example: -Gradient 'Red@0', 'Blue@25' -GradientRepeat Mirror
+
+    Default: None
+
+    .PARAMETER GradientDirection
+    The way a gradient runs across the text:
+
+    - Forward: from the first character to the last.
+    - Reverse: from the last character to the first.
+    - CenterOut: from the middle out to both ends.
+    - EdgesIn: from both ends in to the middle.
+
+    Default: Forward
+
+    .PARAMETER GradientSteps
+    Cuts a gradient into this many bands of solid color, the first band in the first color and the
+    last band in the last; 0, the default, blends smoothly.
+
+    Example: -Gradient Green, Yellow, Red -GradientSteps 3
 
     .PARAMETER UnderlineColor
     The color of each segment's underline, in the forms of -Color; the colors repeat over the
@@ -592,17 +683,26 @@
     #>
     [CmdletBinding()]
     [Alias('Write-ColourEX', 'Write-Color', 'Write-Colour', 'WC', 'WCEX', 'wcolor', 'wcolour')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'unknownColorNames', Justification = 'The helpers in Private/WriteColorCore.ps1 that this function calls read it through PowerShell''s dynamic scope.')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'OriginalTrueColor', Justification = 'The helpers in Private/WriteColorCore.ps1 that this function calls read it through PowerShell''s dynamic scope.')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'OriginalANSI4', Justification = 'The helpers in Private/WriteColorCore.ps1 that this function calls read it through PowerShell''s dynamic scope.')]
     param (
-        [Parameter(ValueFromPipeline = $true)]
+        [Parameter(Position = 0, ValueFromPipeline = $true)]
         [alias ('T')][string[]] $Text,
+        [Parameter(Position = 1)]
         [alias ('C', 'ForegroundColor', 'FGC')][array] $Color = $null,
+        [Parameter(Position = 2)]
         [alias ('B', 'BGC')][array] $BackGroundColor = $null,
+        [Parameter(Position = 3)]
         [AllowNull()]
         [alias ('Grad')][object[]] $Gradient = $null,
         [alias ('A4')][switch] $ANSI4,
         [alias ('A8')][switch] $ANSI8,
         [alias ('A24','TrueColor','TC')][switch] $ANSI24,
+        [ValidateSet('None', 'ANSI4', 'ANSI8', 'TrueColor')][string] $ColorSupport,
+        [Parameter(Position = 4)]
         [ValidateScript({$_ -is [string] -or $_ -is [int] -or $_ -is [int[]] -or $_ -is [string[]] -or $_ -is [object[]]})][alias ('S')][object] $Style = $null,
+        [Parameter(Position = 5)]
         [PSColorStyle] $StyleProfile = $null,
         [switch] $Default,
         [switch] $Bold,
@@ -613,16 +713,26 @@
         [alias ('Strikethrough')][switch] $CrossedOut,
         [switch] $DoubleUnderline,
         [switch] $Overline,
+        [Parameter(Position = 6)]
         [alias ('Indent')][int] $StartTab = 0,
+        [Parameter(Position = 7)]
         [int] $LinesBefore = 0,
+        [Parameter(Position = 8)]
         [int] $LinesAfter = 0,
+        [Parameter(Position = 9)]
         [int] $StartSpaces = 0,
+        [Parameter(Position = 10)]
         [alias ('L')][string] $LogFile = '',
+        [Parameter(Position = 11)]
         [alias ('LP')][string] $LogPath = '',
+        [Parameter(Position = 12)]
         [alias ('LL', 'LogLvl')][string] $LogLevel = '',
         [alias ('LT')][switch] $LogTime,
+        [Parameter(Position = 13)]
         [Alias('DateFormat', 'TimeFormat', 'Timestamp', 'TS')][string] $DateTimeFormat = 'yyyy-MM-dd HH:mm:ss',
+        [Parameter(Position = 14)]
         [int] $LogRetry = 2,
+        [Parameter(Position = 15)]
         [ValidateSet('unknown', 'string', 'unicode', 'bigendianunicode', 'utf8', 'utf8BOM', 'utf8NoBOM', 'utf7', 'utf32', 'bigendianutf32', 'ascii', 'ansi', 'default', 'oem')][string]$Encoding = 'utf8',
         [switch] $ShowTime,
         [switch] $NoNewLine,
@@ -631,20 +741,35 @@
         [alias('HideConsole', 'NoConsole', 'LogOnly', 'LO')][switch] $NoConsoleOutput,
         [switch] $Debugging,
         [switch] $Silent,
+        [Parameter(Position = 16)]
         [alias('PadWidth', 'Pad')][int] $AutoPad = 0,
         [alias('RightAlign')][switch] $PadLeft,
+        [Parameter(Position = 17)]
         [alias('PaddingChar', 'FillChar')][char] $PadChar = ' ',
         [switch] $Markup,
+        [Parameter(Position = 18)]
         [string[]] $Split,
+        [Parameter(Position = 19)]
         [string[]] $SplitAround,
         [switch] $SplitEvenly,
+        [Parameter(Position = 20)]
         [System.Collections.IDictionary] $Highlight,
+        [Parameter(Position = 21)]
         [string[]] $Link,
         [alias('Invert')][switch] $Reverse,
+        [Parameter(Position = 22)]
         [AllowNull()]
         [alias ('BGGrad')][object[]] $BackGroundGradient = $null,
-        [ValidateSet('OKLab', 'RGB')][string] $GradientSpace = 'OKLab',
+        [Parameter(Position = 23)]
+        [ValidateSet('OKLab', 'RGB', 'LinearRGB', 'OKLCH', 'HSL', 'HSV', 'Lab', 'LCh')][string] $GradientSpace = 'OKLab',
+        [ValidateSet('Shorter', 'Longer', 'Increasing', 'Decreasing')][string] $GradientHue = 'Shorter',
+        [ValidateSet('Linear', 'InSine', 'OutSine', 'InOutSine', 'InQuad', 'OutQuad', 'InOutQuad', 'InCubic', 'OutCubic', 'InOutCubic', 'InQuart', 'OutQuart', 'InOutQuart', 'InQuint', 'OutQuint', 'InOutQuint', 'InExpo', 'OutExpo', 'InOutExpo', 'InCirc', 'OutCirc', 'InOutCirc', 'InBack', 'OutBack', 'InOutBack', 'InElastic', 'OutElastic', 'InOutElastic', 'InBounce', 'OutBounce', 'InOutBounce')][string] $GradientEasing = 'Linear',
+        [ValidateSet('None', 'Repeat', 'Mirror')][string] $GradientRepeat = 'None',
+        [ValidateSet('Forward', 'Reverse', 'CenterOut', 'EdgesIn')][string] $GradientDirection = 'Forward',
+        [ValidateRange(0, [int]::MaxValue)][int] $GradientSteps = 0,
+        [Parameter(Position = 24)]
         [array] $UnderlineColor = $null,
+        [Parameter(Position = 25)]
         [ValidateSet('Single', 'Double', 'Curly', 'Dotted', 'Dashed')][string] $UnderlineStyle,
         [switch] $Truncate,
         [switch] $PadCenter,
@@ -711,9 +836,10 @@
             $variables = $ExecutionContext.SessionState.PSVariable
             $boundAtStart = @{}
             foreach ($name in $MyInvocation.MyCommand.Parameters.Keys) {
-                # -Style and -UnderlineStyle are left out: the function does not change them, and
-                # their parameter checks would refuse the empty values they hold when not given
-                if ($name -eq 'Text' -or $name -eq 'Style' -or $name -eq 'UnderlineStyle') { continue }
+                # -Style, -UnderlineStyle and -ColorSupport are left out: the function does not
+                # change them, and their parameter checks would refuse the empty values they hold
+                # when not given
+                if ($name -eq 'Text' -or $name -eq 'Style' -or $name -eq 'UnderlineStyle' -or $name -eq 'ColorSupport') { continue }
                 $variable = $variables.Get($name)
                 if ($variable) {
                     $boundAtStart[$name] = $variable.Value
@@ -740,6 +866,10 @@
         $Colors = $script:CachedColorTable
         # The color names the table lacks, each warned about once per line
         $unknownColorNames = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+
+        # A single name of a named gradient stands for its colors
+        if ($null -ne $Gradient -and $Gradient.Count -eq 1) { $Gradient = Resolve-GradientName -Values $Gradient }
+        if ($null -ne $BackGroundGradient -and $BackGroundGradient.Count -eq 1) { $BackGroundGradient = Resolve-GradientName -Values $BackGroundGradient }
 
         If ($Gradient -and $Gradient.Count -lt 2) {
             Write-ColorWarningMsg "Gradient requires at least 2 colors (received $($Gradient.Count)). Gradient disabled."
@@ -774,31 +904,67 @@
             }
         }
 
+        # A style's value outside its parameter's set gives the parameter check's error and leaves
+        # the parameter as it is
         if ($StyleProfile) {
             if ($Debugging) { Write-DebugLog "Applying style profile: $($StyleProfile.Name)" }
-            $profileParams = $StyleProfile.ToWriteColorParams()
+            # A PSColorStyle goes straight to the function its method calls; a subclass keeps its own
+            $profileParams = if ($StyleProfile.GetType() -eq [PSColorStyle]) { Get-ColorStyleParameter -Style $StyleProfile } else { $StyleProfile.ToWriteColorParams() }
             foreach ($key in $profileParams.Keys) {
                 if (-not $PSBoundParameters.ContainsKey($key)) {
-                    $ExecutionContext.SessionState.PSVariable.Set($key, $profileParams[$key])
+                    $refusal = Get-ColorSetRefusal -Parameter $MyInvocation.MyCommand.Parameters[$key] -Value $profileParams[$key]
+                    if ($refusal) {
+                        $PSCmdlet.WriteError($refusal)
+                    } else {
+                        $ExecutionContext.SessionState.PSVariable.Set($key, $profileParams[$key])
+                    }
                 }
             }
         }
 
         if ($Default -and [PSColorStyle]::Default) {
             if ($Debugging) { Write-DebugLog "Applying default style profile" }
-            $defaultParams = [PSColorStyle]::Default.ToWriteColorParams()
+            $defaultStyle = [PSColorStyle]::Default
+            $defaultParams = if ($defaultStyle.GetType() -eq [PSColorStyle]) { Get-ColorStyleParameter -Style $defaultStyle } else { $defaultStyle.ToWriteColorParams() }
             foreach ($key in $defaultParams.Keys) {
                 if (-not $PSBoundParameters.ContainsKey($key) -and -not $StyleProfile) {
-                    $ExecutionContext.SessionState.PSVariable.Set($key, $defaultParams[$key])
+                    $refusal = Get-ColorSetRefusal -Parameter $MyInvocation.MyCommand.Parameters[$key] -Value $defaultParams[$key]
+                    if ($refusal) {
+                        $PSCmdlet.WriteError($refusal)
+                    } else {
+                        $ExecutionContext.SessionState.PSVariable.Set($key, $defaultParams[$key])
+                    }
                 }
             }
         }
 
+        # A style's gradient may be a named gradient too
+        if ($null -ne $Gradient -and $Gradient.Count -eq 1) { $Gradient = Resolve-GradientName -Values $Gradient }
+        if ($null -ne $BackGroundGradient -and $BackGroundGradient.Count -eq 1) { $BackGroundGradient = Resolve-GradientName -Values $BackGroundGradient }
+
+        # A gradient color's place, given with '@' after it, comes off before the color is read;
+        # a gradient with no '@' in it has no places
+        $gradientPlaces = $null
+        $backgroundPlaces = $null
+        if ($null -ne $Gradient -and (@($Gradient) -like '*@*')) {
+            $placed = Split-GradientPlace -Values $Gradient
+            $Gradient = $placed.Colors
+            $gradientPlaces = $placed.Places
+        }
+        if ($null -ne $BackGroundGradient -and (@($BackGroundGradient) -like '*@*')) {
+            $placed = Split-GradientPlace -Values $BackGroundGradient
+            $BackGroundGradient = $placed.Colors
+            $backgroundPlaces = $placed.Places
+        }
+
         # The styles in use, kept apart from -Style, whose parameter check would refuse the empty
         # array the function puts in it. One style alone is the first segment's, as an array of
-        # one; indexing the string itself would read its letters.
+        # one; indexing the string itself would read its letters. A list, such as a List[string],
+        # reads as the array it holds.
         $styles = $Style
         if ($styles -is [string]) {
+            $styles = @($styles)
+        } elseif ($styles -is [System.Collections.IList] -and $styles -isnot [array]) {
             $styles = @($styles)
         }
 
@@ -976,23 +1142,36 @@
             }
         }
 
+        # -ColorSupport, in the spelling Test-AnsiSupport reports, stands in for the terminal and the
+        # color variables
+        $givenSupport = switch ($ColorSupport) {
+            'None' { 'None' }
+            'ANSI4' { 'ANSI4' }
+            'ANSI8' { 'ANSI8' }
+            'TrueColor' { 'TrueColor' }
+        }
+
         # The color variables, read on each call since they can change at any time. FORCE_COLOR 1 to
         # 3 keeps colors on in its mode; FORCE_COLOR=0 and NO_COLOR turn them off; CLICOLOR_FORCE,
         # set to anything but 0, keeps them on; CLICOLOR=0 and TERM=dumb turn them off. The first
         # of these set decides.
-        $forceColor = [System.Environment]::GetEnvironmentVariable('FORCE_COLOR')
-        $forcedColor = $forceColor -in @('1', '2', '3')
+        $forceColor = $null
+        $forcedColor = $false
         $cliColorForced = $false
         $ColorDisabled = $false
-        if (-not $forcedColor) {
-            if ($forceColor -eq '0' -or -not [string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable('NO_COLOR'))) {
-                $ColorDisabled = $true
-            } else {
-                $cliColorForce = [System.Environment]::GetEnvironmentVariable('CLICOLOR_FORCE')
-                if (-not [string]::IsNullOrEmpty($cliColorForce) -and $cliColorForce -ne '0') {
-                    $cliColorForced = $true
-                } elseif ([System.Environment]::GetEnvironmentVariable('CLICOLOR') -eq '0' -or [System.Environment]::GetEnvironmentVariable('TERM') -eq 'dumb') {
+        if ($null -eq $givenSupport) {
+            $forceColor = [System.Environment]::GetEnvironmentVariable('FORCE_COLOR')
+            $forcedColor = $forceColor -in @('1', '2', '3')
+            if (-not $forcedColor) {
+                if ($forceColor -eq '0' -or -not [string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable('NO_COLOR'))) {
                     $ColorDisabled = $true
+                } else {
+                    $cliColorForce = [System.Environment]::GetEnvironmentVariable('CLICOLOR_FORCE')
+                    if (-not [string]::IsNullOrEmpty($cliColorForce) -and $cliColorForce -ne '0') {
+                        $cliColorForced = $true
+                    } elseif ([System.Environment]::GetEnvironmentVariable('CLICOLOR') -eq '0' -or [System.Environment]::GetEnvironmentVariable('TERM') -eq 'dumb') {
+                        $ColorDisabled = $true
+                    }
                 }
             }
         }
@@ -1016,7 +1195,10 @@
             # Console colors only: no ANSI detection needed, only whether the line can go out as one call
             $ANSISupport = $False
             $ANSIColorSupport = 'None'
-            if ($forcedColor -or $cliColorForced) {
+            if ($null -ne $givenSupport) {
+                # A support given keeps the colors as escape codes whatever the host, None as console colors
+                $ComposeLine = $givenSupport -ne 'None' -and ($null -ne $captured -or -not $NoConsoleOutput)
+            } elseif ($forcedColor -or $cliColorForced) {
                 # FORCE_COLOR and CLICOLOR_FORCE keep the colors as escape codes, whatever the host
                 $ComposeLine = $null -ne $captured -or -not $NoConsoleOutput
             } elseif ($null -ne $captured) {
@@ -1027,7 +1209,10 @@
             }
             if ($Debugging) { Write-DebugLog "Console colors only; one call per line: $ComposeLine" }
         } Else {
-            if ($forcedColor) {
+            if ($null -ne $givenSupport) {
+                $ANSIColorSupport = $givenSupport
+                if ($Debugging) { Write-DebugLog "Color support given: $ANSIColorSupport" }
+            } elseif ($forcedColor) {
                 if ($Debugging) { Write-DebugLog "FORCE_COLOR environment variable detected: $forceColor" }
                 switch ($forceColor) {
                     '1' { $ANSIColorSupport = 'ANSI4' }
@@ -1127,6 +1312,10 @@
             }
         }
 
+        # Whether bold shows as a font: -Bold lightens the colors where the terminal draws bold as
+        # brighter colors, and under -ColorSupport None, whose console colors carry no bold
+        $boldFonts = $script:SupportsBoldFonts -and $givenSupport -ne 'None'
+
         If (-not $NoConsoleOutput) {
             $WindowWidth = 0
             If ($BlankLine -or $HorizontalCenter -or ($Wrap -and $AutoPad -le 0)) {
@@ -1173,18 +1362,64 @@
                 $lines.Add($items)
             }
 
-            # Each run's characters, and where it starts in the gradients, which run across every
-            # character written, padding included. A color code is never put inside a character.
+            # Each segment's underline color, cycling through -UnderlineColor. A segment with no
+            # other underline takes a single one.
+            $underlineCodes = [System.Collections.Generic.List[string]]::new()
+            If ($ANSISupport -and $UnderlineColor.Count -gt 0) {
+                $underlined = $Underline -or $DoubleUnderline -or $UnderlineStyle
+                For ($i = 0; $i -lt $segmentCount; $i++) {
+                    $code = Get-UnderlineColorSequence -Value $UnderlineColor[$i % $UnderlineColor.Count]
+                    if ($code -and -not $underlined) {
+                        $ownUnderline = $false
+                        if ($styles) {
+                            foreach ($name in @($styles[$i])) {
+                                if ($name -in 'Underline', 'DoubleUnderline', 'Curly', 'Dotted', 'Dashed') { $ownUnderline = $true }
+                            }
+                        }
+                        if (-not $ownUnderline) {
+                            $code = $script:UnderlineStyleSgr['Single'] + $code
+                        }
+                    }
+                    $underlineCodes.Add($code)
+                }
+            }
+
+            # Each run's characters, and where it starts in the gradients. The background gradient
+            # runs across every character written, padding included. The text gradient runs across
+            # the characters that show its color: white space takes none unless a line under,
+            # through or over it, or -Reverse, shows it. A color code is never put inside a
+            # character.
             $totalChars = 0
+            $textChars = 0
             If (($Gradient -and $Gradient.Count -ge 2) -or ($BackGroundGradient -and $BackGroundGradient.Count -ge 2)) {
+                $lineShowsSpace = [bool]($Underline -or $DoubleUnderline -or $UnderlineStyle -or $CrossedOut -or $Overline -or $Reverse)
                 foreach ($items in $lines) {
                     foreach ($item in $items) {
+                        $segment = [int]$item.Index
+                        $segmentShowsSpace = $lineShowsSpace -or
+                            ($segment -lt $underlineCodes.Count -and $underlineCodes[$segment].Length -gt 0) -or
+                            ($segment -lt $styles.Count -and (Test-ShowsWhiteSpace -Names $styles[$segment]))
                         foreach ($run in $item.Runs) {
                             if ($null -eq $run.Characters) {
                                 $run.Characters = @(Split-DisplayCharacter -Text $run.Text)
                             }
                             $run.GradientIndex = $totalChars
-                            $totalChars += $run.Characters.Count
+                            $run.TextGradientIndex = $textChars
+                            $run.ShowsSpace = $segmentShowsSpace -or ($null -ne $run.Styles -and (Test-ShowsWhiteSpace -Names $run.Styles))
+                            $count = $run.Characters.Count
+                            $totalChars += $count
+                            # Every character of a run takes the text gradient when the run shows white
+                            # space or has none; only a run with white space is counted character by character
+                            $run.AllShow = $run.ShowsSpace -or -not [regex]::IsMatch([string]::Concat([string[]]$run.Characters), '\s')
+                            if ($run.AllShow) {
+                                $textChars += $count
+                            } else {
+                                foreach ($character in $run.Characters) {
+                                    if (-not [string]::IsNullOrWhiteSpace($character)) {
+                                        $textChars++
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1194,15 +1429,15 @@
             $gradientArray = $null
             If ($Gradient -and $Gradient.Count -ge 2) {
                 if ($Debugging) { Write-DebugLog "Calculating gradient for text" }
-                if ($Debugging) { Write-DebugLog "Total characters for gradient: $totalChars" }
+                if ($Debugging) { Write-DebugLog "Total characters for gradient: $textChars" }
 
-                if ($Gradient.Count -gt $totalChars) {
-                    Write-ColorWarningMsg "Gradient has $($Gradient.Count) colors but text only has $totalChars characters. Applying standard coloring instead."
-                    if ($Debugging) { Write-DebugLog "Gradient disabled: More colors ($($Gradient.Count)) than characters ($totalChars)" }
+                if ($Gradient.Count -gt $textChars) {
+                    Write-ColorWarningMsg "Gradient has $($Gradient.Count) colors but text only has $textChars characters. Applying standard coloring instead."
+                    if ($Debugging) { Write-DebugLog "Gradient disabled: More colors ($($Gradient.Count)) than characters ($textChars)" }
                     $Gradient = $null
                 } else {
                     if ($Debugging) { Write-DebugLog "Generating gradient in $gradientMode mode" }
-                    $gradientArray = New-GradientColorArray -Colors $Gradient -Steps $totalChars -Mode $gradientMode -Space $GradientSpace
+                    $gradientArray = New-GradientColorArray -Colors $Gradient -Places $gradientPlaces -Steps $textChars -Mode $gradientMode -Space $GradientSpace -Hue $GradientHue -Easing $GradientEasing -Repeat $GradientRepeat -Direction $GradientDirection -Bands $GradientSteps
                     if (-not $gradientArray) {
                         if ($Debugging) { Write-DebugLog "Gradient array generation failed" }
                         $gradientArray = $null
@@ -1217,7 +1452,7 @@
                     Write-ColorWarningMsg "BackGroundGradient has $($BackGroundGradient.Count) colors but text only has $totalChars characters. Applying standard coloring instead."
                     $BackGroundGradient = $null
                 } else {
-                    $bgGradientArray = New-GradientColorArray -Colors $BackGroundGradient -Steps $totalChars -Mode $gradientMode -Space $GradientSpace
+                    $bgGradientArray = New-GradientColorArray -Colors $BackGroundGradient -Places $backgroundPlaces -Steps $totalChars -Mode $gradientMode -Space $GradientSpace -Hue $GradientHue -Easing $GradientEasing -Repeat $GradientRepeat -Direction $GradientDirection -Bands $GradientSteps
                     if (-not $bgGradientArray) {
                         $bgGradientArray = $null
                         $BackGroundGradient = $null
@@ -1229,7 +1464,7 @@
             # a name in the color table (its RGB in TrueColor), a hex code in TrueColor, and a
             # code 0-255 in ANSI8. The others go through ConvertTo-ForegroundModeColor and
             # ConvertTo-BackgroundModeColor, which warn and write debug messages.
-            $directColors = -not $Debugging -and -not ($Bold -and -not $script:SupportsBoldFonts)
+            $directColors = -not $Debugging -and -not ($Bold -and -not $boldFonts)
 
             # Each segment's text color, cycling through -Color, converted for the mode in use
             If ($Color.Count -gt 0 -and -not $ColorDisabled) {
@@ -1286,7 +1521,7 @@
                             continue
                         }
                     }
-                    $ProcessedBGColors.Add((ConvertTo-BackgroundModeColor -Value $value -Index $i -Original $value))
+                    $ProcessedBGColors.Add((ConvertTo-BackgroundModeColor -Value $value -Original $value))
                 }
                 $BackGroundColor = $ProcessedBGColors.ToArray()
             } Else {
@@ -1299,31 +1534,9 @@
                     foreach ($item in $items) {
                         foreach ($run in $item.Runs) {
                             if ($run.HasFg) { $run.ModeFg = ConvertTo-ForegroundModeColor -Value $run.Fg -Index $item.Index -Original $run.Fg }
-                            if ($run.HasBg) { $run.ModeBg = ConvertTo-BackgroundModeColor -Value $run.Bg -Index $item.Index -Original $run.Bg }
+                            if ($run.HasBg) { $run.ModeBg = ConvertTo-BackgroundModeColor -Value $run.Bg -Original $run.Bg }
                         }
                     }
-                }
-            }
-
-            # Each segment's underline color, cycling through -UnderlineColor. A segment with no
-            # other underline takes a single one.
-            $underlineCodes = [System.Collections.Generic.List[string]]::new()
-            If ($ANSISupport -and $UnderlineColor.Count -gt 0) {
-                $underlined = $Underline -or $DoubleUnderline -or $UnderlineStyle
-                For ($i = 0; $i -lt $segmentCount; $i++) {
-                    $code = Get-UnderlineColorSequence -Value $UnderlineColor[$i % $UnderlineColor.Count]
-                    if ($code -and -not $underlined) {
-                        $ownUnderline = $false
-                        if ($styles) {
-                            foreach ($name in @($styles[$i])) {
-                                if ($name -in 'Underline', 'DoubleUnderline', 'Curly', 'Dotted', 'Dashed') { $ownUnderline = $true }
-                            }
-                        }
-                        if (-not $ownUnderline) {
-                            $code = $script:UnderlineStyleSgr['Single'] + $code
-                        }
-                    }
-                    $underlineCodes.Add($code)
                 }
             }
 

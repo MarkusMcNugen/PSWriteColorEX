@@ -1,0 +1,64 @@
+{
+  "Colors": {
+    "GruvboxLightBg0": "#FBF1C7",
+    "GruvboxLightBg1": "#EBDBB2",
+    "GruvboxLightBg2": "#D5C4A1",
+    "GruvboxLightBg3": "#BDAE93",
+    "GruvboxLightBg4": "#A89984",
+    "GruvboxLightFg0": "#282828",
+    "GruvboxLightFg1": "#3C3836",
+    "GruvboxLightFg2": "#504945",
+    "GruvboxLightFg3": "#665C54",
+    "GruvboxLightFg4": "#7C6F64",
+    "GruvboxLightGray": "#928374",
+    "GruvboxLightRed": "#9D0006",
+    "GruvboxLightGreen": "#79740E",
+    "GruvboxLightYellow": "#B57614",
+    "GruvboxLightBlue": "#076678",
+    "GruvboxLightPurple": "#8F3F71",
+    "GruvboxLightAqua": "#427B58",
+    "GruvboxLightOrange": "#AF3A03"
+  },
+  "Default": "Default",
+  "Profiles": [
+    {
+      "Name": "Critical",
+      "ForegroundColor": "#FBF1C7",
+      "BackgroundColor": "#9D0006",
+      "Bold": true,
+      "Blink": true
+    },
+    {
+      "Name": "Debug",
+      "ForegroundColor": "#928374",
+      "BackgroundColor": null,
+      "Italic": true
+    },
+    {
+      "Name": "Default",
+      "ForegroundColor": "#3C3836",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Error",
+      "ForegroundColor": "#9D0006",
+      "BackgroundColor": null,
+      "Bold": true
+    },
+    {
+      "Name": "Info",
+      "ForegroundColor": "#076678",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Success",
+      "ForegroundColor": "#79740E",
+      "BackgroundColor": null
+    },
+    {
+      "Name": "Warning",
+      "ForegroundColor": "#B57614",
+      "BackgroundColor": null
+    }
+  ]
+}

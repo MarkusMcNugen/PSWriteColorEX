@@ -11,6 +11,10 @@
     Array of gradient waypoints (minimum 2 colors).
     Accepts color names, hex codes, or RGB arrays.
 
+    .PARAMETER Places
+    Each waypoint's place from 0 to 1, or $null for one with none, as Split-GradientPlace returns
+    them; $null for none placed.
+
     .PARAMETER Steps
     Number of colors to generate (typically total character count)
 
@@ -18,9 +22,23 @@
     Color mode: 'TrueColor' returns RGB arrays, 'ANSI8' returns ANSI 256-color codes
 
     .PARAMETER Space
-    The space colors are blended in: 'OKLab', where equal steps look equally far apart and the
-    brightness stays even, or 'RGB', each channel on its own. The first and last step of each
-    stretch between two waypoints are the waypoints themselves.
+    The space colors are blended in, as Write-ColorEX's -GradientSpace names them.
+
+    .PARAMETER Hue
+    The way round the hue wheel, as Write-ColorEX's -GradientHue names it.
+
+    .PARAMETER Easing
+    The easing curve, as Write-ColorEX's -GradientEasing names it.
+
+    .PARAMETER Repeat
+    What the gradient does past its first and last waypoints, as Write-ColorEX's -GradientRepeat
+    names it.
+
+    .PARAMETER Direction
+    The way across the steps, as Write-ColorEX's -GradientDirection names it.
+
+    .PARAMETER Bands
+    The bands of solid color, as Write-ColorEX's -GradientSteps gives them; 0 for a smooth blend.
 
     .EXAMPLE
     New-GradientColorArray -Colors @("Red","Blue") -Steps 10 -Mode TrueColor
@@ -41,11 +59,14 @@
     License: MIT
     Requires: PowerShell 5.1 or later
 
-    Write-ColorEX calls this private function for -Gradient and -BackGroundGradient. Each step's
-    color is a linear interpolation between the two waypoints around it, in OKLab or in RGB. A
-    color name not in the color table and an invalid hex code are gray. The result of each set of
-    waypoints, steps, mode and space is kept for the session, so a gradient written again costs a
-    lookup.
+    Write-ColorEX calls this private function for -Gradient and -BackGroundGradient, and
+    Get-GradientColor for -Count. With at least as many steps as waypoints, each waypoint moves to
+    the step nearest its place, a half rounded up, so every waypoint is drawn; with fewer, the
+    steps are spread over the whole gradient. Each other step's color is blended between the two
+    waypoints around it in the space, and in ANSI8 is the 256-color code Convert-RGBToANSI8 returns
+    for it. A color name not in the color table and an invalid hex code are gray. The result of
+    each set of waypoints, places, options, steps and mode is kept for the session, so a gradient
+    written again costs a lookup.
 
     .LINK
     https://github.com/MarkusMcNugen/PSWriteColorEX
@@ -54,9 +75,14 @@
     Write-ColorEX
     #>
     [CmdletBinding()]
+    [OutputType([object[]])]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'It returns a new array of colors and changes nothing.')]
     param(
         [Parameter(Mandatory)]
         [object[]]$Colors,
+
+        [AllowNull()]
+        [object[]]$Places = $null,
 
         [Parameter(Mandatory)]
         [ValidateRange(1, [int]::MaxValue)]
@@ -66,8 +92,23 @@
         [ValidateSet('TrueColor', 'ANSI8')]
         [string]$Mode,
 
-        [ValidateSet('OKLab', 'RGB')]
-        [string]$Space = 'OKLab'
+        [ValidateSet('OKLab', 'RGB', 'LinearRGB', 'OKLCH', 'HSL', 'HSV', 'Lab', 'LCh')]
+        [string]$Space = 'OKLab',
+
+        [ValidateSet('Shorter', 'Longer', 'Increasing', 'Decreasing')]
+        [string]$Hue = 'Shorter',
+
+        [ValidateSet('Linear', 'InSine', 'OutSine', 'InOutSine', 'InQuad', 'OutQuad', 'InOutQuad', 'InCubic', 'OutCubic', 'InOutCubic', 'InQuart', 'OutQuart', 'InOutQuart', 'InQuint', 'OutQuint', 'InOutQuint', 'InExpo', 'OutExpo', 'InOutExpo', 'InCirc', 'OutCirc', 'InOutCirc', 'InBack', 'OutBack', 'InOutBack', 'InElastic', 'OutElastic', 'InOutElastic', 'InBounce', 'OutBounce', 'InOutBounce')]
+        [string]$Easing = 'Linear',
+
+        [ValidateSet('None', 'Repeat', 'Mirror')]
+        [string]$Repeat = 'None',
+
+        [ValidateSet('Forward', 'Reverse', 'CenterOut', 'EdgesIn')]
+        [string]$Direction = 'Forward',
+
+        [ValidateRange(0, [int]::MaxValue)]
+        [int]$Bands = 0
     )
 
     # Validate colors count
@@ -75,13 +116,51 @@
         throw "Gradient requires at least 2 colors (received $($Colors.Count))"
     }
 
-    # Every waypoint as RGB
-    $rgbColors = [System.Collections.Generic.List[array]]::new($Colors.Count)
+    $rgbColors = ConvertTo-GradientStopRgb -Colors $Colors
 
+    # The key holds the options by name, so GradientOptions runs only for a gradient not yet built
+    $stopTexts = foreach ($stop in $rgbColors) { $stop -join ',' }
+    $placeKey = ''
+    if ($null -ne $Places) {
+        $placeTexts = foreach ($place in $Places) {
+            if ($null -eq $place) { '' } else { ([double]$place).ToString('R', [System.Globalization.CultureInfo]::InvariantCulture) }
+        }
+        $placeKey = @($placeTexts) -join ';'
+    }
+    $cacheKey = '{0}|{1}|{2}|{3}|{4}|{5}|{6}|{7}|{8}|{9}' -f $Mode, $Space, $Hue, $Easing, $Repeat, $Direction, $Bands, $Steps, (@($stopTexts) -join ';'), $placeKey
+    $cached = $script:GradientCache[$cacheKey]
+    if ($null -ne $cached) {
+        return ,$cached
+    }
+
+    $options = [ColorMath]::GradientOptions($Space, $Hue, $Easing, $Repeat, $Direction, $Bands)
+    $result = [ColorMath]::GradientRgb($rgbColors, $Places, $Steps, $options)
+    if ($Mode -eq 'ANSI8') {
+        for ($step = 0; $step -lt $result.Count; $step++) {
+            $rgb = $result[$step]
+            $result[$step] = [ColorMath]::NearestAnsi8($rgb[0], $rgb[1], $rgb[2])
+        }
+    }
+    if ($script:GradientCache.Count -ge 256) {
+        $script:GradientCache.Clear()
+    }
+    $script:GradientCache[$cacheKey] = $result
+
+    # The comma keeps the array whole rather than unrolled into the pipeline
+    return ,$result
+}
+
+function ConvertTo-GradientStopRgb {
+    <#
+    .SYNOPSIS
+    Each of a gradient's colors as an RGB array: an RGB array clamped to 0-255, a hex code, or a
+    color name. A name the color table lacks and an invalid hex code are gray.
+    #>
+    param([object[]]$Colors)
     if ($null -eq $script:CachedColorTable) {
         $script:CachedColorTable = Get-ColorTableWithRGB
     }
-
+    $rgbColors = [System.Collections.Generic.List[array]]::new($Colors.Count)
     foreach ($color in $Colors) {
         if ($color -is [array] -and $color.Count -eq 3) {
             $null = $rgbColors.Add(@(
@@ -100,22 +179,9 @@
             }
         }
     }
-
-    $cacheKey = '{0}|{1}|{2}|{3}' -f $Mode, $Space, $Steps, (($rgbColors | ForEach-Object { $_ -join ',' }) -join ';')
-    $cached = $script:GradientCache[$cacheKey]
-    if ($null -ne $cached) {
-        return ,$cached
-    }
-
-    $result = [ColorMath]::Blend($rgbColors.ToArray(), $Steps, $Mode -eq 'ANSI8', $Space -eq 'OKLab')
-    if ($script:GradientCache.Count -ge 256) {
-        $script:GradientCache.Clear()
-    }
-    $script:GradientCache[$cacheKey] = $result
-
     # The comma keeps the array whole rather than unrolled into the pipeline
-    return ,$result
+    return ,$rgbColors.ToArray()
 }
 
-# The gradients built so far, by mode, space, steps and waypoints
+# The gradients built so far, by mode, options, steps, waypoints and places
 $script:GradientCache = @{}

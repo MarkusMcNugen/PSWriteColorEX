@@ -42,12 +42,31 @@ CLICOLOR_FORCE=1 comes before TERM
 ```
 
 `-ANSI4`, `-ANSI8` and `-TrueColor` choose a mode for one call, below the color variables:
-`NO_COLOR` turns off colors the call asks for.
+`NO_COLOR` turns off colors the call asks for. `-ColorSupport` takes the place of all of them for
+one call of `Write-ColorEX` or `Format-ColorEX`: none of the variables is read, and the call
+writes for the support it names.
+
+```powershell,none
+PS> Write-ColorEX -Text 'NO_COLOR is set, and -ColorSupport writes 16 colors' -Color '#FF8800' -ColorSupport ANSI4
+NO_COLOR is set, and -ColorSupport writes 16 colors
+```
+
+## Unicode
+
+`WRITECOLOREX_UNICODE` sets whether `Test-AnsiSupport` reports that the terminal can show Unicode,
+in its `SupportsUnicode` property, in place of the check of the locale or the console's font:
+
+| Variable | Value | Effect |
+|---|---|---|
+| `WRITECOLOREX_UNICODE` | `true` | `SupportsUnicode` is `$true` |
+| `WRITECOLOREX_UNICODE` | `false` | `SupportsUnicode` is `$false` |
+
+Any other value gets a warning and is set aside.
 
 ## The terminal variables
 
 `Test-AnsiSupport` reads these, after the color variables, to find what the terminal supports,
-and `Write-ColorEX` takes its answer when the module is imported:
+and `Write-ColorEX` keeps its result from when the module is imported:
 
 | Variable | Read as |
 |---|---|
@@ -61,6 +80,7 @@ and `Write-ColorEX` takes its answer when the module is imported:
 | `KITTY_WINDOW_ID`, `ALACRITTY_WINDOW_ID` | Kitty, Alacritty |
 | `TERMINAL_EMULATOR` | `JetBrains-JediTerm`: the JetBrains IDEs |
 | `TMUX` | tmux, which passes on the colors its own `TERM` and `COLORTERM` name |
+| `LC_ALL`, `LC_CTYPE`, `LANG` | the locale on Linux, macOS and FreeBSD: the first one set must name UTF-8, as in `en_US.UTF-8`, for `SupportsUnicode` to be `$true` |
 
 [Test-AnsiSupport](test-ansisupport.md) gives the whole detection order, and the values are
 compared without regard to case. [Terminal compatibility](terminals.md) lists what each terminal

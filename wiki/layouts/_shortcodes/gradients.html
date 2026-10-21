@@ -1,0 +1,25 @@
+{{- /*
+The named gradients from data/presets.json, which generate.ps1 reads from the module: each name,
+its colors as a bar blended in OKLab where the browser can, and its colors as hex codes.
+*/ -}}
+{{- $presets := hugo.Data.presets | default dict -}}
+{{- if not $presets.gradients -}}
+  {{- errorf "data/presets.json has no gradients: run pwsh ./generate.ps1 in wiki/ (%s)" .Position -}}
+{{- end -}}
+<div class="hx:overflow-x-auto">
+<table class="wcx-gradients">
+  <thead>
+    <tr><th>Name</th><th>Gradient</th><th>Colors</th></tr>
+  </thead>
+  <tbody>
+  {{- range $presets.gradients }}
+    {{- $stops := delimit .colors ", " }}
+    <tr>
+      <td><code>{{ .name }}</code></td>
+      <td><span class="wcx-gradient" style="{{ printf "background: linear-gradient(to right, %s); background: linear-gradient(to right in oklab, %s)" $stops $stops | safeCSS }}"></span></td>
+      <td>{{ range $i, $color := .colors }}{{ if $i }} {{ end }}<code>{{ $color }}</code>{{ end }}</td>
+    </tr>
+  {{- end }}
+  </tbody>
+</table>
+</div>

@@ -19,7 +19,8 @@ A color is a name, a hex code, an `rgb()` or `hsl()` form, an RGB array or an AN
 [Colors and names](colors-and-names.md). The color mode is detected when the module is imported and can be
 forced with `-ANSI4`, `-ANSI8` or `-ANSI24`, or with the environment variables in
 [Environment variables](environment.md); a mode the terminal lacks falls back to the next one
-down, as [Color modes](color-modes.md) explains. Each line goes to the host in as few
+down, as [Color modes](color-modes.md) explains. `-ColorSupport` gives the support to write for
+in place of the detection and those variables. Each line goes to the host in as few
 `Write-Host` calls as its colors allow, which [How output reaches the host](how-output-is-written.md)
 explains along with transcripts.
 
@@ -27,8 +28,9 @@ explains along with transcripts.
 
 | Purpose | Parameters |
 |---|---|
-| Text and color | [`-Text`](#text), [`-Color`](#color), [`-BackGroundColor`](#backgroundcolor), [`-Gradient`](#gradient), [`-BackGroundGradient`](#backgroundgradient), [`-GradientSpace`](#gradientspace) |
-| Color mode | [`-ANSI4`](#ansi4), [`-ANSI8`](#ansi8), [`-ANSI24`](#ansi24) |
+| Text and color | [`-Text`](#text), [`-Color`](#color), [`-BackGroundColor`](#backgroundcolor), [`-Gradient`](#gradient), [`-BackGroundGradient`](#backgroundgradient) |
+| Gradient options | [`-GradientSpace`](#gradientspace), [`-GradientHue`](#gradienthue), [`-GradientEasing`](#gradienteasing), [`-GradientRepeat`](#gradientrepeat), [`-GradientDirection`](#gradientdirection), [`-GradientSteps`](#gradientsteps) |
+| Color mode | [`-ANSI4`](#ansi4), [`-ANSI8`](#ansi8), [`-ANSI24`](#ansi24), [`-ColorSupport`](#colorsupport) |
 | Styles | [`-Style`](#style), [`-Bold`](#bold), [`-Faint`](#faint), [`-Italic`](#italic), [`-Underline`](#underline), [`-UnderlineStyle`](#underlinestyle), [`-UnderlineColor`](#underlinecolor), [`-DoubleUnderline`](#doubleunderline), [`-Blink`](#blink), [`-CrossedOut`](#crossedout), [`-Overline`](#overline), [`-Reverse`](#reverse) |
 | Parts of a string | [`-Markup`](#markup), [`-Highlight`](#highlight), [`-Split`](#split), [`-SplitAround`](#splitaround), [`-SplitEvenly`](#splitevenly), [`-Link`](#link) |
 | Layout | [`-AutoPad`](#autopad), [`-PadLeft`](#padleft), [`-PadCenter`](#padcenter), [`-PadChar`](#padchar), [`-Truncate`](#truncate), [`-Wrap`](#wrap), [`-StartTab`](#starttab), [`-StartSpaces`](#startspaces), [`-LinesBefore`](#linesbefore), [`-LinesAfter`](#linesafter), [`-HorizontalCenter`](#horizontalcenter), [`-NoNewLine`](#nonewline), [`-BlankLine`](#blankline), [`-ShowTime`](#showtime) |

@@ -89,7 +89,7 @@ function ConvertTo-ColorForm {
     <#
     .SYNOPSIS
     A color as Write-ColorEX reads it further on: '#RGB', '0xRGB', 'rgb(r, g, b)' and
-    'hsl(h, s%, l%)' become '#RRGGBB'; any other value is answered as it is.
+    'hsl(h, s%, l%)' become '#RRGGBB'; any other value is returned as it is.
     #>
     param([object]$Value)
     if ($Value -isnot [string]) {
@@ -150,11 +150,38 @@ function Test-ColorName {
     }
 }
 
+function Get-ColorSetRefusal {
+    <#
+    .SYNOPSIS
+    The error PowerShell's parameter check gives for a value outside a parameter's ValidateSet,
+    the values compared without regard to case; $null for a value in the set or a parameter with
+    no set.
+    #>
+    param([System.Management.Automation.ParameterMetadata]$Parameter, [object]$Value)
+    if ($null -eq $Parameter) {
+        return $null
+    }
+    foreach ($attribute in $Parameter.Attributes) {
+        if ($attribute -isnot [System.Management.Automation.ValidateSetAttribute]) {
+            continue
+        }
+        $text = [string]$Value
+        foreach ($allowed in $attribute.ValidValues) {
+            if ([string]::Equals($allowed, $text, [System.StringComparison]::OrdinalIgnoreCase)) {
+                return $null
+            }
+        }
+        $message = "Cannot validate argument on parameter '$($Parameter.Name)'. The argument `"$text`" does not belong to the set `"$($attribute.ValidValues -join ',')`" specified by the ValidateSet attribute. Supply an argument that is in the set and then try the command again."
+        return [System.Management.Automation.ErrorRecord]::new([System.ArgumentException]::new($message), 'ParameterArgumentValidationError', [System.Management.Automation.ErrorCategory]::InvalidData, $Value)
+    }
+    return $null
+}
+
 function ConvertFrom-ColorStyleSpec {
     <#
     .SYNOPSIS
     Reads a markup tag or a -Highlight style: style names, a text color, 'on' and a background
-    color, and link=URL, separated by spaces outside parentheses. Answers $null when a word is none
+    color, and link=URL, separated by spaces outside parentheses. Returns $null when a word is none
     of these.
     #>
     param([string]$Spec)
@@ -229,6 +256,7 @@ function New-ColorRun {
     .SYNOPSIS
     A run of text with the colors, styles and link markup or -Highlight give it.
     #>
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'It returns a new run and changes nothing.')]
     param([string]$Text, [hashtable]$Style)
     if ($null -eq $Style) {
         return @{ Text = $Text; HasFg = $false; HasBg = $false; HasLink = $false; Styles = $null }
@@ -623,9 +651,9 @@ function ConvertTo-ForegroundModeColor {
     A text color as the mode in use writes it, with the warnings about its form and range.
 
     .DESCRIPTION
-    Checks the color against the mode asked for, lightens it for -Bold where the terminal shows
-    bold as brighter colors, and converts it for the mode in use after any fallback. Index is the
-    segment the color is for, and Original the color as given, both for the debug messages.
+    Checks the color against the mode asked for, lightens it for -Bold where bold does not show
+    as a font, and converts it for the mode in use after any fallback. Index is the segment the
+    color is for, and Original the color as given, both for the debug messages.
     #>
     param([object]$Value, [int]$Index, [object]$Original)
     $currentColor = $Value
@@ -673,8 +701,8 @@ function ConvertTo-ForegroundModeColor {
         }
     }
 
-    # Where the terminal shows bold as brighter colors, the color is made lighter instead
-    if ($Bold -and -not $script:SupportsBoldFonts) {
+    # Where bold does not show as a font, the color is made lighter instead
+    if ($Bold -and -not $boldFonts) {
         if ($Debugging) { Write-DebugLog "Bold enabled but terminal doesn't support bold fonts - auto-lightening color" }
 
         if ($currentColor -is [array] -and $currentColor.Count -eq 3) {
@@ -795,7 +823,7 @@ function ConvertTo-BackgroundModeColor {
     A background color as the mode in use writes it, as ConvertTo-ForegroundModeColor does for
     text, with the background's codes and messages.
     #>
-    param([object]$Value, [int]$Index, [object]$Original)
+    param([object]$Value, [object]$Original)
     $currentColor = $Value
 
     if ($null -eq $currentColor -or $currentColor -eq "None") {
@@ -838,8 +866,8 @@ function ConvertTo-BackgroundModeColor {
         }
     }
 
-    # Where the terminal shows bold as brighter colors, the color is made lighter instead
-    if ($Bold -and -not $script:SupportsBoldFonts) {
+    # Where bold does not show as a font, the color is made lighter instead
+    if ($Bold -and -not $boldFonts) {
         if ($Debugging) { Write-DebugLog "Bold enabled but terminal doesn't support bold fonts - auto-lightening background color" }
 
         if ($currentColor -is [array] -and $currentColor.Count -eq 3) {
@@ -948,6 +976,21 @@ function ConvertTo-BackgroundModeColor {
 # ---------------------------------------------------------------------------------------------
 # Underline colors, and wrapping
 # ---------------------------------------------------------------------------------------------
+
+function Test-ShowsWhiteSpace {
+    <#
+    .SYNOPSIS
+    Whether the style names, a name or a list of them, draw a line under, through or over a
+    character or reverse it, so that white space shows its text color.
+    #>
+    param([object]$Names)
+    foreach ($name in @($Names)) {
+        if ($name -in 'Underline', 'DoubleUnderline', 'Curly', 'Dotted', 'Dashed', 'CrossedOut', 'Overline', 'Reverse') {
+            return $true
+        }
+    }
+    return $false
+}
 
 function Get-UnderlineColorSequence {
     <#
@@ -1095,7 +1138,7 @@ function Add-ColorLinePadding {
     The padding is a segment of its own, as without -Wrap: before the text with Side 'Left', on
     both sides with 'Center' (the right side one character more when the count is odd), and after
     it with 'Right'. A padding segment before the text moves the text's segments one on, when any
-    line has padding there. Answers @{ Lines; SegmentCount }, the count with the padding segments.
+    line has padding there. Returns @{ Lines; SegmentCount }, the count with the padding segments.
     #>
     param(
         [System.Collections.Generic.List[object]]$Lines,

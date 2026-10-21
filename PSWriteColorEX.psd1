@@ -3,7 +3,7 @@
     RootModule = 'PSWriteColorEX.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.2.0'
+    ModuleVersion = '1.2.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Desktop', 'Core')
@@ -86,7 +86,9 @@
         'Unregister-ColorName',
         'Export-ColorProfile',
         'Import-ColorProfile',
-        'Remove-ColorProfile'
+        'Remove-ColorProfile',
+        'Get-GradientColor',
+        'Get-ColorContrast'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -142,7 +144,11 @@
         # Register-ColorName and Unregister-ColorName aliases
         'Register-ColourName', 'Unregister-ColourName',
         # Export-ColorProfile, Import-ColorProfile and Remove-ColorProfile aliases
-        'Export-ColourProfile', 'Import-ColourProfile', 'Remove-ColourProfile'
+        'Export-ColourProfile', 'Import-ColourProfile', 'Remove-ColourProfile',
+        # Get-GradientColor aliases
+        'Get-GradientColour',
+        # Get-ColorContrast aliases
+        'Get-ColourContrast'
     )
 
     # DSC resources to export from this module
@@ -187,34 +193,33 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = @'
-1.2.0
+1.2.1
 
 Added:
-- Write-ColorEX -Markup: tags that color and style part of a string, such as '[bold red]Error:[/] file not found'.
-- -Split, -SplitAround and -SplitEvenly color parts of a string without giving it in pieces.
-- -Highlight colors and styles the text regular expressions match.
-- -Link writes links that terminals open when clicked.
-- -Reverse, -UnderlineStyle (single, double, curly, dotted, dashed) and -UnderlineColor.
-- -BackGroundGradient, and -GradientSpace OKLab or RGB.
-- -Truncate, -PadCenter and -Wrap.
-- Colors in the forms #RGB, rgb(r, g, b) and hsl(h, s%, l%).
-- Format-ColorEX answers colored text as strings; Show-ColorTable shows every color name.
-- Register-ColorName and Unregister-ColorName; Export-ColorProfile, Import-ColorProfile and Remove-ColorProfile.
-- Tab completion of color and profile names.
-- Detection of Ghostty, WezTerm, Warp, Kitty, Alacritty, foot, JetBrains IDEs and tmux; CLICOLOR_FORCE and CLICOLOR.
+- Twenty-one named gradients, such as Rainbow, Sunset, Ocean and Progress, for -Gradient and -BackGroundGradient.
+- Gradient options: -GradientSpace LinearRGB, OKLCH, HSL, HSV, Lab and LCh, -GradientHue, -GradientEasing (31 curves), -GradientRepeat, -GradientDirection and -GradientSteps.
+- Gradient colors placed with '@', as a percent: 'Gold@40'.
+- Get-GradientColor returns a gradient's colors, for a number of characters or at several places.
+- Get-ColorContrast returns the WCAG contrast ratio of a color on a background.
+- -ColorSupport on Write-ColorEX and Format-ColorEX names the color support to write for.
+- Test-AnsiSupport reports SupportsUnicode; WRITECOLOREX_UNICODE sets it.
+- Import-ColorProfile -Theme: Catppuccin, Solarized, Gruvbox, Dracula, Nord, One Dark, Tokyo Night, PowerShell's own colors and the CSS color names.
+- Show-ColorTable -Styles, -Palette and -Profiles.
+- The about_PSWriteColorEX help topic, a cheat sheet by task.
 
 Changed:
-- Gradients blend in OKLab; -GradientSpace RGB gives the 1.1.0 colors.
-- An unknown color name gives a warning and no color.
-- -Gradient writes -BackGroundColor under the gradient.
-- Write-ColorEX takes 38% to 60% less time per call than 1.1.0.
-- FORCE_COLOR and CLICOLOR_FORCE write a line of color names as escape codes in every host, so the colors reach a CI log.
+- In 256 colors, each color is written as the code that looks nearest to it, measured in OKLab.
+- Each gradient stop falls on a character of its own, so every color given is drawn exactly.
+- A text gradient leaves out white space, which shows no text color.
+- -Style reads a list as the array it holds.
+- Every command that returns objects declares their type.
+- Test-AnsiSupport turns on escape codes in a console without compiling C#.
 
 Fixed:
-- -Color and -BackGroundColor take $null entries.
-- Set-ColorDefault with no parameters makes the default style plain Gray.
-- With -ANSI8 or -ANSI4, a hex, rgb() or hsl() color is written as the nearest color of that mode.
-- PowerShell 7 in the Windows console host lightens -Bold colors, as Windows PowerShell 5.1 does there.
+- A style value outside its parameter's set gives the parameter check's error and the text is written, inside a try or not.
+- The Write-Color* helpers write a refused profile's error and go on.
+- The module keeps working in a runspace after another runspace that imported it is disposed, in Windows PowerShell 5.1 and PowerShell 7.
+- Runspaces that import the module at the same moment all finish in Windows PowerShell 5.1.
 
 The full list is in CHANGELOG.md: https://github.com/MarkusMcNugen/PSWriteColorEX/blob/main/CHANGELOG.md
 '@

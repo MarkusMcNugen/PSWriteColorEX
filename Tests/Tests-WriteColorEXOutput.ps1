@@ -3,10 +3,10 @@
 BeforeDiscovery {
     # PowerShell 7.2 and later remove escape codes from transcripts, and Write-ColorEX writes a
     # line of several colors as one call there when the host shows escape codes
-    $composesLines = $PSVersionTable.PSVersion -ge [version]'7.2' -and $Host.UI.SupportsVirtualTerminal
-    $isDesktop = $PSVersionTable.PSEdition -eq 'Desktop'
+    $script:composesLines = $PSVersionTable.PSVersion -ge [version]'7.2' -and $Host.UI.SupportsVirtualTerminal
+    $script:isDesktop = $PSVersionTable.PSEdition -eq 'Desktop'
 
-    $encodingCases = @(
+    $script:encodingCases = @(
         @{ Encoding = 'utf8'; Bytes = 'C3 A9' }
         @{ Encoding = 'utf8NoBOM'; Bytes = 'C3 A9' }
         @{ Encoding = 'default'; Bytes = 'C3 A9' }
@@ -23,10 +23,11 @@ BeforeAll {
     . (Join-Path $PSScriptRoot 'StartupColorEnvironment.ps1')
     Clear-StartupColorEnvironment
     Import-Module "$ModuleRoot\PSWriteColorEX.psd1" -Force
-    $esc = [char]27
+    $script:esc = [char]27
 
     # Sets the color support Write-ColorEX found at import, and whether bold is a bold font
     function Set-TestColorSupport {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'A test helper; -WhatIf has no meaning in a test.')]
         param($Support, [bool]$BoldFonts = $true)
         & (Get-Module PSWriteColorEX) { param($s, $b) $script:CachedANSISupport = $s; $script:SupportsBoldFonts = $b } $Support $BoldFonts
     }
@@ -37,6 +38,7 @@ BeforeAll {
 
     # Removes escape codes, to compare the text alone
     function Remove-EscapeCode {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'It returns the text without its escape codes and changes nothing.')]
         param([string]$Text)
         $Text -replace "$([char]27)\[[0-9;]*m", ''
     }
@@ -317,7 +319,7 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
             Set-TestColorSupport -Support 'ANSI4'
             Write-ColorEX -Text 'x' -Color '#FF6B35' -WarningVariable warnings3 -WarningAction SilentlyContinue
 
-            $script:hostCalls.Object | Should -Be @("$esc[38;2;255;107;53mx$esc[0m", "$esc[38;5;203mx$esc[0m", "$esc[93mx$esc[0m")
+            $script:hostCalls.Object | Should -Be @("$esc[38;2;255;107;53mx$esc[0m", "$esc[38;5;202mx$esc[0m", "$esc[93mx$esc[0m")
             @($warnings1) + @($warnings2) + @($warnings3) | Should -BeNullOrEmpty
         }
 
@@ -350,6 +352,17 @@ Describe 'Write-ColorEX host output' -Tag 'Unit', 'Output' {
             Set-TestColorSupport -Support 'ANSI4'
 
             Write-ColorEX -Text 'x', 'y' -Style @(@('Bold', 'Underline'), 'Italic')
+
+            $script:hostCalls[0].Object | Should -Be "$esc[1m$esc[4mx$esc[0m$esc[3my$esc[0m"
+        }
+
+        It 'Styles the segments with a list given to -Style as with the array it holds' {
+            Set-TestColorSupport -Support 'ANSI4'
+            $list = [System.Collections.Generic.List[object]]::new()
+            $list.Add(@('Bold', 'Underline'))
+            $list.Add('Italic')
+
+            Write-ColorEX -Text 'x', 'y' -Style $list
 
             $script:hostCalls[0].Object | Should -Be "$esc[1m$esc[4mx$esc[0m$esc[3my$esc[0m"
         }
