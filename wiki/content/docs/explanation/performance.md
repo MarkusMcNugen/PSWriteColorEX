@@ -22,17 +22,17 @@ class, which computes 1000 OKLab steps in about 11 milliseconds.
 
 ## PWRSWriteColorEX
 
-PWRSWriteColorEX is compiled from Rust. Both modules at 1.2.0, each call run 2000 times after 200
-warm-up calls with its output discarded, each module in a process of its own, in pwsh 7.6.6 on
+PWRSWriteColorEX is compiled from Rust. Both modules at 1.2.1, each call run 2000 times after 200
+warm-up calls with its output discarded, each module in a process of its own, in pwsh 7.6.7 on
 Windows 11 on an AMD Ryzen 9 7900X with `FORCE_COLOR=3`:
 
-| Call | PSWriteColorEX 1.2.0 | PWRSWriteColorEX 1.2.0 |
+| Call | PSWriteColorEX 1.2.1 | PWRSWriteColorEX 1.2.1 |
 |---|---:|---:|
-| `Write-ColorEX -Text 'Status: ', 'OK' -Color Gray, Green` | 748 microseconds | 175 microseconds |
-| `Write-ColorEX -Text 'x' -Color '#FF8000' -Bold` | 616 microseconds | 186 microseconds |
-| `Write-ColorEX -Text ('=' * 40) -Gradient Red, Blue` | 1178 microseconds | 183 microseconds |
-| `Write-ColorEX -Text '世界' -AutoPad 20` | 448 microseconds | 164 microseconds |
-| `Write-ColorInfo 'message'` | 430 microseconds | 148 microseconds |
+| `Write-ColorEX -Text 'Status: ', 'OK' -Color Gray, Green` | 705 microseconds | 139 microseconds |
+| `Write-ColorEX -Text 'x' -Color '#FF8000' -Bold` | 611 microseconds | 128 microseconds |
+| `Write-ColorEX -Text ('=' * 40) -Gradient Red, Blue` | 1195 microseconds | 144 microseconds |
+| `Write-ColorEX -Text '世界' -AutoPad 20` | 454 microseconds | 127 microseconds |
+| `Write-ColorInfo 'message'` | 431 microseconds | 128 microseconds |
 
 The same call costs more on one machine and operating system than another, so compare the two
 modules on one machine, as here, rather than across tables.
