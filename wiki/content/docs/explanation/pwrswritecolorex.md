@@ -21,9 +21,10 @@ Three test suites hold PWRSWriteColorEX to PSWriteColorEX, and its CI runs them 
 it builds:
 
 - The surface test compares every command and the types it returns, every parameter (type,
-  position, aliases, valid values, parameter sets), alias and `PSColorStyle` member with what
+  position, aliases, valid values, parameter sets, whether it takes `$null`, an empty value or
+  wildcards, and the default value its help gives), alias and `PSColorStyle` member with what
   PSWriteColorEX declares.
-- The parity suite runs 717 calls against both modules, each in a process of its own, under eight
+- The parity suite runs 718 calls against both modules, each in a process of its own, under eight
   color environments: TrueColor, 256 colors, 16 colors, `NO_COLOR`, `TERM=dumb`, `CLICOLOR=0`,
   `CLICOLOR_FORCE` with `TERM=dumb`, and the support the terminal reports. It compares each write
   to the host with its colors, each warning, error and object, and the bytes of each log file,
